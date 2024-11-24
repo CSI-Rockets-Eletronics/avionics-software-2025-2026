@@ -1,9 +1,15 @@
-#include <stdio.h>
 #include <Arduino.h>
 
-extern "C" void app_main()
-{
+#include "device.h"
+
+extern "C" void app_main() {
     initArduino();
 
-    printf("Hello, World!\n");
+    Serial.begin(115200);
+
+    device::InitAll();
+
+    while (true) {
+        device::LoopAll();
+    }
 }
