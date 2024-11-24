@@ -4,7 +4,7 @@
 
 #include "device.h"
 
-static const uint8_t kDhtPin = 99;  // TODO
+static const int kDhtPin = 99;  // TODO
 
 static const bandwidth kAccBandwidth = acc_460Hz;
 static const bandwidth kGyroBandwidth = gyro_250Hz;

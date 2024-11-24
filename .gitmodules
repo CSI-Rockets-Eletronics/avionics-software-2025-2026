@@ -10,3 +10,6 @@
 [submodule "components/RadioHead/RadioHead"]
 	path = components/RadioHead/RadioHead
 	url = https://github.com/CSI-Rockets-Eletronics/RadioHead.git
+[submodule "components/Adafruit_GPS/Adafruit_GPS"]
+	path = components/Adafruit_GPS/Adafruit_GPS
+	url = https://github.com/adafruit/Adafruit_GPS.git

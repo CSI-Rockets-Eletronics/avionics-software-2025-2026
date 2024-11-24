@@ -3,10 +3,10 @@
 
 #include "device.h"
 
-static const uint8_t kInterruptPin = 99;  // TODO
+static const int kInterruptPin = 99;  // TODO
 
-static const uint32_t kFrequency = 433;
-static const int8_t kTxPower = 23;
+static const int kFrequency = 433;
+static const int kTxPower = 23;
 
 class DevRadio : public device::Device {
    public:
