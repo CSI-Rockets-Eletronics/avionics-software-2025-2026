@@ -1,5 +1,7 @@
 #include "device.h"
 
+#include <Arduino.h>
+
 #include <vector>
 
 namespace device {
@@ -17,15 +19,26 @@ Device::~Device() {
     }
 }
 
+void Device::LoopIfInit() {
+    if (!init_failed_) {
+        Loop();
+    }
+}
+
+void Device::InitDie(std::string msg) {
+    init_failed_ = true;
+    Serial.println(msg.c_str());
+}
+
 void InitAll() {
     for (auto dev : devices) {
-        dev->init();
+        dev->Init();
     }
 }
 
 void LoopAll() {
     for (auto dev : devices) {
-        dev->loop();
+        dev->LoopIfInit();
     }
 }
 

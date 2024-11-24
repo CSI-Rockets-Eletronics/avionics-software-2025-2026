@@ -9,8 +9,15 @@ class Device {
    public:
     Device();
     ~Device();
-    virtual void init() = 0;
-    virtual void loop() = 0;
+    virtual void Init() = 0;
+    void LoopIfInit();
+
+   protected:
+    virtual void Loop() = 0;
+    void InitDie(std::string msg);
+
+   private:
+    bool init_failed_ = false;
 };
 
 void InitAll();
