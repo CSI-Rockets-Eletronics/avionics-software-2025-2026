@@ -9,18 +9,18 @@ class Device {
    public:
     Device();
     ~Device();
-    virtual void Init() = 0;
-    void LoopIfInit();
+    virtual void Setup() = 0;
+    void LoopIfSetupSucceeded();
 
    protected:
     virtual void Loop() = 0;
-    void InitDie(std::string msg);
+    void SetupDie(std::string msg);
 
    private:
-    bool init_failed_ = false;
+    bool setupFailed = false;
 };
 
-void InitAll();
+void SetupAll();
 void LoopAll();
 
 }  // namespace device

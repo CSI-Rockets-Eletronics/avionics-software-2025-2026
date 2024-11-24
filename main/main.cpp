@@ -9,7 +9,7 @@ extern "C" void app_main() {
 
     Serial.begin(kSerialBaud);
 
-    device::InitAll();
+    device::SetupAll();
 
     while (true) {
         device::LoopAll();

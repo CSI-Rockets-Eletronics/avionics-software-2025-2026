@@ -10,12 +10,12 @@ static const int kTxPower = 23;
 
 class DevRadio : public device::Device {
    public:
-    void Init() override {
+    void Setup() override {
         if (!rf95.init()) {
-            return InitDie("RF95 init failed");
+            return SetupDie("RF95 init failed");
         }
         if (!rf95.setFrequency(kFrequency)) {
-            return InitDie("RF95 setFrequency failed");
+            return SetupDie("RF95 setFrequency failed");
         }
         rf95.setTxPower(kTxPower, false);
     }

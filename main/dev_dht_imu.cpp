@@ -14,11 +14,11 @@ static const scales kGyroScale = scale_2000dps;
 
 class DevDhtImu : public device::Device {
    public:
-    void Init() override {
+    void Setup() override {
         dht.begin();
 
         if (mpu.init()) {
-            return InitDie("MPU9255 init failed");
+            return SetupDie("MPU9255 init failed");
         }
 
         mpu.set_acc_bandwidth(kAccBandwidth);

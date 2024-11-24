@@ -8,7 +8,7 @@ static const int kTxPin = 99;  // TODO
 
 class DevGps : public device::Device {
    public:
-    void Init() override {
+    void Setup() override {
         gpsSerial.setPins(kRxPin, kTxPin);
         gps.begin(9600);
         // include recommended minimum (RMC) and fix (GGA)

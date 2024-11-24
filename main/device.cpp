@@ -19,26 +19,26 @@ Device::~Device() {
     }
 }
 
-void Device::LoopIfInit() {
-    if (!init_failed_) {
+void Device::LoopIfSetupSucceeded() {
+    if (!setupFailed) {
         Loop();
     }
 }
 
-void Device::InitDie(std::string msg) {
-    init_failed_ = true;
+void Device::SetupDie(std::string msg) {
+    setupFailed = true;
     Serial.println(msg.c_str());
 }
 
-void InitAll() {
+void SetupAll() {
     for (auto dev : devices) {
-        dev->Init();
+        dev->Setup();
     }
 }
 
 void LoopAll() {
     for (auto dev : devices) {
-        dev->LoopIfInit();
+        dev->LoopIfSetupSucceeded();
     }
 }
 
