@@ -1,14 +1,31 @@
 #include <Arduino.h>
+#include <DHT.h>
+#include <MPU9255.h>
 
-#include "DHT.h"
 #include "device.h"
 
 static const uint8_t kDhtPin = 99;  // TODO
 
+static const bandwidth kAccBandwidth = acc_460Hz;
+static const bandwidth kGyroBandwidth = gyro_250Hz;
+
+static const scales kAccScale = scale_16g;
+static const scales kGyroScale = scale_2000dps;
+
 class DevDhtImu : public device::Device {
    public:
     void Init() override {
-        // TODO
+        dht.begin();
+
+        if (mpu.init()) {
+            return InitDie("MPU9255 init failed");
+        }
+
+        mpu.set_acc_bandwidth(kAccBandwidth);
+        mpu.set_gyro_bandwidth(kGyroBandwidth);
+
+        mpu.set_acc_scale(kAccScale);
+        mpu.set_gyro_scale(kGyroScale);
     }
 
     void Loop() override {
@@ -17,6 +34,7 @@ class DevDhtImu : public device::Device {
 
    private:
     DHT dht{kDhtPin, DHT11};
+    MPU9255 mpu;  // uses default I2C pins
 };
 
 DevDhtImu devDhtImu;

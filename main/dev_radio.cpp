@@ -4,6 +4,7 @@
 #include "device.h"
 
 static const uint8_t kInterruptPin = 99;  // TODO
+
 static const uint32_t kFrequency = 433;
 static const int8_t kTxPower = 23;
 
