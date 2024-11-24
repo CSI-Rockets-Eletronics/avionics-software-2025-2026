@@ -3,8 +3,8 @@
 
 #include "device.h"
 
-const int kRxPin = 99;  // TODO
-const int kTxPin = 99;  // TODO
+static const int kRxPin = 99;  // TODO
+static const int kTxPin = 99;  // TODO
 
 class DevGps : public device::Device {
    public:
