@@ -1,3 +1,12 @@
 [submodule "components/RadioHead/RadioHead"]
 	path = components/RadioHead/RadioHead
 	url = https://github.com/adafruit/RadioHead.git
+[submodule "components/DHT-sensor-library/DHT-sensor-library"]
+	path = components/DHT-sensor-library/DHT-sensor-library
+	url = https://github.com/adafruit/DHT-sensor-library.git
+[submodule "components/MPU9255-Arduino-Library/MPU9255-Arduino-Library"]
+	path = components/MPU9255-Arduino-Library/MPU9255-Arduino-Library
+	url = https://github.com/Bill2462/MPU9255-Arduino-Library.git
+[submodule "components/Adafruit_Sensor/Adafruit_Sensor"]
+	path = components/Adafruit_Sensor/Adafruit_Sensor
+	url = https://github.com/adafruit/Adafruit_Sensor.git

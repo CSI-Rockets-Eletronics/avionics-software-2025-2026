@@ -3,7 +3,7 @@
 
 #include "device.h"
 
-static const uint8_t kInterrupt = 99;  // TODO
+static const uint8_t kInterruptPin = 99;  // TODO
 static const uint32_t kFrequency = 433;
 static const int8_t kTxPower = 23;
 
@@ -24,7 +24,7 @@ class DevRadio : public device::Device {
     }
 
    private:
-    RH_RF95 rf95{SS, kInterrupt};
+    RH_RF95 rf95{SS, kInterruptPin};  // uses default SPI pins
 };
 
 DevRadio devRadio;
