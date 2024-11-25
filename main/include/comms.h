@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 
 namespace avionics {
@@ -23,7 +24,9 @@ class MacAddress {
     std::array<uint8_t, 6> bytes_;
 };
 
-void EspNowSetup();
+using ReceiveCallback = std::function<void(const uint8_t* data, int len)>;
+
+void EspNowSetup(ReceiveCallback on_receive);
 
 void EspNowSend(const MacAddress& to_address, const uint8_t* bytes, size_t len);
 

@@ -10,7 +10,9 @@ extern "C" void app_main() {
 
     Serial.begin(kSerialBaud);
 
-    avionics::EspNowSetup();
+    avionics::EspNowSetup([](auto dato, auto len) {
+        // TODO
+    });
 
     while (true) {
         avionics::this_node.Loop();

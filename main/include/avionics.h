@@ -1,6 +1,8 @@
 #ifndef AVIONICS_H_
 #define AVIONICS_H_
 
+#include <Arduino.h>
+
 #include <functional>
 #include <memory>
 #include <vector>
@@ -23,12 +25,22 @@ class Device {
     virtual void Setup() = 0;
     virtual void Loop() = 0;
 
+    virtual void OnReceive(uint8_t* bytes, size_t len) {}
+
    protected:
     void Die(const char* msg);
 
     template <typename T>
     inline void Send(DeviceType to_device, const T& data) {
         Send(to_device, reinterpret_cast<const uint8_t*>(&data), sizeof(data));
+    }
+
+    template <typename T>
+    inline T& Parse(const uint8_t* bytes, size_t len) {
+        if (len != sizeof(T)) {
+            Serial.println("Invalid message length, ignoring...");
+        }
+        return *reinterpret_cast<T*>(bytes);
     }
 
    private:

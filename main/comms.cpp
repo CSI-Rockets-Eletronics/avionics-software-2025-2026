@@ -46,7 +46,18 @@ static void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
     send_in_flight = false;
 }
 
-void EspNowSetup() {
+ReceiveCallback on_receive_cb;
+
+static void OnDataReceived(const esp_now_recv_info_t* _info,
+                           const uint8_t* data, int len) {
+    if (on_receive_cb) {
+        on_receive_cb(data, len);
+    }
+}
+
+void EspNowSetup(ReceiveCallback on_receive) {
+    on_receive_cb = on_receive;
+
     WiFi.mode(WIFI_STA);
 
     MacAddress this_mac_address;
@@ -64,6 +75,10 @@ void EspNowSetup() {
 
     if (esp_now_register_send_cb(OnDataSent) != ESP_OK) {
         Die("Failed to register ESP-NOW send callback");
+    }
+
+    if (esp_now_register_recv_cb(OnDataReceived) != ESP_OK) {
+        Die("Failed to register ESP-NOW receive callback");
     }
 
     for (const auto& mac_address : all_mac_addresses) {
