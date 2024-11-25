@@ -2,7 +2,6 @@
 #define NODECONFIG_H_
 
 #include "avionics.h"
-#include "comms.h"
 
 namespace avionics {
 

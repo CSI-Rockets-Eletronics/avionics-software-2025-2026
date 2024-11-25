@@ -6,17 +6,19 @@
 
 namespace avionics {
 
+void Die(const char* msg) {
+    Serial.println(msg);
+    esp_restart();
+}
+
+void Device::Die(const char* msg) { avionics::Die(msg); }
+
 static std::unordered_map<DeviceType, std::function<std::unique_ptr<Device>()>>
     device_factories;
 
 void _register::RegisterDeviceFactory(
     DeviceType type, std::function<std::unique_ptr<Device>()> factory) {
     device_factories[type] = factory;
-}
-
-void Device::SetupDie(const char* msg) {
-    Serial.println(msg);
-    esp_restart();
 }
 
 void Node::Setup() {

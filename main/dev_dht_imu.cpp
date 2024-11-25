@@ -17,7 +17,7 @@ class DevDhtImu : public avionics::Device {
         dht.begin();
 
         if (mpu.init()) {
-            return SetupDie("MPU9255 init failed");
+            return Die("MPU9255 init failed");
         }
 
         mpu.set_acc_bandwidth(kAccBandwidth);

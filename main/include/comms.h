@@ -1,12 +1,27 @@
 #ifndef COMMS_H_
 #define COMMS_H_
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
-
-#include "avionics.h"
+#include <string>
 
 namespace avionics {
+
+class MacAddress {
+   public:
+    MacAddress();
+    MacAddress(std::string str_address);
+    std::string ToString() const;
+    void CopyInto(uint8_t* dest) const;
+    uint8_t* Data();
+    const uint8_t* ReadData() const;
+
+    bool operator==(const MacAddress& other) const;
+
+   private:
+    std::array<uint8_t, 6> bytes_;
+};
 
 void EspNowSetup();
 

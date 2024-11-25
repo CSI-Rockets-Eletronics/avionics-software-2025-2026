@@ -11,10 +11,10 @@ class DevRadio : public avionics::Device {
    public:
     void Setup() override {
         if (!rf95.init()) {
-            return SetupDie("RF95 init failed");
+            return Die("RF95 init failed");
         }
         if (!rf95.setFrequency(kFrequency)) {
-            return SetupDie("RF95 setFrequency failed");
+            return Die("RF95 setFrequency failed");
         }
         rf95.setTxPower(kTxPower, false);
     }

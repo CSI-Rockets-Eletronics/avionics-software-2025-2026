@@ -5,7 +5,11 @@
 #include <memory>
 #include <vector>
 
+#include "comms.h"
+
 namespace avionics {
+
+void Die(const char* msg);
 
 enum class DeviceType {
     // sort alphabetically
@@ -20,11 +24,8 @@ class Device {
     virtual void Loop() = 0;
 
    protected:
-    // reboots the device
-    void SetupDie(const char* msg);
+    void Die(const char* msg);
 };
-
-using MacAddress = std::array<uint8_t, 6>;
 
 class Node {
    public:
