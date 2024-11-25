@@ -15,7 +15,14 @@ void Device::Die(const char* msg) { avionics::Die(msg); }
 
 void Device::Send(DeviceType to_device, const uint8_t* bytes, size_t len) {
     // packet format: [DeviceType][data]
-    auto& to_node = Node::FindNode(to_device);
+
+    auto maybe_to_node = Node::FindNode(to_device);
+    if (!maybe_to_node) {
+        Serial.println("Send: Node not found, ignoring...");
+        return;
+    }
+    auto& to_node = maybe_to_node->get();
+
     size_t dev_header_len = sizeof(DeviceType);
     uint8_t buf[dev_header_len + len];
     memcpy(buf, &to_device, dev_header_len);
@@ -50,7 +57,7 @@ void Node::Setup() {
     }
 }
 
-Node& Node::FindNode(DeviceType device) {
+std::optional<std::reference_wrapper<Node>> Node::FindNode(DeviceType device) {
     for (auto node : all_nodes) {
         for (auto node_dev : node->device_types) {
             if (node_dev == device) {
@@ -58,8 +65,46 @@ Node& Node::FindNode(DeviceType device) {
             }
         }
     }
-    Die("Node not found");
-    return *all_nodes[0];  // unreachable
+    return std::nullopt;
+}
+
+std::optional<std::reference_wrapper<Device>> Node::FindDevice(
+    DeviceType device) {
+    auto maybe_node = FindNode(device);
+    if (!maybe_node) {
+        return std::nullopt;
+    }
+    auto& node = maybe_node->get();
+
+    // is node initialized?
+    if (node.devices_.size() != node.device_types.size()) {
+        return std::nullopt;
+    }
+
+    for (int i = 0; i < node.device_types.size(); i++) {
+        if (node.device_types[i] == device) {
+            return *node.devices_[i];
+        }
+    }
+
+    return std::nullopt;
+}
+
+void Node::OnReceive(uint8_t* bytes, size_t len) {
+    if (len < sizeof(DeviceType)) {
+        Serial.println("Invalid message length, ignoring...");
+        return;
+    }
+
+    DeviceType from_device = *reinterpret_cast<const DeviceType*>(bytes);
+    auto maybe_dev = FindDevice(from_device);
+    if (!maybe_dev) {
+        Serial.println("Device not found, ignoring...");
+        return;
+    }
+    auto& dev = maybe_dev->get();
+
+    dev.OnReceive(bytes + sizeof(DeviceType), len - sizeof(DeviceType));
 }
 
 void Node::Loop() {

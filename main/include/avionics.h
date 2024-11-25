@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "comms.h"
@@ -60,10 +61,16 @@ class Node {
     void Setup();
     void Loop();
 
-    static Node& FindNode(DeviceType type);
+    static std::optional<std::reference_wrapper<Node>> FindNode(
+        DeviceType type);
+    static std::optional<std::reference_wrapper<Device>> FindDevice(
+        DeviceType type);
+
+    static void OnReceive(uint8_t* bytes, size_t len);
 
    private:
     // uninitialized unless Setup() is called
+    // if initialized, then devices correspond to device_types
     std::vector<std::unique_ptr<Device>> devices_;
 };
 

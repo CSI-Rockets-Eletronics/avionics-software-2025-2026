@@ -51,7 +51,9 @@ ReceiveCallback on_receive_cb;
 static void OnDataReceived(const esp_now_recv_info_t* _info,
                            const uint8_t* data, int len) {
     if (on_receive_cb) {
-        on_receive_cb(data, len);
+        uint8_t data_copy[len];
+        memcpy(data_copy, data, len);
+        on_receive_cb(data_copy, len);
     }
 }
 

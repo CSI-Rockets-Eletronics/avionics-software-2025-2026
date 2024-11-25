@@ -24,7 +24,7 @@ class MacAddress {
     std::array<uint8_t, 6> bytes_;
 };
 
-using ReceiveCallback = std::function<void(const uint8_t* data, int len)>;
+using ReceiveCallback = std::function<void(uint8_t* data, int len)>;
 
 void EspNowSetup(ReceiveCallback on_receive);
 
