@@ -5,9 +5,7 @@
 static const int kRxPin = 99;  // TODO
 static const int kTxPin = 99;  // TODO
 
-using namespace avionics;
-
-class DevGps : public Device {
+class DevGps : public avionics::Device {
    public:
     void Setup() override {
         gpsSerial.setPins(kRxPin, kTxPin);
@@ -30,4 +28,4 @@ class DevGps : public Device {
     Adafruit_GPS gps{&gpsSerial};
 };
 
-REGISTER_DEVICE(DevGps);
+REGISTER_AVIONICS_DEVICE(DevGps);

@@ -7,9 +7,7 @@ static const int kInterruptPin = 99;  // TODO
 static const int kFrequency = 433;
 static const int kTxPower = 23;
 
-using namespace avionics;
-
-class DevRadio : public Device {
+class DevRadio : public avionics::Device {
    public:
     void Setup() override {
         if (!rf95.init()) {
@@ -29,4 +27,4 @@ class DevRadio : public Device {
     RH_RF95 rf95{SS, kInterruptPin};  // uses default SPI pins
 };
 
-REGISTER_DEVICE(DevRadio);
+REGISTER_AVIONICS_DEVICE(DevRadio);

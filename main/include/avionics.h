@@ -55,8 +55,8 @@ class RegisterDevice {
 
 }  // namespace _register
 
-#define REGISTER_DEVICE(Dev) static _register::RegisterDevice<Dev, DeviceType::Dev> reg
-
 }  // namespace avionics
+
+#define REGISTER_AVIONICS_DEVICE(Dev) static avionics::_register::RegisterDevice<Dev, avionics::DeviceType::Dev> reg
 
 #endif  // AVIONICS_H_

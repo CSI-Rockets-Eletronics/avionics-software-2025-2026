@@ -11,9 +11,7 @@ static const bandwidth kGyroBandwidth = gyro_250Hz;
 static const scales kAccScale = scale_16g;
 static const scales kGyroScale = scale_2000dps;
 
-using namespace avionics;
-
-class DevDhtImu : public Device {
+class DevDhtImu : public avionics::Device {
    public:
     void Setup() override {
         dht.begin();
@@ -38,4 +36,4 @@ class DevDhtImu : public Device {
     MPU9255 mpu;  // uses default I2C pins
 };
 
-REGISTER_DEVICE(DevDhtImu);
+REGISTER_AVIONICS_DEVICE(DevDhtImu);
