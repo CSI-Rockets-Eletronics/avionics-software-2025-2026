@@ -18,6 +18,7 @@ enum class DeviceType {
     // sort alphabetically
     DevDhtImu,
     DevGps,
+    DevPiSerial,
     DevRadio,
 };
 
@@ -36,12 +37,15 @@ class Device {
         Send(to_device, reinterpret_cast<const uint8_t*>(&data), sizeof(data));
     }
 
+    // returns true if parsing was successful, false otherwise
     template <typename T>
-    inline T& Parse(const uint8_t* bytes, size_t len) {
+    static inline bool Parse(const uint8_t* bytes, size_t len, T* out) {
         if (len != sizeof(T)) {
             Serial.println("Invalid message length, ignoring...");
+            return false;
         }
-        return *reinterpret_cast<T*>(bytes);
+        memcpy(out, bytes, sizeof(T));
+        return true;
     }
 
    private:
