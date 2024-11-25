@@ -4,8 +4,8 @@ namespace nodeconfig {
 
 using namespace avionics;
 
-static Node radio_node{"node1", {DeviceType::DevRadio}};
-static Node pos_tracking_node{"node1", {DeviceType::DevDhtImu, DeviceType::DevGps}};
+static Node radio_node{{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, {DeviceType::DevRadio}};
+static Node pos_tracking_node{{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, {DeviceType::DevDhtImu, DeviceType::DevGps}};
 
 avionics::Node& this_node = radio_node;
 

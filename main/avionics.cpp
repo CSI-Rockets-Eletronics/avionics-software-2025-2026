@@ -12,8 +12,8 @@ void _register::RegisterDeviceFactory(DeviceType type, std::function<std::unique
     device_factories[type] = factory;
 }
 
-void Device::SetupDie(std::string msg) {
-    Serial.println(msg.c_str());
+void Device::SetupDie(const char* msg) {
+    Serial.println(msg);
     esp_restart();
 }
 
