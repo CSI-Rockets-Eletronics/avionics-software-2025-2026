@@ -30,18 +30,19 @@ class Device {
 class Node {
    public:
     const MacAddress mac_address;
+    const std::vector<DeviceType> device_types;
 
     Node(const MacAddress mac_address,
-         const std::vector<DeviceType> device_types)
-        : mac_address(mac_address), device_types_(device_types) {}
+         const std::vector<DeviceType> device_types);
     void Setup();
     void Loop();
 
    private:
-    const std::vector<DeviceType> device_types_;
     // uninitialized unless Setup() is called
     std::vector<std::unique_ptr<Device>> devices_;
 };
+
+Node& FindNode(DeviceType type);
 
 namespace _register {
 
