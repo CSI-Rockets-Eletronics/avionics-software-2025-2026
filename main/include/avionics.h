@@ -28,13 +28,14 @@ using MacAddress = std::array<uint8_t, 6>;
 
 class Node {
    public:
-    Node(MacAddress mac_address, std::vector<DeviceType> device_types)
-        : mac_address_(mac_address), device_types_(device_types) {}
+    const MacAddress mac_address;
+
+    Node(const MacAddress mac_address, const std::vector<DeviceType> device_types)
+        : mac_address(mac_address), device_types_(device_types) {}
     void Setup();
     void Loop();
 
    private:
-    const MacAddress mac_address_;
     const std::vector<DeviceType> device_types_;
     std::vector<std::unique_ptr<Device>> devices_;  // uninitialized unless Setup() is called
 };
