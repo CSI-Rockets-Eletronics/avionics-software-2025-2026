@@ -4,11 +4,11 @@
 #include "avionics.h"
 #include "comms.h"
 
-namespace nodeconfig {
+namespace avionics {
 
-extern avionics::Node& this_node;
-extern avionics::EspNow esp_now;
+extern std::vector<MacAddress> all_mac_addresses;
+extern Node& this_node;
 
-}  // namespace nodeconfig
+}  // namespace avionics
 
 #endif  // NODECONFIG_H_

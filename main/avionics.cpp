@@ -6,9 +6,11 @@
 
 namespace avionics {
 
-static std::unordered_map<DeviceType, std::function<std::unique_ptr<Device>()>> device_factories;
+static std::unordered_map<DeviceType, std::function<std::unique_ptr<Device>()>>
+    device_factories;
 
-void _register::RegisterDeviceFactory(DeviceType type, std::function<std::unique_ptr<Device>()> factory) {
+void _register::RegisterDeviceFactory(
+    DeviceType type, std::function<std::unique_ptr<Device>()> factory) {
     device_factories[type] = factory;
 }
 

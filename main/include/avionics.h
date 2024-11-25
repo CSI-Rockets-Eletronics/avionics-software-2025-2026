@@ -30,14 +30,16 @@ class Node {
    public:
     const MacAddress mac_address;
 
-    Node(const MacAddress mac_address, const std::vector<DeviceType> device_types)
+    Node(const MacAddress mac_address,
+         const std::vector<DeviceType> device_types)
         : mac_address(mac_address), device_types_(device_types) {}
     void Setup();
     void Loop();
 
    private:
     const std::vector<DeviceType> device_types_;
-    std::vector<std::unique_ptr<Device>> devices_;  // uninitialized unless Setup() is called
+    // uninitialized unless Setup() is called
+    std::vector<std::unique_ptr<Device>> devices_;
 };
 
 namespace _register {
@@ -45,7 +47,8 @@ namespace _register {
 template <typename T>
 concept IsDevice = std::is_base_of_v<Device, T>;
 
-void RegisterDeviceFactory(DeviceType type, std::function<std::unique_ptr<Device>()> factory);
+void RegisterDeviceFactory(DeviceType type,
+                           std::function<std::unique_ptr<Device>()> factory);
 
 template <IsDevice Dev, DeviceType type>
 class RegisterDevice {
@@ -59,6 +62,8 @@ class RegisterDevice {
 
 }  // namespace avionics
 
-#define REGISTER_AVIONICS_DEVICE(Dev) static avionics::_register::RegisterDevice<Dev, avionics::DeviceType::Dev> reg
+#define REGISTER_AVIONICS_DEVICE(Dev)                                          \
+    static avionics::_register::RegisterDevice<Dev, avionics::DeviceType::Dev> \
+        reg
 
 #endif  // AVIONICS_H_

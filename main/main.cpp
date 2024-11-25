@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "comms.h"
 #include "nodeconfig.h"
 
 const unsigned long kSerialBaud = 115200;
@@ -9,9 +10,9 @@ extern "C" void app_main() {
 
     Serial.begin(kSerialBaud);
 
-    nodeconfig::this_node.Setup();
+    avionics::EspNowSetup();
 
     while (true) {
-        nodeconfig::this_node.Loop();
+        avionics::this_node.Loop();
     }
 }

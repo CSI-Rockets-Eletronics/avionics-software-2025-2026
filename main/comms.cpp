@@ -5,6 +5,8 @@
 #include <esp_wifi.h>
 #include <wifi.h>
 
+#include "nodeconfig.h"
+
 namespace avionics {
 
 static void die(const char* msg) {
@@ -15,9 +17,11 @@ static void die(const char* msg) {
 // don't bother synchronizing -- it's okay to drop messages occasionally
 static bool send_in_flight = false;
 
-static void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) { send_in_flight = false; }
+static void OnDataSent(const uint8_t* mac_addr, esp_now_send_status_t status) {
+    send_in_flight = false;
+}
 
-EspNow::EspNow(const std::vector<MacAddress>& mac_addresses) {
+void EspNowSetup() {
     WiFi.mode(WIFI_STA);
 
     MacAddress this_mac_address;
@@ -34,7 +38,7 @@ EspNow::EspNow(const std::vector<MacAddress>& mac_addresses) {
         die("Failed to register ESP-NOW send callback");
     }
 
-    for (const auto& mac_address : mac_addresses) {
+    for (const auto& mac_address : all_mac_addresses) {
         if (mac_address == this_mac_address) {
             continue;
         }
@@ -50,7 +54,8 @@ EspNow::EspNow(const std::vector<MacAddress>& mac_addresses) {
     }
 }
 
-void EspNow::SendBytes(const MacAddress& to_address, const uint8_t* bytes, size_t len) {
+void EspNowSend(const MacAddress& to_address, const uint8_t* bytes,
+                size_t len) {
     if (send_in_flight) {
         return;
     }
