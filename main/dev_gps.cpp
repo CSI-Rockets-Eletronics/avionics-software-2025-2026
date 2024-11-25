@@ -1,12 +1,13 @@
 #include <Adafruit_GPS.h>
-#include <Arduino.h>
 
-#include "device.h"
+#include "avionics.h"
 
 static const int kRxPin = 99;  // TODO
 static const int kTxPin = 99;  // TODO
 
-class DevGps : public device::Device {
+using namespace avionics;
+
+class DevGps : public Device {
    public:
     void Setup() override {
         gpsSerial.setPins(kRxPin, kTxPin);
@@ -29,4 +30,4 @@ class DevGps : public device::Device {
     Adafruit_GPS gps{&gpsSerial};
 };
 
-DevGps devGps;
+REGISTER_DEVICE(DevGps);

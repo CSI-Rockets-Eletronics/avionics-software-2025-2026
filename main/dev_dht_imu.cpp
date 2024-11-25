@@ -1,8 +1,7 @@
-#include <Arduino.h>
 #include <DHT.h>
 #include <MPU9255.h>
 
-#include "device.h"
+#include "avionics.h"
 
 static const int kDhtPin = 99;  // TODO
 
@@ -12,7 +11,9 @@ static const bandwidth kGyroBandwidth = gyro_250Hz;
 static const scales kAccScale = scale_16g;
 static const scales kGyroScale = scale_2000dps;
 
-class DevDhtImu : public device::Device {
+using namespace avionics;
+
+class DevDhtImu : public Device {
    public:
     void Setup() override {
         dht.begin();
@@ -37,4 +38,4 @@ class DevDhtImu : public device::Device {
     MPU9255 mpu;  // uses default I2C pins
 };
 
-DevDhtImu devDhtImu;
+REGISTER_DEVICE(DevDhtImu);

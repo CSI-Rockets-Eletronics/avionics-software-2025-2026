@@ -1,14 +1,15 @@
-#include <Arduino.h>
 #include <RH_RF95.h>
 
-#include "device.h"
+#include "avionics.h"
 
 static const int kInterruptPin = 99;  // TODO
 
 static const int kFrequency = 433;
 static const int kTxPower = 23;
 
-class DevRadio : public device::Device {
+using namespace avionics;
+
+class DevRadio : public Device {
    public:
     void Setup() override {
         if (!rf95.init()) {
@@ -28,4 +29,4 @@ class DevRadio : public device::Device {
     RH_RF95 rf95{SS, kInterruptPin};  // uses default SPI pins
 };
 
-DevRadio devRadio;
+REGISTER_DEVICE(DevRadio);
