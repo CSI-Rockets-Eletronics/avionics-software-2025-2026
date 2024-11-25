@@ -25,6 +25,14 @@ class Device {
 
    protected:
     void Die(const char* msg);
+
+    template <typename T>
+    inline void Send(DeviceType to_device, const T& data) {
+        Send(to_device, reinterpret_cast<const uint8_t*>(&data), sizeof(data));
+    }
+
+   private:
+    void Send(DeviceType to_device, const uint8_t* bytes, size_t len);
 };
 
 class Node {
@@ -34,15 +42,18 @@ class Node {
 
     Node(const MacAddress mac_address,
          const std::vector<DeviceType> device_types);
+
+    Node(const Node&) = delete;
+
     void Setup();
     void Loop();
+
+    static Node& FindNode(DeviceType type);
 
    private:
     // uninitialized unless Setup() is called
     std::vector<std::unique_ptr<Device>> devices_;
 };
-
-Node& FindNode(DeviceType type);
 
 namespace _register {
 

@@ -13,22 +13,15 @@ void Die(const char* msg) {
 
 void Device::Die(const char* msg) { avionics::Die(msg); }
 
+void Device::Send(DeviceType to_device, const uint8_t* bytes, size_t len) {
+    auto& to_node = Node::FindNode(to_device);
+    EspNowSend(to_node.mac_address, bytes, len);
+}
+
 static std::unordered_map<DeviceType, std::function<std::unique_ptr<Device>()>>
     device_factories;
 
 static std::vector<Node*> all_nodes;
-
-Node& FindNode(DeviceType device) {
-    for (auto node : all_nodes) {
-        for (auto node_dev : node->device_types) {
-            if (node_dev == device) {
-                return *node;
-            }
-        }
-    }
-    Die("Node not found");
-    return *all_nodes[0];  // unreachable
-}
 
 void _register::RegisterDeviceFactory(
     DeviceType type, std::function<std::unique_ptr<Device>()> factory) {
@@ -50,6 +43,18 @@ void Node::Setup() {
     for (auto& dev : devices_) {
         dev->Setup();
     }
+}
+
+Node& Node::FindNode(DeviceType device) {
+    for (auto node : all_nodes) {
+        for (auto node_dev : node->device_types) {
+            if (node_dev == device) {
+                return *node;
+            }
+        }
+    }
+    Die("Node not found");
+    return *all_nodes[0];  // unreachable
 }
 
 void Node::Loop() {
