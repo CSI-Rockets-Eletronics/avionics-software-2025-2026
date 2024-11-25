@@ -1,21 +1,17 @@
 #include <Arduino.h>
 
-#include "avionics.h"
-
-using namespace avionics;
+#include "nodeconfig.h"
 
 const unsigned long kSerialBaud = 115200;
-
-Node node{DeviceType::DevDhtImu, DeviceType::DevGps, DeviceType::DevRadio};
 
 extern "C" void app_main() {
     initArduino();
 
     Serial.begin(kSerialBaud);
 
-    node.Setup();
+    nodeconfig::this_node.Setup();
 
     while (true) {
-        node.Loop();
+        nodeconfig::this_node.Loop();
     }
 }
