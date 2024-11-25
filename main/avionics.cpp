@@ -14,8 +14,13 @@ void Die(const char* msg) {
 void Device::Die(const char* msg) { avionics::Die(msg); }
 
 void Device::Send(DeviceType to_device, const uint8_t* bytes, size_t len) {
+    // packet format: [DeviceType][data]
     auto& to_node = Node::FindNode(to_device);
-    EspNowSend(to_node.mac_address, bytes, len);
+    size_t dev_header_len = sizeof(DeviceType);
+    uint8_t buf[dev_header_len + len];
+    memcpy(buf, &to_device, dev_header_len);
+    memcpy(buf + dev_header_len, bytes, len);
+    EspNowSend(to_node.mac_address, buf, sizeof(buf));
 }
 
 static std::unordered_map<DeviceType, std::function<std::unique_ptr<Device>()>>
