@@ -88,6 +88,7 @@ MacAddress EspNowSetup(ReceiveCallback on_receive) {
         }
 
         esp_now_peer_info_t peer_info;
+        memset(&peer_info, 0, sizeof(peer_info));
         mac_address.CopyInto(peer_info.peer_addr);
         peer_info.channel = 0;
         peer_info.encrypt = false;
