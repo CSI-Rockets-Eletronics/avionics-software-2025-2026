@@ -2,6 +2,7 @@
 #include <MPU9255.h>
 
 #include "avionics.h"
+#include "packets.h"
 
 static const int kDhtPin = 99;  // TODO
 
@@ -29,6 +30,8 @@ class DevDhtImu : public avionics::Device {
 
     void Loop() override {
         // TODO
+        avionics::PiSerialPacket packet{.msg = "Ping from IMU!"};
+        Send(avionics::DeviceType::DevPiSerial, packet);
     }
 
    private:

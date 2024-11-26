@@ -15,6 +15,7 @@ class DevPiSerial : public avionics::Device {
         avionics::PiSerialPacket packet;
         if (!Parse(bytes, len, &packet)) return;
 
+        Serial.print("Received message: ");
         Serial.println(packet.msg);
     }
 
