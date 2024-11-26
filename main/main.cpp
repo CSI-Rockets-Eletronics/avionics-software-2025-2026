@@ -22,6 +22,8 @@ extern "C" void app_main() {
 
     auto& this_node = maybe_this_node->get();
 
+    this_node.Setup();
+
     while (true) {
         this_node.Loop();
     }
