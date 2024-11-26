@@ -6,5 +6,4 @@ idf_component_register(SRCS
                         "dev_pi_serial.cpp"
                         "dev_radio.cpp"
                         "main.cpp"
-                        "nodeconfig.cpp"
                     INCLUDE_DIRS "include")

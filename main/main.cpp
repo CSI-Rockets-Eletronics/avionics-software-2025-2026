@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
-#include "avionics.h"
 #include "comms.h"
+#include "nodeconfig.h"
 
 using namespace avionics;
 
