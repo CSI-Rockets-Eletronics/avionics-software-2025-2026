@@ -106,6 +106,6 @@ class RegisterDevice {
 
 #define REGISTER_AVIONICS_DEVICE(Dev)                                          \
     static avionics::_register::RegisterDevice<Dev, avionics::DeviceType::Dev> \
-        reg
+        _register_##Dev;
 
 #endif  // AVIONICS_H_
