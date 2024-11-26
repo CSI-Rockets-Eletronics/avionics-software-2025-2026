@@ -66,9 +66,15 @@ class Node {
     void Loop();
 
     static std::optional<std::reference_wrapper<Node>> FindNode(
+        MacAddress mac_address);
+
+    static std::optional<std::reference_wrapper<Node>> FindNode(
         DeviceType type);
+
     static std::optional<std::reference_wrapper<Device>> FindDevice(
         DeviceType type);
+
+    static std::vector<MacAddress> AllMacAddresses();
 
     static void OnReceive(uint8_t* bytes, size_t len);
 

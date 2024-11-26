@@ -1,11 +1,10 @@
 #include "comms.h"
 
-#include <Arduino.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
 #include <wifi.h>
 
-#include "nodeconfig.h"
+#include "avionics.h"
 
 namespace avionics {
 
@@ -57,7 +56,7 @@ static void OnDataReceived(const esp_now_recv_info_t* _info,
     }
 }
 
-void EspNowSetup(ReceiveCallback on_receive) {
+MacAddress EspNowSetup(ReceiveCallback on_receive) {
     on_receive_cb = on_receive;
 
     WiFi.mode(WIFI_STA);
@@ -83,7 +82,7 @@ void EspNowSetup(ReceiveCallback on_receive) {
         Die("Failed to register ESP-NOW receive callback");
     }
 
-    for (const auto& mac_address : all_mac_addresses) {
+    for (const auto& mac_address : Node::AllMacAddresses()) {
         if (mac_address == this_mac_address) {
             continue;
         }
@@ -97,6 +96,8 @@ void EspNowSetup(ReceiveCallback on_receive) {
             Die("Failed to add ESP-NOW peer");
         }
     }
+
+    return this_mac_address;
 }
 
 void EspNowSend(const MacAddress& to_address, const uint8_t* bytes,

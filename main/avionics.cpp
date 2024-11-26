@@ -57,6 +57,15 @@ void Node::Setup() {
     }
 }
 
+std::optional<std::reference_wrapper<Node>> Node::FindNode(MacAddress mac) {
+    for (auto node : all_nodes) {
+        if (node->mac_address == mac) {
+            return *node;
+        }
+    }
+    return std::nullopt;
+}
+
 std::optional<std::reference_wrapper<Node>> Node::FindNode(DeviceType device) {
     for (auto node : all_nodes) {
         for (auto node_dev : node->device_types) {
@@ -88,6 +97,14 @@ std::optional<std::reference_wrapper<Device>> Node::FindDevice(
     }
 
     return std::nullopt;
+}
+
+std::vector<MacAddress> Node::AllMacAddresses() {
+    std::vector<MacAddress> macs;
+    for (auto node : all_nodes) {
+        macs.push_back(node->mac_address);
+    }
+    return macs;
 }
 
 void Node::OnReceive(uint8_t* bytes, size_t len) {
