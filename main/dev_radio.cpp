@@ -24,6 +24,7 @@ class DevRadio : public avionics::Device {
         // TODO
         avionics::PiSerialPacket packet{.msg = "Ping from Radio!"};
         Send(avionics::DeviceType::DevPiSerial, packet);
+        Serial.println("Sent message");
     }
 
    private:

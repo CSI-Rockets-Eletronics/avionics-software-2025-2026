@@ -15,23 +15,24 @@ static const scales kGyroScale = scale_2000dps;
 class DevDhtImu : public avionics::Device {
    public:
     void Setup() override {
-        dht.begin();
+        // dht.begin();
 
-        if (mpu.init()) {
-            return Die("MPU9255 init failed");
-        }
+        // if (mpu.init()) {
+        //     return Die("MPU9255 init failed");
+        // }
 
-        mpu.set_acc_bandwidth(kAccBandwidth);
-        mpu.set_gyro_bandwidth(kGyroBandwidth);
+        // mpu.set_acc_bandwidth(kAccBandwidth);
+        // mpu.set_gyro_bandwidth(kGyroBandwidth);
 
-        mpu.set_acc_scale(kAccScale);
-        mpu.set_gyro_scale(kGyroScale);
+        // mpu.set_acc_scale(kAccScale);
+        // mpu.set_gyro_scale(kGyroScale);
     }
 
     void Loop() override {
         // TODO
         avionics::PiSerialPacket packet{.msg = "Ping from IMU!"};
         Send(avionics::DeviceType::DevPiSerial, packet);
+        Serial.println("Sent message");
     }
 
    private:

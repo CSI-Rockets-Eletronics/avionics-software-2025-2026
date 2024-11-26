@@ -24,6 +24,7 @@ class DevGps : public avionics::Device {
         // TODO
         avionics::PiSerialPacket packet{.msg = "Ping from GPS!"};
         Send(avionics::DeviceType::DevPiSerial, packet);
+        Serial.println("Sent message");
     }
 
    private:
