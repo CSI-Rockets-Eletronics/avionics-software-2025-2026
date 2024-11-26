@@ -49,6 +49,9 @@ Node::Node(const MacAddress mac_address,
 void Node::Setup() {
     for (auto type : device_types) {
         auto factory = device_factories[type];
+        if (!factory) {
+            Die("Device factory not found");
+        }
         devices_.push_back(factory());
     }
 
