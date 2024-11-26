@@ -1,21 +1,50 @@
 #include "avionics.h"
 
 #include <Arduino.h>
+#include <esp_now.h>
 
 #include <unordered_map>
 
 namespace avionics {
+
+static const int kQueueNumEntries = 32;
+
+// entry format: [len][data], where len is a uint8_t
+static const int kQueueEntrySize = sizeof(uint8_t) + ESP_NOW_MAX_DATA_LEN;
 
 void Die(const char* msg) {
     Serial.println(msg);
     esp_restart();
 }
 
+Device::Device() {
+    recv_queue_ = xQueueCreate(kQueueNumEntries, kQueueEntrySize);
+
+    if (recv_queue_ == nullptr) {
+        Die("Failed to create receive queue");
+    }
+}
+
+void Device::QueueReceive(const uint8_t* bytes, size_t len) {
+    uint8_t buf[kQueueEntrySize];
+
+    if (uxQueueSpacesAvailable(recv_queue_) == 0) {
+        // queue is full, drop oldest message
+        xQueueReceive(recv_queue_, buf, 0);
+    }
+
+    memset(buf, 0, kQueueEntrySize);
+    buf[0] = len;
+    memcpy(buf + 1, bytes, len);
+
+    if (xQueueSend(recv_queue_, buf, 0) != pdTRUE) {
+        Serial.println("Failed to queue received message");
+    }
+}
+
 void Device::Die(const char* msg) { avionics::Die(msg); }
 
 void Device::Send(DeviceType to_device, const uint8_t* bytes, size_t len) {
-    // packet format: [DeviceType][data]
-
     auto maybe_to_node = Node::FindNode(to_device);
     if (!maybe_to_node) {
         Serial.println("Send: Node not found, ignoring...");
@@ -23,11 +52,28 @@ void Device::Send(DeviceType to_device, const uint8_t* bytes, size_t len) {
     }
     auto& to_node = maybe_to_node->get();
 
+    // packet format: [DeviceType][data]
     size_t dev_header_len = sizeof(DeviceType);
     uint8_t buf[dev_header_len + len];
     memcpy(buf, &to_device, dev_header_len);
     memcpy(buf + dev_header_len, bytes, len);
+
     EspNowSend(to_node.mac_address, buf, sizeof(buf));
+}
+
+bool Device::Receive(uint8_t* out, size_t len) {
+    uint8_t buf[kQueueEntrySize];
+    if (xQueueReceive(recv_queue_, buf, 0) != pdTRUE) {
+        return false;
+    }
+
+    if (buf[0] != len) {
+        Serial.println("Invalid message length, ignoring...");
+        return false;
+    }
+
+    memcpy(out, buf + 1, len);
+    return true;
 }
 
 static std::unordered_map<DeviceType, std::function<std::unique_ptr<Device>()>>
@@ -124,7 +170,7 @@ void Node::OnReceive(uint8_t* bytes, size_t len) {
     }
     auto& dev = maybe_dev->get();
 
-    dev.OnReceive(bytes + sizeof(DeviceType), len - sizeof(DeviceType));
+    dev.QueueReceive(bytes + sizeof(DeviceType), len - sizeof(DeviceType));
 }
 
 void Node::Loop() {

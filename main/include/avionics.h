@@ -24,10 +24,12 @@ enum class DeviceType {
 
 class Device {
    public:
+    Device();
+
+    void QueueReceive(const uint8_t* bytes, size_t len);
+
     virtual void Setup() = 0;
     virtual void Loop() = 0;
-
-    virtual void OnReceive(uint8_t* bytes, size_t len) {}
 
    protected:
     void Die(const char* msg);
@@ -37,19 +39,19 @@ class Device {
         Send(to_device, reinterpret_cast<const uint8_t*>(&data), sizeof(data));
     }
 
-    // returns true if parsing was successful, false otherwise
+    // returns true if a message was received, false otherwise
     template <typename T>
-    static inline bool Parse(const uint8_t* bytes, size_t len, T* out) {
-        if (len != sizeof(T)) {
-            Serial.println("Invalid message length, ignoring...");
-            return false;
-        }
-        memcpy(out, bytes, sizeof(T));
-        return true;
+    inline bool Receive(T* out) {
+        return Receive(reinterpret_cast<uint8_t*>(out), sizeof(T));
     }
 
    private:
+    QueueHandle_t recv_queue_;
+
     void Send(DeviceType to_device, const uint8_t* bytes, size_t len);
+
+    // returns true if a message was received, false otherwise
+    bool Receive(uint8_t* bytes, size_t len);
 };
 
 class Node {
