@@ -9,6 +9,7 @@ class DevPiSerial : public avionics::Device {
 
     void Loop() override {
         // TODO
+        delay(10);
     }
 
     void OnReceive(uint8_t* bytes, size_t len) override {
