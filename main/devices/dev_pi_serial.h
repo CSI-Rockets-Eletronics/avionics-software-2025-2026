@@ -24,20 +24,39 @@ class DevPiSerial : public Device {
 
         switch (Receive(&gps_packet, &imu_packet, &dht_packet)) {
             case 0:
-                Serial.println("Received GPS packet");
-                Serial2.write((uint8_t*)&gps_packet, sizeof(gps_packet));
+                // Serial.println("Received GPS packet");
+                Serial.print("ax: ");
+                Serial.print(imu_packet.ax);
+                Serial.print("\tay: ");
+                Serial.print(imu_packet.ay);
+                Serial.print("\taz: ");
+                Serial.print(imu_packet.az);
+                Serial.print("\tgx: ");
+                Serial.print(imu_packet.gx);
+                Serial.print("\tgy: ");
+                Serial.print(imu_packet.gy);
+                Serial.print("\tgz: ");
+                Serial.println(imu_packet.gz);
+
+                SendToPi(gps_packet);
                 break;
             case 1:
-                Serial.println("Received IMU packet");
-                Serial2.write((uint8_t*)&imu_packet, sizeof(imu_packet));
+                // Serial.println("Received IMU packet");
+                SendToPi(imu_packet);
                 break;
             case 2:
-                Serial.println("Received DHT packet");
-                Serial2.write((uint8_t*)&dht_packet, sizeof(dht_packet));
+                // Serial.println("Received DHT packet");
+                SendToPi(dht_packet);
                 break;
         }
 
         delay(10);
+    }
+
+    template <typename T>
+    void SendToPi(const T& data) {
+        Serial2.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
+        Serial2.write(kPiPacketDelimeter, sizeof(kPiPacketDelimeter));
     }
 };
 
