@@ -19,26 +19,33 @@ class DevDhtImu : public Device {
     void Setup() override {
         // dht.begin();
 
-        // if (mpu.init()) {
-        //     return Die("MPU9255 init failed");
-        // }
+        if (mpu.init()) {
+            return Die("MPU9255 init failed");
+        }
 
-        // mpu.set_acc_bandwidth(kAccBandwidth);
-        // mpu.set_gyro_bandwidth(kGyroBandwidth);
+        // save power
+        mpu.disable(magnetometer);
+        mpu.disable(thermometer);
 
-        // mpu.set_acc_scale(kAccScale);
-        // mpu.set_gyro_scale(kGyroScale);
+        mpu.set_acc_bandwidth(kAccBandwidth);
+        mpu.set_gyro_bandwidth(kGyroBandwidth);
+
+        mpu.set_acc_scale(kAccScale);
+        mpu.set_gyro_scale(kGyroScale);
     }
 
     void Loop() override {
+        mpu.read_acc();
+        mpu.read_gyro();
+
         ImuPacket imu_packet{
             .ts = micros(),
-            .ax = 0,
-            .ay = 0,
-            .az = 0,
-            .gx = 0,
-            .gy = 0,
-            .gz = 0,
+            .ax = mpu.ax,
+            .ay = mpu.ay,
+            .az = mpu.az,
+            .gx = mpu.gx,
+            .gy = mpu.gy,
+            .gz = mpu.gz,
         };
         Send(DeviceType::DevPiSerial, imu_packet);
 
