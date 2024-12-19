@@ -49,6 +49,7 @@ ReceiveCallback on_receive_cb;
 
 static void OnDataReceived(const esp_now_recv_info_t* _info,
                            const uint8_t* data, int len) {
+    // note: EspNowSend may call this function with _info == nullptr
     if (on_receive_cb) {
         uint8_t data_copy[len];
         memcpy(data_copy, data, len);
@@ -56,16 +57,20 @@ static void OnDataReceived(const esp_now_recv_info_t* _info,
     }
 }
 
+static MacAddress GetThisMacAddress() {
+    MacAddress this_mac_address;
+    if (esp_wifi_get_mac(WIFI_IF_STA, this_mac_address.Data()) != ESP_OK) {
+        Die("Failed to get ESP-NOW MAC address");
+    }
+    return this_mac_address;
+}
+
 MacAddress EspNowSetup(ReceiveCallback on_receive) {
     on_receive_cb = on_receive;
 
     WiFi.mode(WIFI_STA);
 
-    MacAddress this_mac_address;
-
-    if (esp_wifi_get_mac(WIFI_IF_STA, this_mac_address.Data()) != ESP_OK) {
-        Die("Failed to get ESP-NOW MAC address");
-    }
+    MacAddress this_mac_address = GetThisMacAddress();
 
     Serial.print("Mac address: ");
     Serial.println(this_mac_address.ToString().c_str());
@@ -103,12 +108,18 @@ MacAddress EspNowSetup(ReceiveCallback on_receive) {
 
 void EspNowSend(const MacAddress& to_address, const uint8_t* bytes,
                 size_t len) {
-    if (send_in_flight) {
+    if (len > ESP_NOW_MAX_DATA_LEN) {
+        Serial.println("Warning: ESP-NOW message too large");
         return;
     }
 
-    if (len > ESP_NOW_MAX_DATA_LEN) {
-        Serial.println("Warning: ESP-NOW message too large");
+    if (to_address == GetThisMacAddress()) {
+        // sending to self: just call the receive callback directly
+        OnDataReceived(nullptr, bytes, len);
+        return;
+    }
+
+    if (send_in_flight) {
         return;
     }
 
