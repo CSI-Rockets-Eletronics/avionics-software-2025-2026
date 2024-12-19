@@ -19,12 +19,12 @@ struct GpsPacket {
 // size: 20 bytes
 struct ImuPacket {
     uint64_t ts;  // 8 bytes
-    uint16_t ax;  // 2 bytes
-    uint16_t ay;  // 2 bytes
-    uint16_t az;  // 2 bytes
-    uint16_t gx;  // 2 bytes
-    uint16_t gy;  // 2 bytes
-    uint16_t gz;  // 2 bytes
+    int16_t ax;   // 2 bytes
+    int16_t ay;   // 2 bytes
+    int16_t az;   // 2 bytes
+    int16_t gx;   // 2 bytes
+    int16_t gy;   // 2 bytes
+    int16_t gz;   // 2 bytes
 };
 
 // size: 16 bytes
