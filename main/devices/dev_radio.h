@@ -3,12 +3,14 @@
 #include "avionics.h"
 #include "packets.h"
 
+using namespace avionics;
+
 static const int kInterruptPin = 99;  // TODO
 
 static const int kFrequency = 433;
 static const int kTxPower = 23;
 
-class DevRadio : public avionics::Device {
+class DevRadio : public Device {
    public:
     void Setup() override {
         // if (!rf95.init()) {
@@ -22,9 +24,7 @@ class DevRadio : public avionics::Device {
 
     void Loop() override {
         // TODO
-        avionics::PiSerialPacket packet{.msg = "Ping from Radio!"};
-        Send(avionics::DeviceType::DevPiSerial, packet);
-        // Serial.println("Sent message");
+        delay(10);
     }
 
    private:

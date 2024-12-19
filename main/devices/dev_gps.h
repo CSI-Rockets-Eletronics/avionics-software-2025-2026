@@ -3,10 +3,12 @@
 #include "avionics.h"
 #include "packets.h"
 
+using namespace avionics;
+
 static const int kRxPin = 99;  // TODO
 static const int kTxPin = 99;  // TODO
 
-class DevGps : public avionics::Device {
+class DevGps : public Device {
    public:
     void Setup() override {
         // gpsSerial.setPins(kRxPin, kTxPin);
@@ -21,10 +23,18 @@ class DevGps : public avionics::Device {
     }
 
     void Loop() override {
-        // TODO
-        avionics::PiSerialPacket packet{.msg = "Ping from GPS!"};
-        Send(avionics::DeviceType::DevPiSerial, packet);
-        Serial.println("Sent message");
+        GpsPacket gps_packet{
+            .ts = micros(),
+            .fix = 1,
+            .fixquality = 1,
+            .satellites = 1,
+            .latitude_fixed = 0,
+            .longitude_fixed = 0,
+            .altitude = 0.0,
+        };
+        Send(DeviceType::DevPiSerial, gps_packet);
+
+        delay(10);
     }
 
    private:

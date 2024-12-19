@@ -1,42 +1,44 @@
 #include "avionics.h"
 #include "packets.h"
 
-class DevPiSerial : public avionics::Device {
+using namespace avionics;
+
+const int kPiSerialRxPin = 47;
+const int kPiSerialTxPin = 48;
+
+const unsigned long kPiSerialBaud = 230400;
+const uint8_t kPiPacketDelimeter[] = {0b10101010, 0b01010101};
+
+class DevPiSerial : public Device {
    public:
     void Setup() override {
-        // TODO
+        // for raspberry pi
+        Serial2.begin(kPiSerialBaud, SERIAL_8N1, kPiSerialRxPin,
+                      kPiSerialTxPin);
     }
 
     void Loop() override {
-        // TODO
+        GpsPacket gps_packet;
+        ImuPacket imu_packet;
+        DhtPacket dht_packet;
 
-        avionics::PiSerialPacket packet;
-        if (!Receive(&packet)) {
-            delay(10);
-            return;
+        switch (Receive(&gps_packet, &imu_packet, &dht_packet)) {
+            case 0:
+                Serial.println("Received GPS packet");
+                Serial2.write((uint8_t*)&gps_packet, sizeof(gps_packet));
+                break;
+            case 1:
+                Serial.println("Received IMU packet");
+                Serial2.write((uint8_t*)&imu_packet, sizeof(imu_packet));
+                break;
+            case 2:
+                Serial.println("Received DHT packet");
+                Serial2.write((uint8_t*)&dht_packet, sizeof(dht_packet));
+                break;
         }
 
-        // Serial.print("Received message: ");
-        // Serial.println(packet.msg);
-
-        recv_count++;
-        if (recv_count == profile_interval) {
-            long now = millis();
-            long elapsed = now - last_profile_time;
-            last_profile_time = now;
-            recv_count = 0;
-
-            float hz = 1000.0 / elapsed * profile_interval;
-            Serial.print("PiSerial hz: ");
-            Serial.println(hz);
-        }
+        delay(10);
     }
-
-   private:
-    // TODO
-    long profile_interval = 100;
-    long last_profile_time = 0;
-    long recv_count = 0;
 };
 
 REGISTER_AVIONICS_DEVICE(DevPiSerial);

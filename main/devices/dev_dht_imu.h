@@ -4,6 +4,8 @@
 #include "avionics.h"
 #include "packets.h"
 
+using namespace avionics;
+
 static const int kDhtPin = 99;  // TODO
 
 static const bandwidth kAccBandwidth = acc_460Hz;
@@ -12,7 +14,7 @@ static const bandwidth kGyroBandwidth = gyro_250Hz;
 static const scales kAccScale = scale_16g;
 static const scales kGyroScale = scale_2000dps;
 
-class DevDhtImu : public avionics::Device {
+class DevDhtImu : public Device {
    public:
     void Setup() override {
         // dht.begin();
@@ -29,10 +31,27 @@ class DevDhtImu : public avionics::Device {
     }
 
     void Loop() override {
-        // TODO
-        avionics::PiSerialPacket packet{.msg = "Ping from IMU!"};
-        Send(avionics::DeviceType::DevPiSerial, packet);
-        Serial.println("Sent message");
+        ImuPacket imu_packet{
+            .ts = micros(),
+            .ax = 0,
+            .ay = 0,
+            .az = 0,
+            .gx = 0,
+            .gy = 0,
+            .gz = 0,
+        };
+        Send(DeviceType::DevPiSerial, imu_packet);
+
+        delay(10);
+
+        DhtPacket dht_packet{
+            .ts = micros(),
+            .temperature = 0.0,
+            .humidity = 0.0,
+        };
+        Send(DeviceType::DevPiSerial, dht_packet);
+
+        delay(10);
     }
 
    private:
