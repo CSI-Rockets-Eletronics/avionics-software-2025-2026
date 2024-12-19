@@ -12,6 +12,8 @@ static const int kQueueNumEntries = 32;
 // entry format: [len][data], where len is a uint8_t
 static const int kQueueEntrySize = sizeof(uint8_t) + ESP_NOW_MAX_DATA_LEN;
 
+static const int kDeviceLoopTaskStackSize = 4 * 1024;  // 4KB
+
 void Die(const char* msg) {
     Serial.println(msg);
     esp_restart();
@@ -96,7 +98,7 @@ Node::Node(const MacAddress mac_address,
     all_nodes.push_back(this);
 }
 
-void Node::Setup() {
+void Node::Run() {
     for (auto type : device_types) {
         auto factory = device_factories[type];
         if (!factory) {
@@ -107,7 +109,23 @@ void Node::Setup() {
 
     for (auto& dev : devices_) {
         dev->Setup();
+
+        auto res = xTaskCreate(
+            [](void* param) {
+                Device* device = static_cast<Device*>(param);
+                while (true) {
+                    device->Loop();
+                }
+            },
+            "DeviceLoopTask", kDeviceLoopTaskStackSize, dev.get(),
+            tskIDLE_PRIORITY, nullptr);
+
+        if (res != pdPASS) {
+            Die("Failed to create device loop task");
+        }
     }
+
+    vTaskDelete(nullptr);  // this lets the other tasks run forever
 }
 
 std::optional<std::reference_wrapper<Node>> Node::FindNode(MacAddress mac) {
@@ -175,12 +193,6 @@ void Node::OnReceive(uint8_t* bytes, size_t len) {
     auto& dev = maybe_dev->get();
 
     dev.QueueReceive(bytes + sizeof(DeviceType), len - sizeof(DeviceType));
-}
-
-void Node::Loop() {
-    for (auto& dev : devices_) {
-        dev->Loop();
-    }
 }
 
 }  // namespace avionics

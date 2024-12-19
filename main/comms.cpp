@@ -65,6 +65,8 @@ static MacAddress GetThisMacAddress() {
     return this_mac_address;
 }
 
+static SemaphoreHandle_t esp_now_send_mutex = nullptr;
+
 MacAddress EspNowSetup(ReceiveCallback on_receive) {
     on_receive_cb = on_receive;
 
@@ -103,7 +105,26 @@ MacAddress EspNowSetup(ReceiveCallback on_receive) {
         }
     }
 
+    esp_now_send_mutex = xSemaphoreCreateMutex();
+    if (esp_now_send_mutex == nullptr) {
+        Die("Failed to create ESP-NOW send mutex");
+    }
+
     return this_mac_address;
+}
+
+void EspNowSendInMutex(const MacAddress& to_address, const uint8_t* bytes,
+                       size_t len) {
+    if (send_in_flight) {
+        return;
+    }
+
+    send_in_flight = true;
+
+    if (esp_now_send(to_address.ReadData(), bytes, len) != ESP_OK) {
+        send_in_flight = false;
+        Serial.println("Warning: Failed to send ESP-NOW message");
+    }
 }
 
 void EspNowSend(const MacAddress& to_address, const uint8_t* bytes,
@@ -119,16 +140,11 @@ void EspNowSend(const MacAddress& to_address, const uint8_t* bytes,
         return;
     }
 
-    if (send_in_flight) {
-        return;
-    }
-
-    send_in_flight = true;
-
-    if (esp_now_send(to_address.ReadData(), bytes, len) != ESP_OK) {
-        send_in_flight = false;
-        Serial.println("Warning: Failed to send ESP-NOW message");
-        return;
+    if (xSemaphoreTake(esp_now_send_mutex, portMAX_DELAY) == pdTRUE) {
+        EspNowSendInMutex(to_address, bytes, len);
+        xSemaphoreGive(esp_now_send_mutex);
+    } else {
+        Serial.println("Failed to take ESP-NOW send mutex");
     }
 }
 

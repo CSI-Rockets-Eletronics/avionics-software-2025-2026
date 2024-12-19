@@ -82,8 +82,7 @@ class Node {
 
     Node(const Node&) = delete;
 
-    void Setup();
-    void Loop();
+    void Run();
 
     static std::optional<std::reference_wrapper<Node>> FindNode(
         MacAddress mac_address);
