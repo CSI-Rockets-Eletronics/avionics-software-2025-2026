@@ -61,14 +61,18 @@ void Device::Send(DeviceType to_device, const uint8_t* bytes, size_t len) {
     EspNowSend(to_node.mac_address, buf, sizeof(buf));
 }
 
-bool Device::Receive(uint8_t* out, size_t len) {
+bool Device::Receive(uint8_t* out, size_t len, bool put_back_if_len_mismatch) {
     uint8_t buf[kQueueEntrySize];
     if (xQueueReceive(recv_queue_, buf, 0) != pdTRUE) {
         return false;
     }
 
     if (buf[0] != len) {
-        Serial.println("Invalid message length, ignoring...");
+        if (put_back_if_len_mismatch) {
+            xQueueSendToFront(recv_queue_, buf, 0);  // drop if queue is full
+        } else {
+            Serial.println("Invalid message length, ignoring...");
+        }
         return false;
     }
 

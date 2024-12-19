@@ -21,7 +21,7 @@ MacAddress::MacAddress(std::string str_address) {
 
 std::string MacAddress::ToString() const {
     char buf[18];
-    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X", bytes_[0],
+    snprintf(buf, sizeof(buf), "%02x:%02x:%02x:%02x:%02x:%02x", bytes_[0],
              bytes_[1], bytes_[2], bytes_[3], bytes_[4], bytes_[5]);
     return buf;
 }

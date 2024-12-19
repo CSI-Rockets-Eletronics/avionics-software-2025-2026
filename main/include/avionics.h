@@ -39,10 +39,24 @@ class Device {
         Send(to_device, reinterpret_cast<const uint8_t*>(&data), sizeof(data));
     }
 
-    // returns true if a message was received, false otherwise
-    template <typename T>
-    inline bool Receive(T* out) {
-        return Receive(reinterpret_cast<uint8_t*>(out), sizeof(T));
+    // writes into the first type that matches the size of the message;
+    // returns the index of the argument that was written to, or
+    // -1 if no argument was written to
+    template <typename T, typename... Others>
+    inline int Receive(T* out, Others*... others) {
+        // sizes must be different to disambiguate
+        static_assert(((sizeof(T) != sizeof(Others)) && ...),
+                      "message sizes must be different");
+
+        constexpr bool has_others = sizeof...(Others) > 0;
+        if (Receive(reinterpret_cast<uint8_t*>(out), sizeof(T), has_others)) {
+            return 0;
+        } else if constexpr (has_others) {
+            auto result = Receive(others...);
+            return result >= 0 ? result + 1 : -1;
+        } else {
+            return -1;
+        }
     }
 
    private:
@@ -51,7 +65,7 @@ class Device {
     void Send(DeviceType to_device, const uint8_t* bytes, size_t len);
 
     // returns true if a message was received, false otherwise
-    bool Receive(uint8_t* bytes, size_t len);
+    bool Receive(uint8_t* bytes, size_t len, bool put_back_if_len_mismatch);
 };
 
 class Node {
