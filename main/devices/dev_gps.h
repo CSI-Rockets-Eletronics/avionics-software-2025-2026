@@ -33,6 +33,7 @@ class DevGps : public Device {
             .altitude = 0.0,
         };
         Send(DeviceType::DevPiSerial, gps_packet);
+        Send(DeviceType::DevRadio, gps_packet);
 
         delay(100);
     }

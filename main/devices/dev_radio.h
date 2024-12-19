@@ -23,8 +23,13 @@ class DevRadio : public Device {
     }
 
     void Loop() override {
-        // TODO
-        delay(10);
+        GpsPacket gps_packet;
+
+        if (Receive(&gps_packet) == 0) {
+            Serial.print("Received GPS packet (ts = ");
+            Serial.print(gps_packet.ts);
+            Serial.println(")");
+        }
     }
 
    private:
