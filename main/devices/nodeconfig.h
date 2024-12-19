@@ -8,10 +8,11 @@ namespace avionics {
 static Node radio_node{MacAddress{"00:00:00:00:00:00"}, {DeviceType::DevRadio}};
 
 static Node pos_tracking_node{MacAddress{"34:85:18:a5:ef:24"},
-                              {DeviceType::DevDhtImu, DeviceType::DevGps}};
+                              {DeviceType::DevDht, DeviceType::DevGps,
+                               DeviceType::DevImu, DeviceType::DevPiSerial}};
 
-static Node pi_serial_node{MacAddress{"34:85:18:a5:88:50"},
-                           {DeviceType::DevPiSerial}};
+// static Node pi_serial_node{MacAddress{"34:85:18:a5:88:50"},
+//                            {DeviceType::DevPiSerial}};
 
 }  // namespace avionics
 

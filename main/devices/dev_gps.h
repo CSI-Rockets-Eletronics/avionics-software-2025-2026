@@ -34,7 +34,7 @@ class DevGps : public Device {
         };
         Send(DeviceType::DevPiSerial, gps_packet);
 
-        delay(10);
+        delay(100);
     }
 
    private:
