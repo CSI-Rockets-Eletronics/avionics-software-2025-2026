@@ -50,8 +50,12 @@ class Device {
 
         constexpr bool has_others = sizeof...(Others) > 0;
         if (Receive(reinterpret_cast<uint8_t*>(out), sizeof(T), has_others)) {
+            // zero non-matching args to help catch bugs
+            (memset(others, 0, sizeof(Others)), ...);
             return 0;
         } else if constexpr (has_others) {
+            // zero non-matching args to help catch bugs
+            memset(out, 0, sizeof(T));
             auto result = Receive(others...);
             return result >= 0 ? result + 1 : -1;
         } else {
