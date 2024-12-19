@@ -25,6 +25,10 @@ class DevPiSerial : public Device {
         switch (Receive(&gps_packet, &imu_packet, &dht_packet)) {
             case 0:
                 // Serial.println("Received GPS packet");
+                SendToPi(gps_packet);
+                break;
+            case 1:
+                // Serial.println("Received IMU packet");
                 Serial.print("ax: ");
                 Serial.print(imu_packet.ax);
                 Serial.print("\tay: ");
@@ -38,10 +42,6 @@ class DevPiSerial : public Device {
                 Serial.print("\tgz: ");
                 Serial.println(imu_packet.gz);
 
-                SendToPi(gps_packet);
-                break;
-            case 1:
-                // Serial.println("Received IMU packet");
                 SendToPi(imu_packet);
                 break;
             case 2:
