@@ -1,3 +1,10 @@
+/*
+ * Node: VS Code may modify the "idf.port" and "files.associations" fields.
+ * These changes are machine-specific and shoult not be committed.
+ *
+ * Use `git update-index --skip-worktree .vscode/settings.json` to ignore these changes,
+ * and `git update-index --no-skip-worktree .vscode/settings.json` undo.
+ */
 {
   "git.autoRepositoryDetection": false,
   "git.detectSubmodules": false,
