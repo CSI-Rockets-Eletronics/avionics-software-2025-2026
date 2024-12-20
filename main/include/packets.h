@@ -34,6 +34,19 @@ struct DhtPacket {
     float humidity;     // 4 bytes
 };
 
+// size: 18 bytes
+struct RadioPacket {
+    // last byte of ts, to detect fresh data
+    uint8_t gps_ts_tail;          // 1 byte
+    uint8_t gps_fix;              // 1 byte
+    uint8_t gps_fixquality;       // 1 byte
+    uint8_t gps_satellites;       // 1 byte
+    int32_t gps_latitude_fixed;   // 4 bytes
+    int32_t gps_longitude_fixed;  // 4 bytes
+    float gps_altitude;           // 4 bytes
+    int16_t imu_gz;               // 2 bytes
+};
+
 #pragma pack(pop)
 
 }  // namespace avionics

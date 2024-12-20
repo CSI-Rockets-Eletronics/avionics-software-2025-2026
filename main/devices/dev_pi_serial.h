@@ -25,7 +25,18 @@ class DevPiSerial : public Device {
         switch (Receive(&gps_packet, &imu_packet, &dht_packet)) {
             case 0:
                 Serial.println("Received GPS packet");
+
                 SendToPi(gps_packet);
+                got_gps = true;
+
+                radio_packet.gps_ts_tail = gps_packet.ts & 0xFF;
+                radio_packet.gps_fix = gps_packet.fix;
+                radio_packet.gps_fixquality = gps_packet.fixquality;
+                radio_packet.gps_satellites = gps_packet.satellites;
+                radio_packet.gps_latitude_fixed = gps_packet.latitude_fixed;
+                radio_packet.gps_longitude_fixed = gps_packet.longitude_fixed;
+                radio_packet.gps_altitude = gps_packet.altitude;
+
                 break;
             case 1:
                 Serial.println("Received IMU packet");
@@ -43,14 +54,25 @@ class DevPiSerial : public Device {
                 Serial.println(imu_packet.gz);
 
                 SendToPi(imu_packet);
+                got_imu = true;
+
+                radio_packet.imu_gz = imu_packet.gz;
+
                 break;
             case 2:
                 Serial.println("Received DHT packet");
                 SendToPi(dht_packet);
                 break;
+
+            default:
+                // yield and wait for more data
+                delay(10);
+                return;
         }
 
-        delay(10);
+        if (got_gps && got_imu) {
+            Send(DeviceType::DevRadio, radio_packet);
+        }
     }
 
     template <typename T>
@@ -58,6 +80,12 @@ class DevPiSerial : public Device {
         Serial2.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
         Serial2.write(kPiPacketDelimeter, sizeof(kPiPacketDelimeter));
     }
+
+   private:
+    RadioPacket radio_packet;
+    // don't send first packet until we have both
+    bool got_gps = false;
+    bool got_imu = false;
 };
 
 REGISTER_AVIONICS_DEVICE(DevPiSerial);
