@@ -15,7 +15,7 @@ class DevImu : public Device {
    public:
     void Setup() override {
         if (mpu.init()) {
-            return Die("MPU9255 init failed");
+            Die("MPU9255 init failed");
         }
 
         // save power
