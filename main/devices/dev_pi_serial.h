@@ -71,7 +71,7 @@ class DevPiSerial : public Device {
         }
 
         if (got_gps && got_imu) {
-            Send(DeviceType::DevRadio, radio_packet);
+            Send(DeviceType::DevRocketRadio, radio_packet);
         }
     }
 

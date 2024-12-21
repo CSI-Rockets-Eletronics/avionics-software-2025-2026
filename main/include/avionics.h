@@ -20,7 +20,7 @@ enum class DeviceType {
     DevGps,
     DevImu,
     DevPiSerial,
-    DevRadio,
+    DevRocketRadio,
 };
 
 class Device {
