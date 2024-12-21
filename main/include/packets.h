@@ -44,7 +44,7 @@ struct RadioPacket {
     int32_t gps_latitude_fixed;   // 4 bytes
     int32_t gps_longitude_fixed;  // 4 bytes
     float gps_altitude;           // 4 bytes
-    int16_t imu_gz;               // 2 bytes
+    int16_t imu_az;               // 2 bytes
 };
 
 #pragma pack(pop)

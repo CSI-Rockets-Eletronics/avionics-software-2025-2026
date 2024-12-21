@@ -56,7 +56,7 @@ class DevPiSerial : public Device {
                 SendToPi(imu_packet);
                 got_imu = true;
 
-                radio_packet.imu_gz = imu_packet.gz;
+                radio_packet.imu_az = imu_packet.az;
 
                 break;
             case 2:
