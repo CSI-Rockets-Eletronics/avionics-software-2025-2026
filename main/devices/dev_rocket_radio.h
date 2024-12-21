@@ -5,7 +5,7 @@
 
 using namespace avionics;
 
-static const int kInterruptPin = 99;  // TODO
+static const int kInterruptPin = 38;
 
 static const int kFrequency = 433;
 static const int kTxPower = 20;  // max power
