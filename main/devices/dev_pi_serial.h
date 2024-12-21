@@ -3,8 +3,8 @@
 
 using namespace avionics;
 
-const int kPiSerialRxPin = 47;
-const int kPiSerialTxPin = 48;
+const int kPiSerialRxPin = 14;
+const int kPiSerialTxPin = 15;
 
 const unsigned long kPiSerialBaud = 230400;
 const uint8_t kPiPacketDelimeter[] = {0b10101010, 0b01010101};
