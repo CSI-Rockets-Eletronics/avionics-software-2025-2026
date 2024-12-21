@@ -5,12 +5,15 @@
 
 using namespace avionics;
 
-static const int kInterruptPin = 38;
-
-static const int kFrequency = 433;
-static const int kTxPower = 20;  // max power
-
 class DevRocketRadio : public Device {
+   private:
+    static const int kInterruptPin = 38;
+
+    static const int kFrequency = 433;
+    static const int kTxPower = 20;  // max power
+
+    RH_RF95 rf95{SS, kInterruptPin};  // uses default SPI pins
+
    public:
     void Setup() override {
         if (!rf95.init()) {
@@ -37,9 +40,6 @@ class DevRocketRadio : public Device {
             delay(10);
         }
     }
-
-   private:
-    RH_RF95 rf95{SS, kInterruptPin};  // uses default SPI pins
 };
 
 REGISTER_AVIONICS_DEVICE(DevRocketRadio);

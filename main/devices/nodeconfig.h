@@ -5,12 +5,15 @@
 
 namespace avionics {
 
-static Node radio_node{MacAddress{"34:85:18:a5:88:50"},
-                       {DeviceType::DevRocketRadio}};
+static Node rocket_radio_node{MacAddress{"34:85:18:a5:88:50"},
+                              {DeviceType::DevRocketRadio}};
 
 static Node pos_tracking_node{MacAddress{"34:85:18:a5:ef:24"},
                               {DeviceType::DevDht, DeviceType::DevGps,
                                DeviceType::DevImu, DeviceType::DevPiSerial}};
+
+static Node ground_radio_node{MacAddress{"00:00:00:00:00:00"},  // TODO
+                              {DeviceType::DevGroundRadio}};
 
 }  // namespace avionics
 
