@@ -3,13 +3,21 @@
 
 using namespace avionics;
 
-const int kPiSerialRxPin = 14;
-const int kPiSerialTxPin = 15;
-
-const unsigned long kPiSerialBaud = 230400;
-const uint8_t kPiPacketDelimeter[] = {0b10101010, 0b01010101};
-
 class DevPiSerial : public Device {
+   private:
+    static const int kPiSerialRxPin = 14;
+    static const int kPiSerialTxPin = 15;
+
+    static const unsigned long kPiSerialBaud = 230400;
+
+    static const uint8_t kPacketDelimeter1 = 0b10101010;
+    static const uint8_t kPacketDelimeter2 = 0b01010101;
+
+    RadioPacket radio_packet;
+    // don't send first packet until we have both
+    bool got_gps = false;
+    bool got_imu = false;
+
    public:
     void Setup() override {
         // for raspberry pi
@@ -78,14 +86,9 @@ class DevPiSerial : public Device {
     template <typename T>
     void SendToPi(const T& data) {
         Serial2.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
-        Serial2.write(kPiPacketDelimeter, sizeof(kPiPacketDelimeter));
+        Serial2.write(kPacketDelimeter1);
+        Serial2.write(kPacketDelimeter2);
     }
-
-   private:
-    RadioPacket radio_packet;
-    // don't send first packet until we have both
-    bool got_gps = false;
-    bool got_imu = false;
 };
 
 REGISTER_AVIONICS_DEVICE(DevPiSerial);

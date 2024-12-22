@@ -5,10 +5,14 @@
 
 using namespace avionics;
 
-static const int kRxPin = 99;  // TODO
-static const int kTxPin = 99;  // TODO
-
 class DevGps : public Device {
+   private:
+    static const int kRxPin = 99;  // TODO
+    static const int kTxPin = 99;  // TODO
+
+    HardwareSerial& gpsSerial = Serial1;
+    Adafruit_GPS gps{&gpsSerial};
+
    public:
     void Setup() override {
         // gpsSerial.setPins(kRxPin, kTxPin);
@@ -36,10 +40,6 @@ class DevGps : public Device {
 
         delay(100);
     }
-
-   private:
-    HardwareSerial& gpsSerial = Serial1;
-    Adafruit_GPS gps{&gpsSerial};
 };
 
 REGISTER_AVIONICS_DEVICE(DevGps);

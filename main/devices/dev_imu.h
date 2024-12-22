@@ -12,6 +12,9 @@ static const scales kAccScale = scale_16g;
 static const scales kGyroScale = scale_2000dps;
 
 class DevImu : public Device {
+   private:
+    MPU9255 mpu;  // uses default I2C pins
+
    public:
     void Setup() override {
         if (mpu.init()) {
@@ -44,9 +47,6 @@ class DevImu : public Device {
         };
         Send(DeviceType::DevPiSerial, imu_packet);
     }
-
-   private:
-    MPU9255 mpu;  // uses default I2C pins
 };
 
 REGISTER_AVIONICS_DEVICE(DevImu);
