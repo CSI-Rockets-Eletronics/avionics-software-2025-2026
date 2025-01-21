@@ -124,8 +124,6 @@ void Node::Run() {
             Die("Failed to create device loop task");
         }
     }
-
-    vTaskDelete(nullptr);  // this lets the other tasks run forever
 }
 
 std::optional<std::reference_wrapper<Node>> Node::FindNode(MacAddress mac) {
