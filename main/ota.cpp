@@ -104,10 +104,12 @@ void Start() {
         delay(500);
         Serial.print(".");
         if (millis() - start > kWifiTimeoutMs) {
+            Serial.println();
             Serial.println("Failed to connect to WiFi -- skipping OTA");
             return;
         }
     }
+    Serial.println();
 
     // TODO priority?
     xTaskCreate(otaTask, "otaTask", 8192, NULL, 1, NULL);
