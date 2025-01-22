@@ -10,11 +10,13 @@ static const int kWifiTimeoutMs = 5000;
 // give up if a request takes longer than this
 static const int kHttpTimeoutMs = 10000;
 
-static const char *wifiSsid = "Columbia University";
-static const char *wifiPassword = nullptr;
+static const char *kWifiSsid = "Columbia University";
+static const char *kWifiPassword = nullptr;
 
 static const char *kHost = "csiwiki.me.columbia.edu";
 static const int kPort = 4009;
+
+static const std::string kNoUpdateRequired = "No update required!";
 
 static const size_t buffer_size = 4 * 1024;  // TODO make bigger
 
@@ -59,20 +61,23 @@ void HttpConnectAndSkipToBody(WiFiClient &client, std::string path,
     }
 }
 
-/**
- * Stores the response body into the buffer and returns the number of bytes
- * read.
- */
-size_t HttpGetBody(std::string path, uint8_t *buffer, size_t buffer_size) {
+std::string HttpGetBody(std::string path) {
+    uint8_t *buffer = new uint8_t[buffer_size];  // won't fit on stack
     WiFiClient client;
+
     HttpConnectAndSkipToBody(client, path, buffer, buffer_size);
-    size_t len = client.readBytes(buffer, buffer_size);
+    size_t len = client.readBytes(buffer, buffer_size - 1);
+    buffer[len] = '\0';  // terminate string
+    std::string body((const char *)buffer);
+
+    delete[] buffer;
     client.stop();
-    return len;
+
+    return body;
 }
 
 void ConnectWifi() {
-    WiFi.begin(wifiSsid, wifiPassword);
+    WiFi.begin(kWifiSsid, kWifiPassword);
 
     unsigned long start = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - start < kWifiTimeoutMs) {
@@ -84,7 +89,7 @@ void ConnectWifi() {
 
 void CheckForUpdates() {
     Serial.print("Connecting to ");
-    Serial.print(wifiSsid);
+    Serial.print(kWifiSsid);
     Serial.println(" to check for OTA updates");
 
     ConnectWifi();
@@ -95,20 +100,15 @@ void CheckForUpdates() {
 
     Serial.println("Checking for OTA updates...");
 
-    // test stuff
+    std::string needUpdateBody =
+        HttpGetBody("/need-update?name=foo&version=bar");
 
-    // won't fit on the stack of the task
-    uint8_t *buffer = new uint8_t[buffer_size];
+    Serial.print("GET /need-update: ");
+    Serial.println(needUpdateBody.c_str());
 
-    size_t len = HttpGetBody(
-        "http://csiwiki.me.columbia.edu:4009/need-update?name=foo&version=bar",
-        buffer, buffer_size - 1);
-
-    buffer[len] = '\0';  // terminate string
-    Serial.print("Read: ");
-    Serial.println((const char *)buffer);
-
-    delete[] buffer;
+    if (needUpdateBody == kNoUpdateRequired) {
+        return;
+    }
 }
 
 }  // namespace ota
