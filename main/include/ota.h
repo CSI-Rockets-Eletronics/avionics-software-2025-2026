@@ -5,7 +5,7 @@
 
 namespace ota {
 
-void CheckForUpdates(std::string name);
+void CheckForUpdate(std::string name);
 
 }  // namespace ota
 

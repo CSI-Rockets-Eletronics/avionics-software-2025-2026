@@ -89,17 +89,7 @@ void ConnectWifi() {
     Serial.println();
 }
 
-void CheckForUpdates(std::string name) {
-    Serial.print("Connecting to ");
-    Serial.print(kWifiSsid);
-    Serial.println(" to check for OTA updates");
-
-    ConnectWifi();
-
-    if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("Failed to connect to WiFi -- skipping OTA");
-    }
-
+void CheckAndPerformUpdate() {
     Serial.println("Checking for OTA updates...");
 
     std::string needUpdateBody = HttpGetBody(
@@ -110,6 +100,24 @@ void CheckForUpdates(std::string name) {
 
     if (needUpdateBody == kNoUpdateRequired) {
         return;
+    }
+}
+
+void CheckForUpdate(std::string name) {
+    Serial.print("Connecting to ");
+    Serial.print(kWifiSsid);
+    Serial.println(" to check for OTA updates");
+
+    ConnectWifi();
+
+    if (WiFi.status() == WL_CONNECTED) {
+        CheckAndPerformUpdate();
+    } else {
+        Serial.println("Failed to connect to WiFi -- skipping OTA");
+    }
+
+    if (!WiFi.disconnect()) {
+        Die("Failed to disconnect from WiFi");
     }
 }
 
