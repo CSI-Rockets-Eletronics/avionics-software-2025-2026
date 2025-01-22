@@ -57,12 +57,10 @@ size_t HttpGetBody(std::string path, uint8_t *buffer, size_t buffer_size) {
     }
 
     // skip other headers
-    while (client.connected()) {
+    while (true) {
         int count = client.readBytesUntil('\n', buffer, buffer_size);
+        if (count == 0) Die("Failed to read HTTP header");
         if (count == 1) break;  // found line with just '\r\n'
-    }
-    if (!client.connected()) {
-        Die("Connection lost");
     }
 
     // read response body
