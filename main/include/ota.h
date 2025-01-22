@@ -1,9 +1,11 @@
 #ifndef OTA_H_
 #define OTA_H_
 
+#include <string>
+
 namespace ota {
 
-void CheckForUpdates();
+void CheckForUpdates(std::string name);
 
 }  // namespace ota
 

@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 
+#include "ota_version.h"
+
 namespace ota {
 
 // try this long to connect to wifi before giving up on OTA update
@@ -87,7 +89,7 @@ void ConnectWifi() {
     Serial.println();
 }
 
-void CheckForUpdates() {
+void CheckForUpdates(std::string name) {
     Serial.print("Connecting to ");
     Serial.print(kWifiSsid);
     Serial.println(" to check for OTA updates");
@@ -100,8 +102,8 @@ void CheckForUpdates() {
 
     Serial.println("Checking for OTA updates...");
 
-    std::string needUpdateBody =
-        HttpGetBody("/need-update?name=foo&version=bar");
+    std::string needUpdateBody = HttpGetBody(
+        std::string("/need-update?name=" + name + "&version=" + OTA_VERSION));
 
     Serial.print("GET /need-update: ");
     Serial.println(needUpdateBody.c_str());
