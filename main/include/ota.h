@@ -3,7 +3,7 @@
 
 namespace ota {
 
-void Start();
+void CheckForUpdates();
 
 }  // namespace ota
 

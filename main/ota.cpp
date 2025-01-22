@@ -71,7 +71,28 @@ size_t HttpGetBody(std::string path, uint8_t *buffer, size_t buffer_size) {
     return len;
 }
 
-void otaTask(void *pvParameters) {
+void ConnectWifi() {
+    WiFi.begin(wifiSsid, wifiPassword);
+
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < kWifiTimeoutMs) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println();
+}
+
+void CheckForUpdates() {
+    Serial.print("Connecting to ");
+    Serial.print(wifiSsid);
+    Serial.println(" to check for OTA updates");
+
+    ConnectWifi();
+
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("Failed to connect to WiFi -- skipping OTA");
+    }
+
     Serial.println("Checking for OTA updates...");
 
     // test stuff
@@ -88,29 +109,6 @@ void otaTask(void *pvParameters) {
     Serial.println((const char *)buffer);
 
     delete[] buffer;
-}
-
-void Start() {
-    Serial.print("Connecting to ");
-    Serial.print(wifiSsid);
-    Serial.println(" to check for OTA updates");
-
-    WiFi.begin(wifiSsid, wifiPassword);
-
-    unsigned long start = millis();
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-        if (millis() - start > kWifiTimeoutMs) {
-            Serial.println();
-            Serial.println("Failed to connect to WiFi -- skipping OTA");
-            return;
-        }
-    }
-    Serial.println();
-
-    // TODO priority?
-    xTaskCreate(otaTask, "otaTask", 8192, NULL, 1, NULL);
 }
 
 }  // namespace ota
