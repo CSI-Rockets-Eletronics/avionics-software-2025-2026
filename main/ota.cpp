@@ -89,7 +89,7 @@ void ConnectWifi() {
     Serial.println();
 }
 
-void CheckAndPerformUpdate() {
+void CheckAndPerformUpdate(std::string name) {
     Serial.println("Checking for OTA updates...");
 
     std::string needUpdateBody = HttpGetBody(
@@ -111,7 +111,7 @@ void CheckForUpdate(std::string name) {
     ConnectWifi();
 
     if (WiFi.status() == WL_CONNECTED) {
-        CheckAndPerformUpdate();
+        CheckAndPerformUpdate(name);
     } else {
         Serial.println("Failed to connect to WiFi -- skipping OTA");
     }
