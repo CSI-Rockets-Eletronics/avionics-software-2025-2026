@@ -23,13 +23,8 @@ void Die(const char *msg) {
     esp_restart();
 }
 
-/**
- * Stores the response body into the buffer and returns the number of bytes
- * read.
- */
-size_t HttpGetBody(std::string path, uint8_t *buffer, size_t buffer_size) {
-    // connect to server
-    WiFiClient client;
+void HttpConnectAndSkipToBody(WiFiClient &client, std::string path,
+                              uint8_t *buffer, size_t buffer_size) {
     client.setTimeout(kHttpTimeoutMs);
     client.connect(kHost, kPort);
 
@@ -62,11 +57,16 @@ size_t HttpGetBody(std::string path, uint8_t *buffer, size_t buffer_size) {
         if (count == 0) Die("Failed to read HTTP header");
         if (count == 1) break;  // found line with just '\r\n'
     }
+}
 
-    // read response body
+/**
+ * Stores the response body into the buffer and returns the number of bytes
+ * read.
+ */
+size_t HttpGetBody(std::string path, uint8_t *buffer, size_t buffer_size) {
+    WiFiClient client;
+    HttpConnectAndSkipToBody(client, path, buffer, buffer_size);
     size_t len = client.readBytes(buffer, buffer_size);
-
-    // clean up
     client.stop();
     return len;
 }
