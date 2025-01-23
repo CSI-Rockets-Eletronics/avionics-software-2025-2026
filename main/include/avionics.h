@@ -76,11 +76,12 @@ class Device {
 
 class Node {
    public:
+    const std::string name;
     const MacAddress mac_address;
     const std::vector<DeviceType> device_types;
 
-    Node(const MacAddress mac_address,
-         const std::vector<DeviceType> device_types);
+    Node(std::string name, MacAddress mac_address,
+         std::vector<DeviceType> device_types);
 
     Node(const Node&) = delete;
 
