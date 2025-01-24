@@ -6,4 +6,17 @@ First, follow the steps to install the ESP-IDF Extension for VS Code, found at t
 
 Before building the project, use `git submodule` and `git submodule update` to install all requirements.
 
-However, this will run into an error as the credentials to connect to the meche server are missing. To begin, idf.py must be activated. Typically, you should be able to just run `source activate`. If the envrionment remains the same, you need to run `source ~/.espressif/python_env/idf5.1_py3.9_env/bin/activate` instead. 
+However, this will run into an error as the credentials to connect to the meche server are missing. To begin, add this to your ssh config (via `code ~/.ssh/config`):
+
+~~~
+HOST csiwiki
+  HostName csiwiki.me.columbia.edu
+  User wikijs
+  ForwardAgent yes
+~~~
+
+Then, generate ssh key if needed: `ssh-keygen -t ed25519 -C "your_email@example.com"`
+
+Now, copy it to the remote: `ssh-copy-id -i ~/.ssh/id_ed25519.pub csiwiki`
+
+Next, idf.py must be activated. Typically, you should be able to just run `source activate`. If the envrionment remains the same, you need to run `source ~/.espressif/python_env/idf5.1_py3.9_env/bin/activate` instead. 
