@@ -22,7 +22,7 @@ static const int kPort = 4009;
 
 static const std::string kNoUpdateRequired = "No update required!";
 
-static const size_t buffer_size = 4 * 1024;  // 4 KB
+static const size_t buffer_size = 16 * 1024;  // 16 KB
 
 void Die(const char *msg) {
     Serial.println(msg);
@@ -143,7 +143,11 @@ std::string HttpGetBody(std::string path) {
     size_t content_length =
         HttpConnectAndSkipToBody(client, path, buffer, buffer_size);
 
-    size_t len = client.readBytes(buffer, buffer_size - 1);
+    if (content_length > buffer_size - 1) {
+        Die("Content-Length too large");
+    }
+
+    size_t len = client.readBytes(buffer, content_length);
     buffer[len] = '\0';  // terminate string
 
     if (len != content_length) {
@@ -183,22 +187,34 @@ void DownloadAndFlash(std::string path) {
     size_t processed_length = 0;
 
     while (true) {
-        size_t len = client.readBytes(buffer, buffer_size);
-        if (len == 0) break;
+        size_t remaining = content_length - processed_length;
+        size_t len = client.readBytes(buffer, min(remaining, buffer_size));
+
+        if (len == 0) {
+            Die("Failed to read OTA bytes");
+        }
 
         if (esp_ota_write(update_handle, buffer, len) != ESP_OK) {
             Die("Failed to write OTA");
         }
 
         processed_length += len;
+
+        float percentage = (float)processed_length / content_length * 100;
+        Serial.print("OTA progress: ");
+        Serial.print(percentage, 2);
+        Serial.println("%");
+
+        if (processed_length > content_length) {
+            Die("Read more OTA bytes than expected");
+        }
+        if (processed_length == content_length) {
+            break;
+        }
     }
 
     delete[] buffer;
     client.stop();
-
-    if (processed_length != content_length) {
-        Die("Failed to read all OTA bytes");
-    }
 
     if (esp_ota_end(update_handle) != ESP_OK) {
         Die("Failed to end OTA");
@@ -236,7 +252,7 @@ void CheckAndPerformUpdate(std::string name) {
         return;
     }
 
-    Serial.println("Downloading and flashing update...");
+    Serial.println("Downloading and flashing OTA update...");
 
     DownloadAndFlash("/program.bin");
 }
