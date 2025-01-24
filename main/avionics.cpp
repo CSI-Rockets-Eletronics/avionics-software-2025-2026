@@ -92,9 +92,9 @@ void _register::RegisterDeviceFactory(
     device_factories[type] = factory;
 }
 
-Node::Node(const MacAddress mac_address,
-           const std::vector<DeviceType> device_types)
-    : mac_address(mac_address), device_types(device_types) {
+Node::Node(std::string name, MacAddress mac_address,
+           std::vector<DeviceType> device_types)
+    : name(name), mac_address(mac_address), device_types(device_types) {
     all_nodes.push_back(this);
 }
 
@@ -124,8 +124,6 @@ void Node::Run() {
             Die("Failed to create device loop task");
         }
     }
-
-    vTaskDelete(nullptr);  // this lets the other tasks run forever
 }
 
 std::optional<std::reference_wrapper<Node>> Node::FindNode(MacAddress mac) {

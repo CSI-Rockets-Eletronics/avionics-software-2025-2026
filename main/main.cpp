@@ -3,6 +3,7 @@
 #include "comms.h"
 #include "deviceindex.h"
 #include "nodeconfig.h"
+#include "ota.h"
 
 using namespace avionics;
 
@@ -22,5 +23,10 @@ extern "C" void app_main() {
     }
 
     auto& this_node = maybe_this_node->get();
+
+    ota::CheckForUpdate(this_node.name);
+
     this_node.Run();
+
+    vTaskDelete(nullptr);  // this lets other tasks run forever
 }
