@@ -19,4 +19,4 @@ Then, generate ssh key if needed: `ssh-keygen -t ed25519 -C "your_email@example.
 
 Now, copy it to the remote: `ssh-copy-id -i ~/.ssh/id_ed25519.pub csiwiki`
 
-Next, idf.py must be activated. Typically, you should be able to just run `source activate`. If the envrionment remains the same, you need to run `source ~/.espressif/python_env/idf5.1_py3.9_env/bin/activate` instead. 
+Next, idf.py must be activated. Typically, you should be able to just run `source activate`. If the envrionment remains the same, you need to run `source ~/.espressif/python_env/idf5.1_py3.9_env/bin/activate` instead. Finally, run `./deploy_ota.sh `. 
