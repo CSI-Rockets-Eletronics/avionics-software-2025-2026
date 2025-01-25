@@ -1,3 +1,4 @@
+#include <RHSoftwareSPI.h>
 #include <RH_RF95.h>
 
 #include "avionics.h"
@@ -7,15 +8,22 @@ using namespace avionics;
 
 class DevGroundRadio : public Device {
    private:
+    static const int kMisoPin = 13;
+    static const int kMosiPin = 11;
+    static const int kSckPin = 12;
+    static const int kSsPin = 10;
     static const int kInterruptPin = 2;
 
     static const int kFrequency = 433;
     static const int kTxPower = 20;  // max power
 
-    RH_RF95 rf95{SS, kInterruptPin};  // uses default SPI pins
+    RHSoftwareSPI spi;  // for custom pins
+    RH_RF95 rf95{SS, kInterruptPin, spi};
 
    public:
     void Setup() override {
+        spi.setPins(kMisoPin, kMosiPin, kSckPin);
+
         if (!rf95.init()) {
             return Die("RF95 init failed");
         }
@@ -26,8 +34,6 @@ class DevGroundRadio : public Device {
     }
 
     void Loop() override {
-        // TODO double check this sloppy C code
-        Serial.println("Hello");
         rf95.waitAvailable();
 
         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
