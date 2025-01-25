@@ -7,38 +7,46 @@ using namespace avionics;
 
 class DevGps : public Device {
    private:
-    static const int kRxPin = 99;  // TODO
-    static const int kTxPin = 99;  // TODO
+    // note: the txPin arg for setPins() is actually the RX pin, and vice versa
+    static const int kRxPin = 12;
+    static const int kTxPin = 13;
 
     HardwareSerial& gpsSerial = Serial1;
     Adafruit_GPS gps{&gpsSerial};
 
    public:
     void Setup() override {
-        // gpsSerial.setPins(kRxPin, kTxPin);
-        // gps.begin(9600);
-        // // include recommended minimum (RMC) and fix (GGA)
-        // gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-        // gps.sendCommand(PMTK_SET_NMEA_UPDATE_10HZ);
-        // // request uupdates on antenna status
-        // gps.sendCommand(PGCMD_ANTENNA);
+        gpsSerial.setPins(kRxPin, kTxPin);
+        gps.begin(9600);
+        // include recommended minimum (RMC) and fix (GGA)
+        gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+        gps.sendCommand(PMTK_SET_NMEA_UPDATE_10HZ);
+        // request uupdates on antenna status
+        gps.sendCommand(PGCMD_ANTENNA);
 
-        // delay(1000);
+        delay(1000);
     }
 
     void Loop() override {
-        GpsPacket gps_packet{
-            .ts = micros(),
-            .fix = 1,
-            .fixquality = 1,
-            .satellites = 1,
-            .latitude_fixed = 0,
-            .longitude_fixed = 0,
-            .altitude = 0.0,
-        };
-        Send(DeviceType::DevPiSerial, gps_packet);
+        gps.read();
 
-        delay(100);
+        if (gps.newNMEAreceived()) {
+            if (!gps.parse(gps.lastNMEA())) {
+                Serial.println("Failed to parse GPS data");
+                return;
+            }
+
+            GpsPacket gps_packet{
+                .ts = micros(),
+                .fix = gps.fix,
+                .fixquality = gps.fixquality,
+                .satellites = gps.satellites,
+                .latitude_fixed = gps.latitude_fixed,
+                .longitude_fixed = gps.longitude_fixed,
+                .altitude = gps.altitude,
+            };
+            Send(DeviceType::DevPiSerial, gps_packet);
+        }
     }
 };
 
