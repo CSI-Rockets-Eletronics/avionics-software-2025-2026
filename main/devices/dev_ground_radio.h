@@ -34,7 +34,7 @@ class DevGroundRadio : public Device {
     }
 
     void Loop() override {
-        rf95.waitAvailable();
+        rf95.waitAvailable(10);
 
         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
         uint8_t len = sizeof(buf);
