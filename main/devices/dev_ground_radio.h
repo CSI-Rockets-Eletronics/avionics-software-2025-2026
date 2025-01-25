@@ -27,7 +27,7 @@ class DevGroundRadio : public Device {
 
     void Loop() override {
         // TODO double check this sloppy C code
-
+        Serial.println("Hello");
         rf95.waitAvailable();
 
         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];

@@ -15,7 +15,7 @@ static Node pos_tracking_node{"PosTracking",
                                DeviceType::DevImu, DeviceType::DevPiSerial}};
 
 static Node ground_radio_node{"GroundRadio",
-                              MacAddress{"00:00:00:00:00:00"},  // TODO
+                              MacAddress{"68:b6:b3:3f:07:5c"},
                               {DeviceType::DevGroundRadio}};
 
 }  // namespace avionics
