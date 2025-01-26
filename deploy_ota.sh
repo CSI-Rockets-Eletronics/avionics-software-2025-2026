@@ -14,9 +14,10 @@ echo "#define OTA_VERSION \"$VERSION\"" > main/include/ota_version.h
 # Build and copy the binary to the remote assets directory
 source activate
 idf.py build
-scp build/avionics-software-2024-2025.bin $REMOTE_HOST:$REMOTE_ASSETS_DIR/program.bin
+scp build/avionics-software-2024-2025.bin $REMOTE_HOST:$REMOTE_ASSETS_DIR/program.bin.tmp
 
-# Write version.txt to the remote assets directory
-ssh $REMOTE_HOST "echo $VERSION > $REMOTE_ASSETS_DIR/version.txt"
+# Atomically switch the program.bin file and update version.txt
+ssh $REMOTE_HOST "mv $REMOTE_ASSETS_DIR/program.bin.tmp $REMOTE_ASSETS_DIR/program.bin && \
+    echo $VERSION > $REMOTE_ASSETS_DIR/version.txt"
 
 echo "Deployed OTA version: $VERSION"
