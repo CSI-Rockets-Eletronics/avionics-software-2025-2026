@@ -65,6 +65,8 @@ MacAddress GetThisMacAddress() {
     return this_mac_address;
 }
 
+static bool esp_now_is_initialized = false;
+
 static SemaphoreHandle_t esp_now_send_mutex = nullptr;
 
 void EspNowSetup(ReceiveCallback on_receive) {
@@ -109,6 +111,8 @@ void EspNowSetup(ReceiveCallback on_receive) {
     if (esp_now_send_mutex == nullptr) {
         Die("Failed to create ESP-NOW send mutex");
     }
+
+    esp_now_is_initialized = true;
 }
 
 void EspNowSendInMutex(const MacAddress& to_address, const uint8_t* bytes,
@@ -127,6 +131,11 @@ void EspNowSendInMutex(const MacAddress& to_address, const uint8_t* bytes,
 
 void EspNowSend(const MacAddress& to_address, const uint8_t* bytes,
                 size_t len) {
+    if (!esp_now_is_initialized) {
+        Serial.println("ESP-NOW is not initialized -- skipping send");
+        return;
+    }
+
     if (len > ESP_NOW_MAX_DATA_LEN) {
         Serial.println("Warning: ESP-NOW message too large");
         return;

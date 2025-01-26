@@ -94,8 +94,11 @@ void _register::RegisterDeviceFactory(
 }
 
 Node::Node(std::string name, MacAddress mac_address,
-           std::vector<DeviceType> device_types)
-    : name(name), mac_address(mac_address), device_types(device_types) {
+           std::vector<DeviceType> device_types, bool use_esp_now)
+    : name(name),
+      mac_address(mac_address),
+      device_types(device_types),
+      use_esp_now(use_esp_now) {
     all_nodes.push_back(this);
 }
 

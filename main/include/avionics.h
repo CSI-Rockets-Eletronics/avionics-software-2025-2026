@@ -79,9 +79,10 @@ class Node {
     const std::string name;
     const MacAddress mac_address;
     const std::vector<DeviceType> device_types;
+    const bool use_esp_now;
 
     Node(std::string name, MacAddress mac_address,
-         std::vector<DeviceType> device_types);
+         std::vector<DeviceType> device_types, bool use_esp_now = true);
 
     Node(const Node&) = delete;
 

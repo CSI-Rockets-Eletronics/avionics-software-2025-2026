@@ -14,14 +14,16 @@ extern "C" void app_main() {
 
     Serial.begin(kSerialBaud);
 
-    EspNowSetup([](auto data, auto len) { Node::OnReceive(data, len); });
-
     auto maybe_this_node = Node::FindNode(GetThisMacAddress());
     if (!maybe_this_node) {
         Die("Failed to find this node");
     }
 
     auto& this_node = maybe_this_node->get();
+
+    if (this_node.use_esp_now) {
+        EspNowSetup([](auto data, auto len) { Node::OnReceive(data, len); });
+    }
 
     ota::CheckForUpdate(this_node.name);
 
