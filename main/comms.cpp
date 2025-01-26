@@ -57,7 +57,7 @@ static void OnDataReceived(const esp_now_recv_info_t* _info,
     }
 }
 
-static MacAddress GetThisMacAddress() {
+MacAddress GetThisMacAddress() {
     MacAddress this_mac_address;
     if (esp_wifi_get_mac(WIFI_IF_STA, this_mac_address.Data()) != ESP_OK) {
         Die("Failed to get ESP-NOW MAC address");
