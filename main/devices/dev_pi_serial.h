@@ -13,10 +13,7 @@ class DevPiSerial : public Device {
     static const uint8_t kPacketDelimeter1 = 0b10101010;
     static const uint8_t kPacketDelimeter2 = 0b01010101;
 
-    RadioPacket radio_packet;
-    // don't send first packet until we have both
-    bool got_gps = false;
-    bool got_imu = false;
+    RadioPacket radio_packet{};
 
    public:
     void Setup() override {
@@ -35,7 +32,6 @@ class DevPiSerial : public Device {
                 Serial.println("Received GPS packet");
 
                 SendToPi(gps_packet);
-                got_gps = true;
 
                 radio_packet.gps_ts_tail = gps_packet.ts & 0xFF;
                 radio_packet.gps_fix = gps_packet.fix;
@@ -62,7 +58,6 @@ class DevPiSerial : public Device {
                 Serial.println(imu_packet.gz);
 
                 SendToPi(imu_packet);
-                got_imu = true;
 
                 radio_packet.imu_az = imu_packet.az;
 
@@ -78,9 +73,7 @@ class DevPiSerial : public Device {
                 return;
         }
 
-        if (got_gps && got_imu) {
-            Send(DeviceType::DevRocketRadio, radio_packet);
-        }
+        Send(DeviceType::DevRocketRadio, radio_packet);
     }
 
     template <typename T>
