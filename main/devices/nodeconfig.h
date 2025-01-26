@@ -11,8 +11,12 @@ static Node rocket_radio_node{"RocketRadio",
 
 static Node pos_tracking_node{"PosTracking",
                               MacAddress{"34:85:18:a5:ef:24"},
-                              {DeviceType::DevDht, DeviceType::DevGps,
-                               DeviceType::DevImu, DeviceType::DevPiSerial}};
+                              {
+                                  //   DeviceType::DevDht,
+                                  DeviceType::DevGps,
+                                  DeviceType::DevImu,
+                                  DeviceType::DevPiSerial,
+                              }};
 
 static Node ground_radio_node{"GroundRadio",
                               MacAddress{"68:b6:b3:3f:07:5c"},
