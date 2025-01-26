@@ -26,8 +26,9 @@ class MacAddress {
 
 using ReceiveCallback = std::function<void(uint8_t* data, int len)>;
 
-// returns the current MAC address
-MacAddress EspNowSetup(ReceiveCallback on_receive);
+static MacAddress GetThisMacAddress();
+
+void EspNowSetup(ReceiveCallback on_receive);
 
 void EspNowSend(const MacAddress& to_address, const uint8_t* bytes, size_t len);
 

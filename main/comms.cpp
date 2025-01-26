@@ -67,7 +67,7 @@ static MacAddress GetThisMacAddress() {
 
 static SemaphoreHandle_t esp_now_send_mutex = nullptr;
 
-MacAddress EspNowSetup(ReceiveCallback on_receive) {
+void EspNowSetup(ReceiveCallback on_receive) {
     on_receive_cb = on_receive;
 
     WiFi.mode(WIFI_STA);
@@ -109,8 +109,6 @@ MacAddress EspNowSetup(ReceiveCallback on_receive) {
     if (esp_now_send_mutex == nullptr) {
         Die("Failed to create ESP-NOW send mutex");
     }
-
-    return this_mac_address;
 }
 
 void EspNowSendInMutex(const MacAddress& to_address, const uint8_t* bytes,

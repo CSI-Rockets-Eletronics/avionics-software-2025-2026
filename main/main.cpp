@@ -14,10 +14,9 @@ extern "C" void app_main() {
 
     Serial.begin(kSerialBaud);
 
-    auto this_mac_address =
-        EspNowSetup([](auto data, auto len) { Node::OnReceive(data, len); });
+    EspNowSetup([](auto data, auto len) { Node::OnReceive(data, len); });
 
-    auto maybe_this_node = Node::FindNode(this_mac_address);
+    auto maybe_this_node = Node::FindNode(GetThisMacAddress());
     if (!maybe_this_node) {
         Die("Failed to find this node");
     }
