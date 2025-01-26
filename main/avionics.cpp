@@ -13,6 +13,7 @@ static const int kQueueNumEntries = 32;
 static const int kQueueEntrySize = sizeof(uint8_t) + ESP_NOW_MAX_DATA_LEN;
 
 static const int kDeviceLoopTaskStackSize = 4 * 1024;  // 4KB
+static const int kDeviceLoopTaskCore = 0;
 
 void Die(const char* msg) {
     Serial.println(msg);
@@ -110,7 +111,8 @@ void Node::Run() {
     for (auto& dev : devices_) {
         dev->Setup();
 
-        auto res = xTaskCreate(
+        // certain libraries crash if the task isn't pinned to core 0
+        auto res = xTaskCreatePinnedToCore(
             [](void* param) {
                 Device* device = static_cast<Device*>(param);
                 while (true) {
@@ -118,7 +120,7 @@ void Node::Run() {
                 }
             },
             "DeviceLoopTask", kDeviceLoopTaskStackSize, dev.get(),
-            tskIDLE_PRIORITY, nullptr);
+            tskIDLE_PRIORITY, nullptr, kDeviceLoopTaskCore);
 
         if (res != pdPASS) {
             Die("Failed to create device loop task");
