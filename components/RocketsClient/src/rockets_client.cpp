@@ -6,56 +6,6 @@
 
 namespace rockets_client {
 
-// wifi presets
-
-WifiConfigPresets wifiConfigPresets = {
-    .GROUND =
-        {
-            .ssid = "Darknet",
-            .password = "Blueberries",
-        },
-    .ROCKET =
-        {
-            .ssid = "Darknet Rocket",
-            .password = "Blueberries",
-        },
-};
-
-// server presets
-
-ServerConfigPresets serverConfigPresets = {
-    .FS_PI =
-        {
-            .host = "fs-pi.local",
-            .port = 3000,
-            .pathPrefix = "",
-        },
-    .ROCKET_PI =
-        {
-            .host = "rocket-pi.local",
-            .port = 3000,
-            .pathPrefix = "",
-        },
-    .MECHE =
-        {
-            .host = "csiwiki.me.columbia.edu",
-            .port = 3001,
-            .pathPrefix = "/rocketsdata2",
-        },
-    .ALEX_LAPTOP =
-        {
-            .host = "csi-alex-laptop-data-server.ngrok.io",
-            .port = 80,
-            .pathPrefix = "",
-        },
-    .ALEX_HOME_DESKTOP =
-        {
-            .host = "xdxdxdxdxd.mynetgear.com",
-            .port = 3000,
-            .pathPrefix = "",
-        },
-};
-
 // general parameters
 
 const int64_t MAX_TS_DELAY_MS = 200;  // max allowed delay w.r.t. server time

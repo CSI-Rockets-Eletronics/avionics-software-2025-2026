@@ -19,23 +19,6 @@ struct WifiConfig {
     String password;
 };
 
-struct WifiConfigPresets {
-    WifiConfig GROUND;
-    WifiConfig ROCKET;
-};
-
-extern WifiConfigPresets wifiConfigPresets;
-
-struct ServerConfigPresets {
-    ServerConfig FS_PI;
-    ServerConfig ROCKET_PI;
-    ServerConfig MECHE;
-    ServerConfig ALEX_LAPTOP;
-    ServerConfig ALEX_HOME_DESKTOP;
-};
-
-extern ServerConfigPresets serverConfigPresets;
-
 typedef StaticJsonDocument<1024> StaticJsonDoc;
 typedef char Buffer[2048];  // give it some extra space
 
