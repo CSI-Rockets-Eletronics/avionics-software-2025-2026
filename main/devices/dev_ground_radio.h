@@ -43,9 +43,14 @@ class DevGroundRadio : public Device {
 
         RadioPacket* radio_packet = (RadioPacket*)buf;
 
-        Serial.println("Received radio packet");
         Serial.print("gps_ts_tail: ");
         Serial.print(radio_packet->gps_ts_tail);
+        Serial.print("\tfix: ");
+        Serial.print(radio_packet->gps_fix);
+        Serial.print("\tlat: ");
+        Serial.print(radio_packet->gps_latitude_fixed);
+        Serial.print("\tlon: ");
+        Serial.print(radio_packet->gps_longitude_fixed);
         Serial.print("\taz: ");
         Serial.println(radio_packet->imu_az);
     }
