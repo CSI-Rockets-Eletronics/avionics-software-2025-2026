@@ -26,6 +26,7 @@ static Node ground_radio_node{
     "GroundRadio",
     MacAddress{"68:b6:b3:3f:07:5c"},
     {DeviceType::DevGroundRadio},
+    false,  // don't use ESP-NOW (leaves WiFi available)
 };
 
 }  // namespace avionics

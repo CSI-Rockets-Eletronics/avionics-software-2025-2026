@@ -72,8 +72,6 @@ static SemaphoreHandle_t esp_now_send_mutex = nullptr;
 void EspNowSetup(ReceiveCallback on_receive) {
     on_receive_cb = on_receive;
 
-    WiFi.mode(WIFI_STA);
-
     MacAddress this_mac_address = GetThisMacAddress();
 
     Serial.print("Mac address: ");

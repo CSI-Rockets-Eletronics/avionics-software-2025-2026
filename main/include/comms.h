@@ -26,6 +26,7 @@ class MacAddress {
 
 using ReceiveCallback = std::function<void(uint8_t* data, int len)>;
 
+// Assumes `WiFi.mode(WIFI_STA)` has been called.
 MacAddress GetThisMacAddress();
 
 void EspNowSetup(ReceiveCallback on_receive);
