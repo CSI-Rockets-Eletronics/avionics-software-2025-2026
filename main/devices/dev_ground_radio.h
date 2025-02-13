@@ -14,8 +14,8 @@ class DevGroundRadio : public Device {
     static const int kTxPower = 20;  // max power
 
     const rockets_client::WifiConfig kWifiConfig{
-        .ssid = "Columbia University",
-        .password = "",
+        .ssid = "Darknet",
+        .password = "Blueberries",
     };
     const rockets_client::ServerConfig kServerConfig{
         .host = "csiwiki.me.columbia.edu",
