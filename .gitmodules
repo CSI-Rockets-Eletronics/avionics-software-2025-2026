@@ -13,3 +13,6 @@
 [submodule "components/Adafruit_GPS/Adafruit_GPS"]
 	path = components/Adafruit_GPS/Adafruit_GPS
 	url = https://github.com/adafruit/Adafruit_GPS.git
+[submodule "components/Adafruit_ADS1X15/Adafruit_ADS1X15"]
+	path = components/Adafruit_ADS1X15/Adafruit_ADS1X15
+	url = https://github.com/adafruit/Adafruit_ADS1X15.git
