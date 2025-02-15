@@ -5,6 +5,12 @@
 
 namespace avionics {
 
+static Node fs_scientific_node{
+    "FsScientific",
+    MacAddress{"00:00:00:00:00:00"},  // TODO
+    {DeviceType::DevFsTransducers},
+};
+
 static Node rocket_radio_node{
     "RocketRadio",
     MacAddress{"34:85:18:a5:88:50"},
