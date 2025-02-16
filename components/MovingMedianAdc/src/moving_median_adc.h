@@ -19,10 +19,12 @@ template <typename ADCType>
 class MovingMedianADC {
    public:
     MovingMedianADC(const char* debug_name, ADCMode mode, uint16_t rate,
-                    adsGain_t gain, bool continuous, int window_size)
+                    adsGain_t gain, bool continuous, int window_size,
+                    float psi_per_volt)
         : debug_name{debug_name},
           mode{mode},
           continuous{continuous},
+          psi_per_volt{psi_per_volt},
           median_volts{window_size} {
         adc.setDataRate(rate);
         adc.setGain(gain);
@@ -74,8 +76,9 @@ class MovingMedianADC {
     void ResetZero() { SetZero(0); }
 
     float GetLatestVolts() { return median_volts.GetLatest() - zero_volts; }
-
     float GetMedianVolts() { return median_volts.GetMedian() - zero_volts; }
+    float GetLatestPsi() { return GetLatestVolts() * psi_per_volt; }
+    float GetMedianPsi() { return GetMedianVolts() * psi_per_volt; }
 
     // polls ADC for a new reading and saves it
     void Tick() { median_volts.Add(ReadVolts()); }
@@ -84,6 +87,7 @@ class MovingMedianADC {
     const char* debug_name;
     const ADCMode mode;
     const bool continuous;
+    const float psi_per_volt;
 
     ADCType adc;
     MovingMedian<float> median_volts;
