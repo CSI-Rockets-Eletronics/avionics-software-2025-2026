@@ -83,6 +83,12 @@ class MovingMedianADC {
     // polls ADC for a new reading and saves it
     void Tick() { median_volts.Add(ReadVolts()); }
 
+    void PrintLatestPsi() {
+        PrintDebugTag();
+        print(GetLatestPsi());
+        println(" PSI");
+    }
+
    private:
     const char* debug_name;
     const ADCMode mode;

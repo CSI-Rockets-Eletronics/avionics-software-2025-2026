@@ -5,6 +5,16 @@ namespace avionics {
 
 #pragma pack(push, 1)
 
+// size: 24 bytes
+struct FsTransducers {
+    float lox_upper;            // 4 bytes
+    float lox_lower;            // 4 bytes
+    float injector_manifold_1;  // 4 bytes
+    float injector_manifold_2;  // 4 bytes
+    float gn2_manifold_1;       // 4 bytes
+    float gn2_manifold_2;       // 4 bytes
+};
+
 // size: 23 bytes
 struct GpsPacket {
     uint64_t ts;              // 8 bytes
