@@ -11,6 +11,12 @@ static Node fs_scientific_node{
     {DeviceType::DevFsTransducers},
 };
 
+static Node fs_relays{
+    "FsRelays",
+    MacAddress{"34:85:18:a5:80:4c"},
+    {DeviceType::DevFsRelays},
+};
+
 static Node rocket_radio_node{
     "RocketRadio",
     MacAddress{"34:85:18:a5:88:50"},

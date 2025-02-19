@@ -16,9 +16,10 @@ extern "C" void app_main() {
     Serial.begin(kSerialBaud);
     WiFi.mode(WIFI_STA);
 
-    auto maybe_this_node = Node::FindNode(GetThisMacAddress());
+    MacAddress this_mac_address = GetThisMacAddress();
+    auto maybe_this_node = Node::FindNode(this_mac_address);
     if (!maybe_this_node) {
-        Die("Failed to find this node");
+        Die(("Failed to find this node: " + this_mac_address.ToString()).c_str());
     }
 
     auto& this_node = maybe_this_node->get();
