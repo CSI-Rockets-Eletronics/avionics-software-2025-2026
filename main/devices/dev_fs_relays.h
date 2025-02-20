@@ -3,22 +3,24 @@
 using namespace avionics;
 
 class DevFsRelays : public Device {
+   private:
+    const int kRelayPins[12] = {5, 1, 6, 7, 15, 16, 17, 18, 8, 2, 12, 9};
+
    public:
     void Setup() override {
-        // set pin 5 as output
-        pinMode(5, OUTPUT);
+        for (int i = 0; i < 12; i++) {
+            pinMode(kRelayPins[i], OUTPUT);
+        }
     }
 
     void Loop() override {
-        Serial.println("Test");
-
-        // toggle pin 5 on/off for 1s
-        digitalWrite(5, HIGH);
-        delay(1000);
-        digitalWrite(5, LOW);
-        delay(1000);
+        for (int i = 0; i < 12; i++) {
+            digitalWrite(kRelayPins[i], HIGH);
+            delay(250);
+            digitalWrite(kRelayPins[i], LOW);
+            delay(250);
+        }
     }
-   private:
 };
 
 REGISTER_AVIONICS_DEVICE(DevFsRelays);
