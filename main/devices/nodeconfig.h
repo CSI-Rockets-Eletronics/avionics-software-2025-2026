@@ -5,10 +5,16 @@
 
 namespace avionics {
 
-static Node fs_scientific_node{
-    "FsScientific",
-    MacAddress{"00:00:00:00:00:00"},  // TODO
-    {DeviceType::DevFsTransducers},
+static Node fs_scientific1{
+    "FsScientific1",
+    MacAddress{"f4:12:fa:83:de:cc"},
+    {DeviceType::DevFsLoxGn2Transducers},
+};
+
+static Node fs_scientific2{
+    "FsScientific2",
+    MacAddress{"f4:12:fa:5b:42:c8"},
+    {DeviceType::DevFsInjectorTransducers},
 };
 
 static Node fs_relays{
@@ -17,13 +23,13 @@ static Node fs_relays{
     {DeviceType::DevFsRelays},
 };
 
-static Node rocket_radio_node{
+static Node rocket_radio{
     "RocketRadio",
     MacAddress{"34:85:18:a5:88:50"},
     {DeviceType::DevRocketRadio},
 };
 
-static Node pos_tracking_node{
+static Node pos_tracking{
     "PosTracking",
     MacAddress{"34:85:18:a5:ef:24"},
     {
@@ -34,7 +40,7 @@ static Node pos_tracking_node{
     },
 };
 
-static Node ground_radio_node{
+static Node ground_radio{
     "GroundRadio",
     MacAddress{"68:b6:b3:3f:07:5c"},
     {DeviceType::DevGroundRadio},

@@ -6,24 +6,20 @@
 using namespace avionics;
 using namespace moving_median_adc;
 
-class DevFsTransducers : public Device {
+class DevFsLoxGn2Transducers : public Device {
    public:
     void Setup() override {}
 
     void Loop() override {
         lox_upper.Tick();
         lox_lower.Tick();
-        injector_manifold_1.Tick();
-        injector_manifold_2.Tick();
         gn2_manifold_1.Tick();
         gn2_manifold_2.Tick();
 
         // raw values (not medians)
-        FsTransducers fs_transducers_packet{
+        FsLoxGn2TransducersPacket fs_transducers_packet{
             .lox_upper = lox_upper.GetLatestPsi(),
             .lox_lower = lox_lower.GetLatestPsi(),
-            .injector_manifold_1 = injector_manifold_1.GetLatestPsi(),
-            .injector_manifold_2 = injector_manifold_2.GetLatestPsi(),
             .gn2_manifold_1 = gn2_manifold_1.GetLatestPsi(),
             .gn2_manifold_2 = gn2_manifold_2.GetLatestPsi(),
         };
@@ -32,10 +28,10 @@ class DevFsTransducers : public Device {
 
         lox_upper.PrintLatestPsi();
         lox_lower.PrintLatestPsi();
-        injector_manifold_1.PrintLatestPsi();
-        injector_manifold_2.PrintLatestPsi();
         gn2_manifold_1.PrintLatestPsi();
         gn2_manifold_2.PrintLatestPsi();
+
+        delay(500);
     }
 
    private:
@@ -43,63 +39,48 @@ class DevFsTransducers : public Device {
     const bool kContinuous = true;
     const int kWindowSize = 50;
 
+    I2CWire i2c0{0, 2, 1};
+    I2CWire i2c1{1, 6, 7};
+
     // https://kulite.com//assets/media/2017/06/CTL-312.pdf; with AD620
     MovingMedianADC<Adafruit_ADS1115> lox_upper{
-        "lox_upper", ADCMode::SingleEnded_0, kRate, GAIN_ONE, kContinuous,
-        kWindowSize,
+        "lox_upper", i2c0,     ADCAddress::GND, ADCMode::SingleEnded_0,
+        kRate,       GAIN_ONE, kContinuous,     kWindowSize,
         1.0,  // TODO calibrate
     };
 
     // https://kulite.com//assets/media/2017/06/CTL-190.pdf; with AD620
     MovingMedianADC<Adafruit_ADS1115> lox_lower{
-        "lox_lower", ADCMode::SingleEnded_0, kRate, GAIN_ONE, kContinuous,
-        kWindowSize,
-        1.0,  // TODO calibrate
-    };
-
-    // https://kulite.com//assets/media/2017/06/CTL-312.pdf; with AD620
-    MovingMedianADC<Adafruit_ADS1115> injector_manifold_1{
-        "injector_manifold_1",
-        ADCMode::SingleEnded_0,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0,  // TODO calibrate
-    };
-
-    // https://kulite.com//assets/media/2017/06/CTL-190.pdf; with AD620
-    MovingMedianADC<Adafruit_ADS1115> injector_manifold_2{
-        "injector_manifold_2",
-        ADCMode::SingleEnded_0,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
+        "lox_lower", i2c1,     ADCAddress::GND, ADCMode::SingleEnded_0,
+        kRate,       GAIN_ONE, kContinuous,     kWindowSize,
         1.0,  // TODO calibrate
     };
 
     // https://www.dataq.com/resources/pdfs/datasheets/WNK81MA.pdf
     MovingMedianADC<Adafruit_ADS1115> gn2_manifold_1{
         "gn2_manifold_1",
+        i2c0,
+        ADCAddress::VIN,
         ADCMode::SingleEnded_1,
         kRate,
-        GAIN_TWOTHIRDS,
+        GAIN_TWOTHIRDS,  // 5V transducer
         kContinuous,
         kWindowSize,
-        10000.0 / 4.5,  // TODO calibrate
+        1.0,  // TODO calibrate
     };
 
     // https://www.dataq.com/resources/pdfs/datasheets/WNK81MA.pdf
     MovingMedianADC<Adafruit_ADS1115> gn2_manifold_2{
         "gn2_manifold_2",
+        i2c1,
+        ADCAddress::VIN,
         ADCMode::SingleEnded_1,
         kRate,
-        GAIN_TWOTHIRDS,
+        GAIN_TWOTHIRDS,  // 5V transducer
         kContinuous,
         kWindowSize,
-        10000.0 / 4.5,  // TODO calibrate
+        1.0,  // TODO calibrate
     };
 };
 
-REGISTER_AVIONICS_DEVICE(DevFsTransducers);
+REGISTER_AVIONICS_DEVICE(DevFsLoxGn2Transducers);

@@ -5,14 +5,19 @@ namespace avionics {
 
 #pragma pack(push, 1)
 
-// size: 24 bytes
-struct FsTransducers {
-    float lox_upper;            // 4 bytes
-    float lox_lower;            // 4 bytes
+// size: 17 bytes
+struct FsLoxGn2TransducersPacket {
+    float lox_upper;       // 4 bytes
+    float lox_lower;       // 4 bytes
+    float gn2_manifold_1;  // 4 bytes
+    float gn2_manifold_2;  // 4 bytes
+    uint8_t _dummy;        // 1 byte
+};
+
+// size: 8 bytes
+struct FsInjectorTransducersPacket {
     float injector_manifold_1;  // 4 bytes
     float injector_manifold_2;  // 4 bytes
-    float gn2_manifold_1;       // 4 bytes
-    float gn2_manifold_2;       // 4 bytes
 };
 
 // size: 23 bytes
