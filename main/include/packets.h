@@ -15,9 +15,9 @@ struct FsLoxGn2TransducersPacket {
 };
 
 // size: 8 bytes
-struct FsChamberInjectorTransducersPacket {
-    float chamber;   // 4 bytes
-    float injector;  // 4 bytes
+struct FsInjectorTransducersPacket {
+    float injector_manifold_1;  // 4 bytes
+    float injector_manifold_2;  // 4 bytes
 };
 
 // size: 23 bytes
