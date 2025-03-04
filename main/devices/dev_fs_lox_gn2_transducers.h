@@ -8,7 +8,12 @@ using namespace moving_median_adc;
 
 class DevFsLoxGn2Transducers : public Device {
    public:
-    void Setup() override {}
+    void Setup() override {
+        lox_upper.Recalibrate(kCalibrateSamples);
+        lox_lower.Recalibrate(kCalibrateSamples);
+        gn2_manifold_1.Recalibrate(kCalibrateSamples);
+        gn2_manifold_2.Recalibrate(kCalibrateSamples);
+    }
 
     void Loop() override {
         lox_upper.Tick();
@@ -38,6 +43,7 @@ class DevFsLoxGn2Transducers : public Device {
     const uint16_t kRate = RATE_ADS1115_860SPS;
     const bool kContinuous = true;
     const int kWindowSize = 50;
+    const int kCalibrateSamples = 500;
 
     I2CWire i2c0{0, 2, 1};
     I2CWire i2c1{1, 6, 7};
@@ -46,7 +52,7 @@ class DevFsLoxGn2Transducers : public Device {
     MovingMedianADC<Adafruit_ADS1115> lox_upper{
         "lox_upper", i2c0,     ADCAddress::GND, ADCMode::SingleEnded_0,
         kRate,       GAIN_ONE, kContinuous,     kWindowSize,
-        1.0,  // TODO calibrate
+        400.0,
     };
 
     // https://kulite.com//assets/media/2017/06/CTL-190.pdf; with AD620
@@ -66,7 +72,7 @@ class DevFsLoxGn2Transducers : public Device {
         GAIN_ONE,  // 10k PSI = 4.5V; we read up to 5k PSI
         kContinuous,
         kWindowSize,
-        1.0,  // TODO calibrate
+        1260.0,
     };
 
     // https://www.dataq.com/resources/pdfs/datasheets/WNK81MA.pdf
@@ -79,7 +85,7 @@ class DevFsLoxGn2Transducers : public Device {
         GAIN_ONE,  // 10k PSI = 4.5V; we read up to 5k PSI
         kContinuous,
         kWindowSize,
-        1.0,  // TODO calibrate
+        1260.0,
     };
 };
 

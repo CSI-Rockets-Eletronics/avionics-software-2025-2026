@@ -8,7 +8,10 @@ using namespace moving_median_adc;
 
 class DevFsInjectorTransducers : public Device {
    public:
-    void Setup() override {}
+    void Setup() override {
+        injector_manifold_1.Recalibrate(kCalibrateSamples);
+        injector_manifold_2.Recalibrate(kCalibrateSamples);
+    }
 
     void Loop() override {
         injector_manifold_1.Tick();
@@ -32,6 +35,7 @@ class DevFsInjectorTransducers : public Device {
     const uint16_t kRate = RATE_ADS1115_860SPS;
     const bool kContinuous = true;
     const int kWindowSize = 50;
+    const int kCalibrateSamples = 500;
 
     I2CWire i2c2{0, 5, 6};
     I2CWire i2c3{1, 7, 15};
@@ -46,7 +50,7 @@ class DevFsInjectorTransducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1.0,  // TODO calibrate
+        333.0,
     };
 
     // https://kulite.com//assets/media/2017/06/CTL-190.pdf; with AD620
