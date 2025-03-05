@@ -37,7 +37,7 @@ class DevFsLoxGn2Transducers : public Device {
 
         SendToPi(fs_transducers_packet);
 
-        transducers_freq_logger.tick();
+        transducers_freq_logger.Tick();
 
         // lox_upper.PrintLatestPsi();
         // lox_lower.PrintLatestPsi();

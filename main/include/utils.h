@@ -10,32 +10,33 @@ namespace utils {
 class FrequencyLogger {
    public:
     FrequencyLogger(const std::string label,
-                    unsigned long printIntervalMs = 1000)
+                    unsigned long print_interval_ms = 1000)
         : label(label),
-          printIntervalMs(printIntervalMs),
-          lastPrintTime(millis()),
-          tickCount(0) {}
+          print_interval_ms(print_interval_ms),
+          last_print_time(millis()),
+          tick_count(0) {}
 
-    void tick() {
-        tickCount++;
+    void Tick() {
+        tick_count++;
 
-        if (millis() - lastPrintTime > printIntervalMs) {
+        if (millis() - last_print_time > print_interval_ms) {
             Serial.print("[");
             Serial.print(label.c_str());
             Serial.print("] Frequency: ");
-            Serial.print((unsigned long)(tickCount * 1000.0 / printIntervalMs));
+            Serial.print(
+                (unsigned long)(tick_count * 1000.0 / print_interval_ms));
             Serial.println(" Hz");
-            lastPrintTime = millis();
-            tickCount = 0;
+            last_print_time = millis();
+            tick_count = 0;
         }
     }
 
    private:
     const std::string label;
-    const unsigned long printIntervalMs;
+    const unsigned long print_interval_ms;
 
-    unsigned long lastPrintTime;
-    unsigned long tickCount;
+    unsigned long last_print_time;
+    unsigned long tick_count;
 };
 
 }  // namespace utils
