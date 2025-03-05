@@ -36,12 +36,12 @@ class DevFsLoxGn2Transducers : public Device {
 
         SendToPi(fs_transducers_packet);
 
-        lox_upper.PrintLatestPsi();
-        lox_lower.PrintLatestPsi();
-        gn2_manifold_1.PrintLatestPsi();
-        gn2_manifold_2.PrintLatestPsi();
+        // lox_upper.PrintLatestPsi();
+        // lox_lower.PrintLatestPsi();
+        // gn2_manifold_1.PrintLatestPsi();
+        // gn2_manifold_2.PrintLatestPsi();
 
-        delay(500);
+        // delay(500);
     }
 
     template <typename T>
@@ -83,7 +83,8 @@ class DevFsLoxGn2Transducers : public Device {
     MovingMedianADC<Adafruit_ADS1115> lox_lower{
         "lox_lower", i2c1,     ADCAddress::GND, ADCMode::SingleEnded_0,
         kRate,       GAIN_ONE, kContinuous,     kWindowSize,
-        1.0,  // TODO calibrate
+        1.0,   // TODO calibrate
+        true,  // TODO debug_skip_init
     };
 
     // https://www.dataq.com/resources/pdfs/datasheets/WNK81MA.pdf
@@ -110,6 +111,7 @@ class DevFsLoxGn2Transducers : public Device {
         kContinuous,
         kWindowSize,
         1260.0,
+        true,  // TODO debug_skip_init
     };
 };
 
