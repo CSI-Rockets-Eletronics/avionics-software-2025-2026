@@ -77,19 +77,28 @@ class I2CWire {
     }
 };
 
-// if continuous is true, the ADC must only be used for one channel
+/*
+ * If continuous is true, the ADC must only be used for one channel.
+ * If debug_skip_init is true, the ADC will not be initialized, and the reading
+ * will be 0.
+ */
 template <typename ADCType>
 class MovingMedianADC {
    public:
     MovingMedianADC(const char* debug_name, I2CWire& i2c_wire,
                     ADCAddress address, ADCMode mode, uint16_t rate,
                     adsGain_t gain, bool continuous, int window_size,
-                    float psi_per_volt)
+                    float psi_per_volt, bool debug_skip_init = false)
         : debug_name{debug_name},
           mode{mode},
           continuous{continuous},
           psi_per_volt{psi_per_volt},
+          debug_skip_init{debug_skip_init},
           median_volts{window_size} {
+        if (debug_skip_init) {
+            return;
+        }
+
         adc.setDataRate(rate);
         adc.setGain(gain);
 
@@ -158,6 +167,7 @@ class MovingMedianADC {
     const ADCMode mode;
     const bool continuous;
     const float psi_per_volt;
+    const bool debug_skip_init;
 
     ADCType adc;
     MovingMedian<float> median_volts;
@@ -174,6 +184,10 @@ class MovingMedianADC {
     }
 
     float ReadVolts() {
+        if (debug_skip_init) {
+            return 0;
+        }
+
         int16_t counts = 0;
 
         if (continuous) {
