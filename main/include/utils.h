@@ -39,6 +39,47 @@ class FrequencyLogger {
     unsigned long tick_count;
 };
 
+class SerialForwarder {
+   public:
+    SerialForwarder(std::string label, HardwareSerial& from, HardwareSerial& to)
+        : from(from), to(to), freq_logger(label) {}
+
+    void Tick() {
+        while (from.available()) {
+            // if write would overflow, clear the buffer
+            if (bufferIndex >= kMaxPacketSize) {
+                bufferIndex = 0;
+            }
+
+            buffer[bufferIndex] = from.read();
+            bufferIndex++;
+            // here, bufferIndex is at most kMaxPacketSize
+        }
+
+        if (bufferIndex >= 2 && buffer[bufferIndex - 2] == kPacketDelimeter1 &&
+            buffer[bufferIndex - 1] == kPacketDelimeter2) {
+            to.write(buffer, bufferIndex);  // includes the delimeters
+            bufferIndex = 0;
+
+            freq_logger.Tick();
+        }
+    }
+
+   private:
+    static const size_t kMaxPacketSize = 256;
+
+    static const uint8_t kPacketDelimeter1 = 0b10101010;
+    static const uint8_t kPacketDelimeter2 = 0b01010101;
+
+    HardwareSerial& from;
+    HardwareSerial& to;
+
+    FrequencyLogger freq_logger;
+
+    uint8_t buffer[kMaxPacketSize];
+    size_t bufferIndex = 0;  // also equals the number of bytes in the buffer
+};
+
 }  // namespace utils
 
 #endif  // UTILS_H_

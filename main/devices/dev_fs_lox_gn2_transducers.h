@@ -10,6 +10,10 @@ using namespace moving_median_adc;
 class DevFsLoxGn2Transducers : public Device {
    public:
     void Setup() override {
+        // for serial forwarding
+        Serial1.begin(kForwardSerialBaud, SERIAL_8N1, kForwardSerialRxPin,
+                      kForwardSerialTxPin);
+
         // for raspberry pi
         Serial2.begin(kPiSerialBaud, SERIAL_8N1, kPiSerialRxPin,
                       kPiSerialTxPin);
@@ -39,6 +43,8 @@ class DevFsLoxGn2Transducers : public Device {
 
         transducers_freq_logger.Tick();
 
+        serial_forwarder.Tick();
+
         // lox_upper.PrintLatestPsi();
         // lox_lower.PrintLatestPsi();
         // gn2_manifold_1.PrintLatestPsi();
@@ -58,6 +64,16 @@ class DevFsLoxGn2Transducers : public Device {
     // ===== misc =====
 
     utils::FrequencyLogger transducers_freq_logger{"Transducers"};
+
+    // ===== for serial forwarding =====
+
+    static const int kForwardSerialRxPin = 15;
+    static const int kForwardSerialTxPin = 16;
+
+    static const unsigned long kForwardSerialBaud = 230400;
+
+    utils::SerialForwarder serial_forwarder{"Serial Forwarder", Serial1,
+                                            Serial2};
 
     // ===== for raspberry pi =====
 
