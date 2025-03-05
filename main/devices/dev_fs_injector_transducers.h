@@ -19,6 +19,7 @@ class DevFsInjectorTransducers : public Device {
 
         // raw values (not medians)
         FsInjectorTransducersPacket fs_transducers_packet{
+            .ts = micros(),
             .injector_manifold_1 = injector_manifold_1.GetLatestPsi(),
             .injector_manifold_2 = injector_manifold_2.GetLatestPsi(),
         };

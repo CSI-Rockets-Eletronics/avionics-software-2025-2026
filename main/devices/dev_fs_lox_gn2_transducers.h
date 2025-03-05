@@ -9,6 +9,10 @@ using namespace moving_median_adc;
 class DevFsLoxGn2Transducers : public Device {
    public:
     void Setup() override {
+        // for raspberry pi
+        Serial2.begin(kPiSerialBaud, SERIAL_8N1, kPiSerialRxPin,
+                      kPiSerialTxPin);
+
         lox_upper.Recalibrate(kCalibrateSamples);
         lox_lower.Recalibrate(kCalibrateSamples);
         gn2_manifold_1.Recalibrate(kCalibrateSamples);
@@ -23,13 +27,14 @@ class DevFsLoxGn2Transducers : public Device {
 
         // raw values (not medians)
         FsLoxGn2TransducersPacket fs_transducers_packet{
+            .ts = micros(),
             .lox_upper = lox_upper.GetLatestPsi(),
             .lox_lower = lox_lower.GetLatestPsi(),
             .gn2_manifold_1 = gn2_manifold_1.GetLatestPsi(),
             .gn2_manifold_2 = gn2_manifold_2.GetLatestPsi(),
         };
 
-        // TODO do something with the packet...
+        SendToPi(fs_transducers_packet);
 
         lox_upper.PrintLatestPsi();
         lox_lower.PrintLatestPsi();
@@ -39,7 +44,26 @@ class DevFsLoxGn2Transducers : public Device {
         delay(500);
     }
 
+    template <typename T>
+    void SendToPi(const T& data) {
+        Serial2.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
+        Serial2.write(kPacketDelimeter1);
+        Serial2.write(kPacketDelimeter2);
+    }
+
    private:
+    // ===== for raspberry pi =====
+
+    static const int kPiSerialRxPin = 40;
+    static const int kPiSerialTxPin = 39;
+
+    static const unsigned long kPiSerialBaud = 230400;
+
+    static const uint8_t kPacketDelimeter1 = 0b10101010;
+    static const uint8_t kPacketDelimeter2 = 0b01010101;
+
+    // ===== for transducers =====
+
     const uint16_t kRate = RATE_ADS1115_860SPS;
     const bool kContinuous = true;
     const int kWindowSize = 50;

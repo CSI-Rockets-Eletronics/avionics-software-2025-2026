@@ -5,20 +5,27 @@ namespace avionics {
 
 #pragma pack(push, 1)
 
-// size: 17 bytes
+// NOTE: packet sizes must be unique within ground packets and avionics packets
+
+// ===== GROUND PACKETS =====
+
+// size: 24 bytes
 struct FsLoxGn2TransducersPacket {
+    uint64_t ts;           // 8 bytes
     float lox_upper;       // 4 bytes
     float lox_lower;       // 4 bytes
     float gn2_manifold_1;  // 4 bytes
     float gn2_manifold_2;  // 4 bytes
-    uint8_t _dummy;        // 1 byte
 };
 
-// size: 8 bytes
+// size: 16 bytes
 struct FsInjectorTransducersPacket {
+    uint64_t ts;                // 8 bytes
     float injector_manifold_1;  // 4 bytes
     float injector_manifold_2;  // 4 bytes
 };
+
+// ===== AVIONICS PACKETS =====
 
 // size: 23 bytes
 struct GpsPacket {
