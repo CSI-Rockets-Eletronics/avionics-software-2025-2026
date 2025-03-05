@@ -2,6 +2,7 @@
 
 #include "avionics.h"
 #include "packets.h"
+#include "utils.h"
 
 using namespace avionics;
 using namespace moving_median_adc;
@@ -36,6 +37,8 @@ class DevFsLoxGn2Transducers : public Device {
 
         SendToPi(fs_transducers_packet);
 
+        transducers_freq_logger.tick();
+
         // lox_upper.PrintLatestPsi();
         // lox_lower.PrintLatestPsi();
         // gn2_manifold_1.PrintLatestPsi();
@@ -52,6 +55,10 @@ class DevFsLoxGn2Transducers : public Device {
     }
 
    private:
+    // ===== misc =====
+
+    utils::FrequencyLogger transducers_freq_logger{"Transducers"};
+
     // ===== for raspberry pi =====
 
     static const int kPiSerialRxPin = 40;
@@ -83,8 +90,7 @@ class DevFsLoxGn2Transducers : public Device {
     MovingMedianADC<Adafruit_ADS1115> lox_lower{
         "lox_lower", i2c1,     ADCAddress::GND, ADCMode::SingleEnded_0,
         kRate,       GAIN_ONE, kContinuous,     kWindowSize,
-        1.0,   // TODO calibrate
-        true,  // TODO debug_skip_init
+        1.0,  // TODO calibrate
     };
 
     // https://www.dataq.com/resources/pdfs/datasheets/WNK81MA.pdf
@@ -111,7 +117,6 @@ class DevFsLoxGn2Transducers : public Device {
         kContinuous,
         kWindowSize,
         1260.0,
-        true,  // TODO debug_skip_init
     };
 };
 
