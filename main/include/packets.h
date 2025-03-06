@@ -9,6 +9,36 @@ namespace avionics {
 
 // ===== GROUND PACKETS =====
 
+enum class FsCommand : uint8_t {
+    STATE_CUSTOM = 0,
+    STATE_ABORT = 1,
+    STATE_STANDBY = 2,
+    STATE_GN2_STANDBY = 3,
+    STATE_GN2_FILL = 10,
+    STATE_GN2_PULSE_FILL_A = 11,
+    STATE_GN2_PULSE_FILL_B = 12,
+    STATE_GN2_PULSE_FILL_C = 13,
+    STATE_FIRE = 20,
+    STATE_FIRE_MANUAL_DOME_PILOT_OPEN = 21,
+    STATE_FIRE_MANUAL_DOME_PILOT_CLOSE = 22,
+    STATE_FIRE_MANUAL_IGNITER = 23,
+    STATE_FIRE_MANUAL_RUN = 24,
+};
+
+// size: 8 bytes
+struct FsCommandPacket {
+    FsCommand command;  // 1 byte
+
+    // the solenoid state fields below are only used if command is CUSTOM
+    bool gn2_abort;          // 1 byte
+    bool gn2_fill;           // 1 byte
+    bool pilot_vent;         // 1 byte
+    bool dome_pilot_open;    // 1 byte
+    bool run;                // 1 byte
+    bool water_suppression;  // 1 byte
+    bool igniter;            // 1 byte
+};
+
 // size: 24 bytes
 struct FsLoxGn2TransducersPacket {
     uint64_t ts;           // 8 bytes
