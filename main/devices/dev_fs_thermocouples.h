@@ -7,11 +7,11 @@ using namespace avionics;
 
 class DevFsThermocouples : public Device {
    private:
-    static const int kClkPin = 40;
-    static const int kCsPin = 39;
-    static const int kDoPin = 37;  // aka MISO
+    static const int kClkPin = 37;
+    static const int kCsPin = 13;
+    static const int kMisoPin = 39;
 
-    Adafruit_MAX31855 thermocouple{kClkPin, kCsPin, kDoPin};
+    Adafruit_MAX31855 thermocouple{kClkPin, kCsPin, kMisoPin};
 
    public:
     void Setup() override {
