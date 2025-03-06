@@ -26,6 +26,14 @@ class DevFsRelays : public Device {
         }
         delay(kDelayMs);
         Serial.println("Low");
+
+        // Implement stuff here 👀
+
+        FsCommandPacket command_packet;
+
+        if (Receive(&command_packet) == 0) {
+            // got a new command, written into command_packet
+        }
     }
 };
 
