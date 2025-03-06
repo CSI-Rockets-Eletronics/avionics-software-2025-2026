@@ -15,6 +15,9 @@ class DevPiSerial : public Device {
 
     RadioPacket radio_packet{};
 
+    // just VS code intellisense being dumb; Serial2 is accessible globally
+    HardwareSerial Serial2{2};
+
    public:
     void Setup() override {
         // for raspberry pi
