@@ -63,6 +63,8 @@ class DevFsLoxGn2Transducers : public Device {
    private:
     // ===== misc =====
 
+    // just VS code intellisense being dumb; Serial2 is accessible globally
+    HardwareSerial Serial2{2};
     utils::FrequencyLogger transducers_freq_logger{"Transducers"};
 
     // ===== for serial forwarding =====
