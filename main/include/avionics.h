@@ -20,6 +20,7 @@ enum class DeviceType {
     DevFsInjectorTransducers,
     DevFsLoxGn2Transducers,
     DevFsRelays,
+    DevFsThermocouples,
     DevGps,
     DevGroundRadio,
     DevImu,

@@ -14,7 +14,10 @@ static Node fs_scientific1{
 static Node fs_scientific2{
     "FsScientific2",
     MacAddress{"f4:12:fa:5b:42:c8"},
-    {DeviceType::DevFsInjectorTransducers},
+    {
+        DeviceType::DevFsInjectorTransducers,
+        DeviceType::DevFsThermocouples,
+    },
 };
 
 static Node fs_relays{

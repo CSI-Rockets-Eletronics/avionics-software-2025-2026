@@ -37,6 +37,12 @@ class DevFsInjectorTransducers : public Device {
         // injector_manifold_2.PrintLatestPsi();
 
         // delay(500);
+
+        // forward thermocouple packet
+        FsThermocouplesPacket thermo_packet;
+        if (Receive(&thermo_packet) == 0) {
+            SendToOtherEsp32(thermo_packet);
+        }
     }
 
     template <typename T>
