@@ -25,15 +25,15 @@ class DevFsThermocouples : public Device {
 
         if (isnan(celsius)) {
             HandleFault();
-        } else {
-            FsThermocouplesPacket thermo_packet{
-                .ts = micros(),
-                .lox_celsius = (float)celsius,
-                .gn2_celsius = 0,  // TODO
-                ._dummy = 0,
-            };
-            Send(DeviceType::DevFsInjectorTransducers, thermo_packet);
         }
+
+        FsThermocouplesPacket thermo_packet{
+            .ts = micros(),
+            .lox_celsius = (float)celsius,  // pass NaN if fault
+            .gn2_celsius = 0,               // TODO
+            ._dummy = 0,
+        };
+        Send(DeviceType::DevFsInjectorTransducers, thermo_packet);
 
         delay(1000);
     }

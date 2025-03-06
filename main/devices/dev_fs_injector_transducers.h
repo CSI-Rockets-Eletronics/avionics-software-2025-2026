@@ -33,16 +33,15 @@ class DevFsInjectorTransducers : public Device {
 
         transducers_freq_logger.Tick();
 
-        // injector_manifold_1.PrintLatestPsi();
-        // injector_manifold_2.PrintLatestPsi();
-
-        // delay(500);
-
-        // forward thermocouple packet
         FsThermocouplesPacket thermo_packet;
         if (Receive(&thermo_packet) == 0) {
             SendToOtherEsp32(thermo_packet);
         }
+
+        // injector_manifold_1.PrintLatestPsi();
+        // injector_manifold_2.PrintLatestPsi();
+
+        // delay(500);
     }
 
     template <typename T>
