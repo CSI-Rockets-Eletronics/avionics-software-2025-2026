@@ -19,3 +19,6 @@
 [submodule "components/Adafruit_BusIO/Adafruit_BusIO"]
 	path = components/Adafruit_BusIO/Adafruit_BusIO
 	url = https://github.com/adafruit/Adafruit_BusIO.git
+[submodule "components/Adafruit-MAX31855-library/Adafruit-MAX31855-library"]
+	path = components/Adafruit-MAX31855-library/Adafruit-MAX31855-library
+	url = https://github.com/adafruit/Adafruit-MAX31855-library.git
