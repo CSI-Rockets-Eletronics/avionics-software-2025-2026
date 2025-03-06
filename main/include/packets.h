@@ -25,11 +25,43 @@ enum class FsCommand : uint8_t {
     STATE_FIRE_MANUAL_RUN = 24,
 };
 
-// size: 8 bytes
+// size: 9 bytes
 struct FsCommandPacket {
     FsCommand command;  // 1 byte
 
     // the solenoid state fields below are only used if command is CUSTOM
+    bool gn2_abort;          // 1 byte
+    bool gn2_fill;           // 1 byte
+    bool pilot_vent;         // 1 byte
+    bool dome_pilot_open;    // 1 byte
+    bool run;                // 1 byte
+    bool water_suppression;  // 1 byte
+    bool igniter;            // 1 byte
+
+    uint8_t _dummy;  // 1 byte
+};
+
+// a subset of FsCommand values are state values
+enum class FsState : uint8_t {
+    CUSTOM = FsCommand::STATE_CUSTOM,
+    ABORT = FsCommand::STATE_ABORT,
+    STANDBY = FsCommand::STATE_STANDBY,
+    GN2_STANDBY = FsCommand::STATE_GN2_STANDBY,
+    GN2_FILL = FsCommand::STATE_GN2_FILL,
+    GN2_PULSE_FILL_A = FsCommand::STATE_GN2_PULSE_FILL_A,
+    GN2_PULSE_FILL_B = FsCommand::STATE_GN2_PULSE_FILL_B,
+    GN2_PULSE_FILL_C = FsCommand::STATE_GN2_PULSE_FILL_C,
+    FIRE = FsCommand::STATE_FIRE,
+    FIRE_MANUAL_DOME_PILOT_OPEN = FsCommand::STATE_FIRE_MANUAL_DOME_PILOT_OPEN,
+    FIRE_MANUAL_DOME_PILOT_CLOSE =
+        FsCommand::STATE_FIRE_MANUAL_DOME_PILOT_CLOSE,
+    FIRE_MANUAL_IGNITER = FsCommand::STATE_FIRE_MANUAL_IGNITER,
+    FIRE_MANUAL_RUN = FsCommand::STATE_FIRE_MANUAL_RUN,
+};
+
+// size: 8 bytes
+struct FsStatePacket {
+    FsState state;           // 1 byte
     bool gn2_abort;          // 1 byte
     bool gn2_fill;           // 1 byte
     bool pilot_vent;         // 1 byte
