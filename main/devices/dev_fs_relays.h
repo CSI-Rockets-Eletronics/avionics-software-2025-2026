@@ -75,6 +75,7 @@ class DevFsRelays : public Device {
         }
 
         FlushRelays();
+        SendState();
     }
 
     bool ShouldPulsePilotVent(FsState state) {
@@ -272,6 +273,21 @@ class DevFsRelays : public Device {
 
     void FlushRelay(RelayPin pin, bool state) {
         digitalWrite(static_cast<int>(pin), state ? HIGH : LOW);
+    }
+
+    void SendState() {
+        FsStatePacket state_packet{
+            .state = cur_state,
+            .gn2_abort = relay_states.gn2_abort,
+            .gn2_fill = relay_states.gn2_fill,
+            .pilot_vent = relay_states.pilot_vent,
+            .dome_pilot_open = relay_states.dome_pilot_open,
+            .run = relay_states.run,
+            .water_suppression = relay_states.water_suppression,
+            .igniter = relay_states.igniter,
+        };
+
+        Send(DeviceType::DevFsLoxGn2Transducers, state_packet);
     }
 };
 
