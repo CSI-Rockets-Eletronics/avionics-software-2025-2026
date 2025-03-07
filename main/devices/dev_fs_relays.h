@@ -2,238 +2,276 @@
 
 using namespace avionics;
 
-enum Solenoids {
-    GN2_ABORT, 
-    GN2_FILL,
-    PILOT_VENT,
-    DOME_PILOT_OPEN,
-    RUN,
-    WATER_SUPPRESSION,
-    IGNITER
+// Relay pins (left to right): 5, 1, 6, 7, 15, 16, 17, 18, 8, 2, 12, 9
+
+enum class RelayPin : int {
+    GN2_ABORT = 5,
+    GN2_FILL = 1,
+    PILOT_VENT = 6,
+    DOME_PILOT_OPEN = 7,
+    RUN = 15,
+    WATER_SUPPRESSION = 16,
+    IGNITER = 17,
 };
+
+struct RelayStates {
+    bool gn2_abort = false;
+    bool gn2_fill = false;
+    bool pilot_vent = false;
+    bool dome_pilot_open = false;
+    bool run = false;
+    bool water_suppression = false;
+    bool igniter = false;
+};
+
+using MS = unsigned long;
 
 class DevFsRelays : public Device {
    private:
-    const int kRelayPins[12] = {5, 1, 6, 7, 15, 16, 17, 18, 8, 2, 12, 9};
-    
-    const int kPilotValveOpenDurationMs = 5000;  
-    const int kPilotValveClosedDurationMs = 5000;
+    const MS kPilotValveOpenDurationMs = 5000;
+    const MS kPilotValveClosedDurationMs = 5000;
 
-    const int kGN2ValveOpenDurationMs = 5000; 
-    const int kGN2ValveClosedDurationMs = 5000;
+    const MS kGN2FillOpenDurationMs = 5000;
+    const MS kGN2FillClosedDurationMs = 5000;
 
-    const int kDelayMs = 1000;
+    const MS kFillAPulseDurationMs = 1000;
+    const MS kFillBPulseDurationMs = 2000;
+    const MS kFillCPulseDurationMs = 3000;
 
-    const unsigned long kFillAPulseDurationMs = 1000;
-    const unsigned long kFillBPulseDurationMs = 2000;
-    const unsigned long kFillCPulseDurationMs = 3000;
+    // dome pilot opens at T-30s
+    const MS kFireDomePilotCloseDelayMs = 5000;        // T-25s
+    const MS kFireDomePilotIgniterOnDelayMs = 23000;   // T-7s
+    const MS kFireDomePilotIgniterOffDelayMs = 29000;  // T-1s
+    const MS kFireDomePilotRunOpenDelayMs = 30000;     // T-0s
+    const MS kFireDomePilotRunCloseDelayMs = 40000;    // T+10s
 
-    FsState fsCurrentState = FsState::STANDBY;
+    FsState cur_state = FsState::STANDBY;
 
-    unsigned long lastGN2UpdateTime = 0;
-    unsigned long lastPilotUpdateTime = 0; 
-    bool gn2PulseState = false;
-    bool pilotPulseState = false; 
+    // time of entering the current state
+    MS enter_state_ms = millis();
+    // time of entering a state in which we must pulse the pilot valve
+    MS enter_pilot_vent_pulse_ms = millis();
 
-    unsigned long currentTime = 0;
+    RelayStates relay_states;
 
    public:
     void Setup() override {
-        for (int i = 0; i < 12; i++) {
-            pinMode(kRelayPins[i], OUTPUT);
-        }
+        SetPinToOutput(RelayPin::GN2_ABORT);
+        SetPinToOutput(RelayPin::GN2_FILL);
+        SetPinToOutput(RelayPin::PILOT_VENT);
+        SetPinToOutput(RelayPin::DOME_PILOT_OPEN);
+        SetPinToOutput(RelayPin::RUN);
+        SetPinToOutput(RelayPin::WATER_SUPPRESSION);
+        SetPinToOutput(RelayPin::IGNITER);
     }
 
     void Loop() override {
-        // Implement stuff here 👀
+        ParseCommand();
+        TransitionStates();
 
+        // CUSTOM state -> relays were set in ParseCommand()
+        if (cur_state != FsState::CUSTOM) {
+            UpdateRelayStates();
+        }
+
+        FlushRelays();
+    }
+
+    bool ShouldPulsePilotVent(FsState state) {
+        return state == FsState::GN2_STANDBY || state == FsState::GN2_FILL ||
+               state == FsState::GN2_PULSE_FILL_A ||
+               state == FsState::GN2_PULSE_FILL_B ||
+               state == FsState::GN2_PULSE_FILL_C;
+    }
+
+    void ParseCommand() {
         FsCommandPacket command_packet;
-        if (Receive(&command_packet) == 0) {
-            switch (command_packet.command) {
-                case FsCommand::RESTART:
-                    Die("Restarting by command");
-                    break;
-                case FsCommand::STATE_CUSTOM:
-                    fsCurrentState = FsState::CUSTOM;
-                    currentTime = millis();
-                    break;
-                case FsCommand::STATE_ABORT:
-                    fsCurrentState = FsState::ABORT;
-                    break;
-                case FsCommand::STATE_STANDBY:
-                    fsCurrentState = FsState::STANDBY;
-                    break;
-                case FsCommand::STATE_GN2_STANDBY:
-                    fsCurrentState = FsState::GN2_STANDBY;
-                    currentTime = millis();
-                    break;
-                case FsCommand::STATE_GN2_FILL:
-                    fsCurrentState = FsState::GN2_FILL;
-                    currentTime = millis();
-                    break;
-                case FsCommand::STATE_GN2_PULSE_FILL_A:
-                    fsCurrentState = FsState::GN2_PULSE_FILL_A;
-                    currentTime = millis();
-                    break;
-                case FsCommand::STATE_GN2_PULSE_FILL_B:
-                    fsCurrentState = FsState::GN2_PULSE_FILL_B;
-                    currentTime = millis();
-                    break;
-                case FsCommand::STATE_GN2_PULSE_FILL_C:
-                    fsCurrentState = FsState::GN2_PULSE_FILL_C;
-                    currentTime = millis();
-                    break;
-                case FsCommand::STATE_FIRE:
-                    fsCurrentState = FsState::FIRE;
-                    currentTime = millis();
-                    break;
-                case FsCommand::STATE_FIRE_MANUAL_DOME_PILOT_OPEN:
-                    fsCurrentState = FsState::FIRE_MANUAL_DOME_PILOT_OPEN;
-                    break;
-                case FsCommand::STATE_FIRE_MANUAL_DOME_PILOT_CLOSE:
-                    fsCurrentState = FsState::FIRE_MANUAL_DOME_PILOT_CLOSE;
-                    break;
-                case FsCommand::STATE_FIRE_MANUAL_IGNITER:
-                    fsCurrentState = FsState::FIRE_MANUAL_IGNITER;
-                    break;
-                case FsCommand::STATE_FIRE_MANUAL_RUN:
-                    fsCurrentState = FsState::FIRE_MANUAL_RUN;
-                    break;
-                default:
-                    break;
-            }
+
+        if (Receive(&command_packet) != 0) {
+            return;
         }
 
-        if (fsCurrentState == FsState::ABORT) {
-            for (int i = 0; i < 12; i++) {
-                if (i == PILOT_VENT || i == GN2_ABORT) {
-                    digitalWrite(kRelayPins[i], HIGH);
-                } else {
-                    digitalWrite(kRelayPins[i], LOW);
-                }
-            }
-            Serial.println("State: ABORT");
-        } else if (fsCurrentState == FsState::STANDBY) {
-            for (int i = 0; i < 12; i++) {
-                digitalWrite(kRelayPins[i], LOW);
-            }
-            Serial.println("State: STANDBY");
-        } else if (fsCurrentState == FsState::GN2_STANDBY ||
-                   fsCurrentState == FsState::GN2_FILL ||
-                   fsCurrentState == FsState::GN2_PULSE_FILL_A ||
-                   fsCurrentState == FsState::GN2_PULSE_FILL_B ||
-                   fsCurrentState == FsState::GN2_PULSE_FILL_C) {
-            
-            //Pulse pilot valve constantly 
-            unsigned long pilotInterval = pilotPulseState ? kPilotValveOpenDurationMs : kPilotValveClosedDurationMs;
-            if (currentTime - lastPilotUpdateTime >= pilotInterval) {
-                pilotPulseState = !pilotPulseState;
-                digitalWrite(kRelayPins[PILOT_VENT], pilotPulseState ? HIGH : LOW);
-                lastPilotUpdateTime = currentTime;
-            }
-            for (int i = 0; i < 12; i++) {
-                if (i != PILOT_VENT && i != GN2_FILL) {
-                    digitalWrite(kRelayPins[i], LOW);
-                }
-            }
-            
-            if (fsCurrentState == FsState::GN2_STANDBY) {
-                digitalWrite(kRelayPins[GN2_FILL], LOW);
-                Serial.println("State: GN2_STANDBY");
-            } else if (fsCurrentState == FsState::GN2_FILL) {
-                unsigned long GN2interval = gn2PulseState ? kGN2ValveOpenDurationMs : kGN2ValveClosedDurationMs;
-                if (currentTime - lastGN2UpdateTime >= GN2interval) {
-                    gn2PulseState = !gn2PulseState;
-                    digitalWrite(kRelayPins[GN2_FILL], gn2PulseState ? HIGH : LOW);
-                    lastGN2UpdateTime = currentTime;
-                }
-                Serial.println("State: GN2_FILL");
-            } else if (fsCurrentState == FsState::GN2_PULSE_FILL_A) {
-                static unsigned long pulseStartTimeA = 0;
-                if (pulseStartTimeA == 0) {
-                    pulseStartTimeA = currentTime;
-                    digitalWrite(kRelayPins[GN2_FILL], HIGH);
-                    Serial.println("State: GN2_PULSE_FILL_A - Open");
-                }
-                if (currentTime - pulseStartTimeA >= kFillAPulseDurationMs) {
-                    digitalWrite(kRelayPins[GN2_FILL], LOW);
-                    pulseStartTimeA = 0;
-                    fsCurrentState = FsState::GN2_STANDBY;
-                    Serial.println("State: GN2_PULSE_FILL_A complete, switching to GN2_STANDBY");
-                }
-            } else if (fsCurrentState == FsState::GN2_PULSE_FILL_B) {
-                static unsigned long pulseStartTimeB = 0;
-                if (pulseStartTimeB == 0) {
-                    pulseStartTimeB = currentTime;
-                    digitalWrite(kRelayPins[GN2_FILL], HIGH);
-                    Serial.println("State: GN2_PULSE_FILL_B - Open");
-                }
-                if (currentTime - pulseStartTimeB >= kFillBPulseDurationMs) {
-                    digitalWrite(kRelayPins[GN2_FILL], LOW);
-                    pulseStartTimeB = 0;
-                    fsCurrentState = FsState::GN2_STANDBY;
-                    Serial.println("State: GN2_PULSE_FILL_B complete, switching to GN2_STANDBY");
-                }
-            } else if (fsCurrentState == FsState::GN2_PULSE_FILL_C) {
-                static unsigned long pulseStartTimeC = 0;
-                if (pulseStartTimeC == 0) {
-                    pulseStartTimeC = currentTime;
-                    digitalWrite(kRelayPins[GN2_FILL], HIGH);
-                    Serial.println("State: GN2_PULSE_FILL_C - Open");
-                }
-                if (currentTime - pulseStartTimeC >= kFillCPulseDurationMs) {
-                    digitalWrite(kRelayPins[GN2_FILL], LOW);
-                    pulseStartTimeC = 0;
-                    fsCurrentState = FsState::GN2_STANDBY;
-                    Serial.println("State: GN2_PULSE_FILL_C complete, switching to GN2_STANDBY");
-                }
-            }
-        } else if (fsCurrentState == FsState::FIRE) {
-            static unsigned long stateStartTime = millis();
-            unsigned long elapsedTime = millis() - stateStartTime;
-            if (elapsedTime < 5000) {
-                digitalWrite(kRelayPins[DOME_PILOT_OPEN], HIGH);
-                Serial.println("State: FIRE - Domepilot valve open");
-            } else if (elapsedTime < 23000) {
-                digitalWrite(kRelayPins[DOME_PILOT_OPEN], LOW);
-                Serial.println("State: FIRE - Waiting");
-            } else if (elapsedTime < 29000) {
-                digitalWrite(kRelayPins[IGNITER], HIGH);
-                Serial.println("State: FIRE - Igniter on");
-            } else if (elapsedTime < 30000) {
-                digitalWrite(kRelayPins[IGNITER], LOW);
-                Serial.println("State: FIRE - Waiting");
-            } else if (elapsedTime < 40000) {
-                digitalWrite(kRelayPins[RUN], HIGH);
-                Serial.println("State: FIRE - Run valve open");
-            } else {
-                digitalWrite(kRelayPins[RUN], LOW);
-                Serial.println("State: FIRE - Run valve closed");
-                // Reset stateStartTime
-                stateStartTime = millis();
-            }
-        } else if (fsCurrentState == FsState::FIRE_MANUAL_DOME_PILOT_OPEN) {
-            digitalWrite(kRelayPins[DOME_PILOT_OPEN], HIGH);
-            Serial.println("State: FIRE_MANUAL_DOME_PILOT_OPEN");
-        } else if (fsCurrentState == FsState::FIRE_MANUAL_DOME_PILOT_CLOSE) {
-            digitalWrite(kRelayPins[DOME_PILOT_OPEN], LOW);
-            Serial.println("State: FIRE_MANUAL_DOME_PILOT_CLOSE");
-        } else if (fsCurrentState == FsState::FIRE_MANUAL_IGNITER) {
-            digitalWrite(kRelayPins[IGNITER], HIGH);
-            Serial.println("State: FIRE_MANUAL_IGNITER");
-        } else if (fsCurrentState == FsState::FIRE_MANUAL_RUN) {
-            digitalWrite(kRelayPins[RUN], HIGH);
-            Serial.println("State: FIRE_MANUAL_RUN");
-        } else if (fsCurrentState == FsState::CUSTOM) {
-            digitalWrite(kRelayPins[GN2_ABORT], command_packet.gn2_abort ? HIGH : LOW);
-            digitalWrite(kRelayPins[GN2_FILL], command_packet.gn2_fill ? HIGH : LOW);
-            digitalWrite(kRelayPins[PILOT_VENT], command_packet.pilot_vent ? HIGH : LOW);
-            digitalWrite(kRelayPins[DOME_PILOT_OPEN], command_packet.dome_pilot_open ? HIGH : LOW);
-            digitalWrite(kRelayPins[RUN], command_packet.run ? HIGH : LOW);
-            digitalWrite(kRelayPins[WATER_SUPPRESSION], command_packet.water_suppression ? HIGH : LOW);
-            digitalWrite(kRelayPins[IGNITER], command_packet.igniter ? HIGH : LOW);
-            Serial.println("State: CUSTOM");
+        if (command_packet.command == FsCommand::RESTART) {
+            Die("Restarting by command");
+            return;
         }
+
+        FsState prev_state = cur_state;
+
+        switch (command_packet.command) {
+            case FsCommand::STATE_CUSTOM:
+                cur_state = FsState::CUSTOM;
+                UpdateCustomRelayStates(command_packet);
+                break;
+            case FsCommand::STATE_ABORT:
+                cur_state = FsState::ABORT;
+                break;
+            case FsCommand::STATE_STANDBY:
+                cur_state = FsState::STANDBY;
+                break;
+            case FsCommand::STATE_GN2_STANDBY:
+                cur_state = FsState::GN2_STANDBY;
+                break;
+            case FsCommand::STATE_GN2_FILL:
+                cur_state = FsState::GN2_FILL;
+                break;
+            case FsCommand::STATE_GN2_PULSE_FILL_A:
+                cur_state = FsState::GN2_PULSE_FILL_A;
+                break;
+            case FsCommand::STATE_GN2_PULSE_FILL_B:
+                cur_state = FsState::GN2_PULSE_FILL_B;
+                break;
+            case FsCommand::STATE_GN2_PULSE_FILL_C:
+                cur_state = FsState::GN2_PULSE_FILL_C;
+                break;
+            case FsCommand::STATE_FIRE:
+                cur_state = FsState::FIRE;
+                break;
+            case FsCommand::STATE_FIRE_MANUAL_DOME_PILOT_OPEN:
+                cur_state = FsState::FIRE_MANUAL_DOME_PILOT_OPEN;
+                break;
+            case FsCommand::STATE_FIRE_MANUAL_DOME_PILOT_CLOSE:
+                cur_state = FsState::FIRE_MANUAL_DOME_PILOT_CLOSE;
+                break;
+            case FsCommand::STATE_FIRE_MANUAL_IGNITER:
+                cur_state = FsState::FIRE_MANUAL_IGNITER;
+                break;
+            case FsCommand::STATE_FIRE_MANUAL_RUN:
+                cur_state = FsState::FIRE_MANUAL_RUN;
+                break;
+            default:
+                // ignore commands we don't want to handle
+                break;
+        }
+
+        enter_state_ms = millis();
+
+        if (ShouldPulsePilotVent(cur_state) &&
+            !ShouldPulsePilotVent(prev_state)) {
+            enter_pilot_vent_pulse_ms = millis();
+        }
+
+        Serial.print("Entered state: ");
+        Serial.println(static_cast<int>(cur_state));
+    }
+
+    void TransitionStates() {
+        MS time_in_state = millis() - enter_state_ms;
+
+        if (cur_state == FsState::GN2_PULSE_FILL_A &&
+            time_in_state >= kFillAPulseDurationMs) {
+            cur_state = FsState::GN2_STANDBY;
+        }
+        if (cur_state == FsState::GN2_PULSE_FILL_B &&
+            time_in_state >= kFillBPulseDurationMs) {
+            cur_state = FsState::GN2_STANDBY;
+        }
+        if (cur_state == FsState::GN2_PULSE_FILL_C &&
+            time_in_state >= kFillCPulseDurationMs) {
+            cur_state = FsState::GN2_STANDBY;
+        }
+    }
+
+    void UpdateRelayStates() {
+        // reset all relay states
+        relay_states = RelayStates();
+
+        // set all relays except for the pilot vent
+
+        MS time_in_state = millis() - enter_state_ms;
+
+        MS gn2_fill_period = kGN2FillOpenDurationMs + kGN2FillClosedDurationMs;
+        MS time_in_gn2_fill_period = time_in_state % gn2_fill_period;
+
+        switch (cur_state) {
+            case FsState::CUSTOM:
+                // this function won't be called in the CUSTOM state
+                break;
+            case FsState::ABORT:
+                relay_states.gn2_abort = true;
+                relay_states.pilot_vent = true;
+                break;
+            case FsState::STANDBY:
+            case FsState::GN2_STANDBY:
+                // no relays to set
+                break;
+            case FsState::GN2_FILL:
+                relay_states.gn2_fill =
+                    time_in_gn2_fill_period < kGN2FillOpenDurationMs;
+                break;
+            case FsState::GN2_PULSE_FILL_A:
+            case FsState::GN2_PULSE_FILL_B:
+            case FsState::GN2_PULSE_FILL_C:
+                relay_states.gn2_fill = true;
+                break;
+            case FsState::FIRE:
+                if (time_in_state < kFireDomePilotCloseDelayMs) {
+                    relay_states.dome_pilot_open = true;
+                } else if (time_in_state < kFireDomePilotIgniterOnDelayMs) {
+                    // do nothing; dome pilot is closed
+                } else if (time_in_state < kFireDomePilotIgniterOffDelayMs) {
+                    relay_states.igniter = true;
+                } else if (time_in_state < kFireDomePilotRunOpenDelayMs) {
+                    // do nothing; igniter is off
+                } else if (time_in_state < kFireDomePilotRunCloseDelayMs) {
+                    relay_states.run = true;
+                } else {
+                    // do nothing; run is off
+                }
+                break;
+            case FsState::FIRE_MANUAL_DOME_PILOT_OPEN:
+                relay_states.dome_pilot_open = true;
+                break;
+            case FsState::FIRE_MANUAL_DOME_PILOT_CLOSE:
+                relay_states.dome_pilot_open = false;
+                break;
+            case FsState::FIRE_MANUAL_IGNITER:
+                relay_states.igniter = true;
+                break;
+            case FsState::FIRE_MANUAL_RUN:
+                relay_states.run = true;
+                break;
+        }
+
+        // set the pilot vent
+
+        if (ShouldPulsePilotVent(cur_state)) {
+            MS pulse_pilot_period =
+                kPilotValveOpenDurationMs + kPilotValveClosedDurationMs;
+            MS time_in_pulse_pilot_period =
+                (millis() - enter_pilot_vent_pulse_ms) % pulse_pilot_period;
+
+            relay_states.pilot_vent =
+                time_in_pulse_pilot_period < kPilotValveOpenDurationMs;
+        }
+    }
+
+    void UpdateCustomRelayStates(FsCommandPacket command_packet) {
+        relay_states.gn2_abort = command_packet.gn2_abort;
+        relay_states.gn2_fill = command_packet.gn2_fill;
+        relay_states.pilot_vent = command_packet.pilot_vent;
+        relay_states.dome_pilot_open = command_packet.dome_pilot_open;
+        relay_states.run = command_packet.run;
+        relay_states.water_suppression = command_packet.water_suppression;
+        relay_states.igniter = command_packet.igniter;
+    }
+
+    void FlushRelays() {
+        FlushRelay(RelayPin::GN2_ABORT, relay_states.gn2_abort);
+        FlushRelay(RelayPin::GN2_FILL, relay_states.gn2_fill);
+        FlushRelay(RelayPin::PILOT_VENT, relay_states.pilot_vent);
+        FlushRelay(RelayPin::DOME_PILOT_OPEN, relay_states.dome_pilot_open);
+        FlushRelay(RelayPin::RUN, relay_states.run);
+        FlushRelay(RelayPin::WATER_SUPPRESSION, relay_states.water_suppression);
+        FlushRelay(RelayPin::IGNITER, relay_states.igniter);
+    }
+
+    void SetPinToOutput(RelayPin pin) {
+        pinMode(static_cast<int>(pin), OUTPUT);
+    }
+
+    void FlushRelay(RelayPin pin, bool state) {
+        digitalWrite(static_cast<int>(pin), state ? HIGH : LOW);
     }
 };
 
