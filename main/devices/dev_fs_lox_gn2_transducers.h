@@ -50,9 +50,13 @@ class DevFsLoxGn2Transducers : public Device {
         // delay(500);
 
         FsCommandPacket command_packet;
-        if (Receive(&command_packet) == 0 &&
-            command_packet.command == FsCommand::RECALIBRATE_TRANSDUCERS) {
-            Recalibrate();
+        if (Receive(&command_packet) == 0) {
+            if (command_packet.command == FsCommand::RESTART) {
+                Die("Restarting by command");
+            }
+            if (command_packet.command == FsCommand::RECALIBRATE_TRANSDUCERS) {
+                Recalibrate();
+            }
         }
     }
 

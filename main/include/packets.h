@@ -24,6 +24,7 @@ enum class FsCommand : uint8_t {
     STATE_FIRE_MANUAL_IGNITER = 23,
     STATE_FIRE_MANUAL_RUN = 24,
     RECALIBRATE_TRANSDUCERS = 100,
+    RESTART = 110,
 };
 
 // size: 9 bytes
