@@ -19,8 +19,11 @@ class DevFsPiPacketBroadcaster : public Device {
         if (size == sizeof(FsCommandPacket)) {
             FsCommandPacket* command_packet = (FsCommandPacket*)buffer;
 
+            // relays has the highest priority
             Send(DeviceType::DevFsRelays, *command_packet);
+            delay(kSendWaitMs);
             Send(DeviceType::DevFsInjectorTransducers, *command_packet);
+            delay(kSendWaitMs);
             Send(DeviceType::DevFsLoxGn2Transducers, *command_packet);
         } else {
             Serial.println("Unknown packet from Raspberry Pi");
@@ -28,6 +31,9 @@ class DevFsPiPacketBroadcaster : public Device {
     }
 
    private:
+    // time to allow Send() to complete
+    static const int kSendWaitMs = 500;
+
     static const int kPiSerialRxPin = 40;
     static const int kPiSerialTxPin = 39;
 

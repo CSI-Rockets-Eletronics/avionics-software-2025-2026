@@ -55,8 +55,6 @@ class DevFsLoxGn2Transducers : public Device {
         switch (Receive(&command_packet, &state_packet)) {
             case 0:
                 if (command_packet.command == FsCommand::RESTART) {
-                    // allow time to forward the RESTART command to other nodes
-                    delay(1000);
                     Die("Restarting by command");
                 }
                 if (command_packet.command ==
