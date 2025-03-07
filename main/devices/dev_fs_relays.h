@@ -277,6 +277,7 @@ class DevFsRelays : public Device {
 
     void SendState() {
         FsStatePacket state_packet{
+            .ms_since_boot = millis(),
             .state = cur_state,
             .gn2_abort = relay_states.gn2_abort,
             .gn2_fill = relay_states.gn2_fill,

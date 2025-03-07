@@ -27,7 +27,7 @@ enum class FsCommand : uint8_t {
     RESTART = 110,
 };
 
-// size: 9 bytes
+// size: 8 bytes
 struct FsCommandPacket {
     FsCommand command;  // 1 byte
 
@@ -39,8 +39,6 @@ struct FsCommandPacket {
     bool run;                // 1 byte
     bool water_suppression;  // 1 byte
     bool igniter;            // 1 byte
-
-    uint8_t _dummy;  // 1 byte
 };
 
 #define FROM_FS_COMMAND(COMMAND) COMMAND = (uint8_t)FsCommand::STATE_##COMMAND
@@ -64,8 +62,9 @@ enum class FsState : uint8_t {
     FROM_FS_COMMAND(FIRE_MANUAL_RUN),
 };
 
-// size: 8 bytes
+// size: 12 bytes
 struct FsStatePacket {
+    uint32_t ms_since_boot;  // 4 bytes
     FsState state;           // 1 byte
     bool gn2_abort;          // 1 byte
     bool gn2_fill;           // 1 byte
