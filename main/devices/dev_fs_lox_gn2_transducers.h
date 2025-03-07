@@ -18,10 +18,7 @@ class DevFsLoxGn2Transducers : public Device {
         Serial2.begin(kPiSerialBaud, SERIAL_8N1, kPiSerialRxPin,
                       kPiSerialTxPin);
 
-        lox_upper.Recalibrate(kCalibrateSamples);
-        lox_lower.Recalibrate(kCalibrateSamples);
-        gn2_manifold_1.Recalibrate(kCalibrateSamples);
-        gn2_manifold_2.Recalibrate(kCalibrateSamples);
+        Recalibrate();
     }
 
     void Loop() override {
@@ -51,6 +48,19 @@ class DevFsLoxGn2Transducers : public Device {
         // gn2_manifold_2.PrintLatestPsi();
 
         // delay(500);
+
+        FsCommandPacket command_packet;
+        if (Receive(&command_packet) == 0 &&
+            command_packet.command == FsCommand::RECALIBRATE_TRANSDUCERS) {
+            Recalibrate();
+        }
+    }
+
+    void Recalibrate() {
+        lox_upper.Recalibrate(kCalibrateSamples);
+        lox_lower.Recalibrate(kCalibrateSamples);
+        gn2_manifold_1.Recalibrate(kCalibrateSamples);
+        gn2_manifold_2.Recalibrate(kCalibrateSamples);
     }
 
     template <typename T>

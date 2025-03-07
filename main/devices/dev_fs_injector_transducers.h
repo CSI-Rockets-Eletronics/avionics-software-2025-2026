@@ -14,8 +14,7 @@ class DevFsInjectorTransducers : public Device {
         Serial1.begin(kOtherEsp32SerialBaud, SERIAL_8N1, kOtherEsp32SerialRxPin,
                       kOtherEsp32SerialTxPin);
 
-        injector_manifold_1.Recalibrate(kCalibrateSamples);
-        injector_manifold_2.Recalibrate(kCalibrateSamples);
+        Recalibrate();
     }
 
     void Loop() override {
@@ -42,6 +41,17 @@ class DevFsInjectorTransducers : public Device {
         // injector_manifold_2.PrintLatestPsi();
 
         // delay(500);
+
+        FsCommandPacket command_packet;
+        if (Receive(&command_packet) == 0 &&
+            command_packet.command == FsCommand::RECALIBRATE_TRANSDUCERS) {
+            Recalibrate();
+        }
+    }
+
+    void Recalibrate() {
+        injector_manifold_1.Recalibrate(kCalibrateSamples);
+        injector_manifold_2.Recalibrate(kCalibrateSamples);
     }
 
     template <typename T>
