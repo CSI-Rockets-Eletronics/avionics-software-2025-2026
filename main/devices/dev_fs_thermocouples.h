@@ -8,29 +8,32 @@ using namespace avionics;
 class DevFsThermocouples : public Device {
    private:
     static const int kClkPin = 37;
-    static const int kCsPin = 13;
     static const int kMisoPin = 39;
 
-    Adafruit_MAX31855 thermocouple{kClkPin, kCsPin, kMisoPin};
+    static const int kCs4Pin = 13;
+    static const int kCs5Pin = 12;
+
+    Adafruit_MAX31855 tc4{kClkPin, kCs4Pin, kMisoPin};
+    Adafruit_MAX31855 tc5{kClkPin, kCs5Pin, kMisoPin};
 
    public:
     void Setup() override {
-        if (!thermocouple.begin()) {
-            Die("MAX31855 init failed");
-        }
+        if (!tc4.begin()) Die("tc4 MAX31855 init failed");
+        if (!tc5.begin()) Die("tc5 MAX31855 init failed");
     }
 
     void Loop() override {
-        double celsius = thermocouple.readCelsius();
+        double tc4_celsius = tc4.readCelsius();
+        double tc5_celsius = tc5.readCelsius();
 
-        if (isnan(celsius)) {
-            HandleFault();
-        }
+        if (isnan(tc4_celsius)) HandleFault(tc4, "tc4");
+        if (isnan(tc5_celsius)) HandleFault(tc5, "tc5");
 
         FsThermocouplesPacket thermo_packet{
             .ts = micros(),
-            .lox_celsius = (float)celsius,  // pass NaN if fault
-            .gn2_celsius = 0,               // TODO
+            // if there are faults, values will be NaN
+            .lox_celsius = (float)tc4_celsius,
+            .gn2_celsius = (float)tc5_celsius,
             ._dummy = 0,
         };
         Send(DeviceType::DevFsInjectorTransducers, thermo_packet);
@@ -38,9 +41,12 @@ class DevFsThermocouples : public Device {
         delay(1000);
     }
 
-    void HandleFault() {
-        Serial.println("Thermocouple fault(s) detected!");
-        uint8_t error = thermocouple.readError();
+    void HandleFault(Adafruit_MAX31855 &tc, const char *label) {
+        Serial.print(label);
+        Serial.println(": Thermocouple fault(s) detected!");
+
+        uint8_t error = tc.readError();
+
         if (error & MAX31855_FAULT_OPEN)
             Serial.println("FAULT: Thermocouple is open - no connections.");
         if (error & MAX31855_FAULT_SHORT_GND)
