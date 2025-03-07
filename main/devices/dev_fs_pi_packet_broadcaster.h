@@ -22,6 +22,7 @@ class DevFsPiPacketBroadcaster : public Device {
             // relays has the highest priority
             Send(DeviceType::DevFsRelays, *command_packet);
             delay(kSendWaitMs);
+            // TODO bug: not sending to FsScientific2
             Send(DeviceType::DevFsInjectorTransducers, *command_packet);
             delay(kSendWaitMs);
             Send(DeviceType::DevFsLoxGn2Transducers, *command_packet);
