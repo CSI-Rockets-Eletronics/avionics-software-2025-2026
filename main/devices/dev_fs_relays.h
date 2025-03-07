@@ -35,8 +35,8 @@ class DevFsRelays : public Device {
     const MS kGN2FillClosedDurationMs = 5000;
 
     const MS kFillAPulseDurationMs = 1000;
-    const MS kFillBPulseDurationMs = 2000;
-    const MS kFillCPulseDurationMs = 3000;
+    const MS kFillBPulseDurationMs = 5000;
+    const MS kFillCPulseDurationMs = 10000;
 
     // dome pilot opens at T-30s
     const MS kFireDomePilotCloseDelayMs = 5000;        // T-25s
