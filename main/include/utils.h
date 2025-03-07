@@ -39,6 +39,44 @@ class FrequencyLogger {
     unsigned long tick_count;
 };
 
+class SerialPacketReader {
+   public:
+    SerialPacketReader(HardwareSerial& serial,
+                       std::function<void(uint8_t*, size_t)> packet_handler)
+        : serial(serial), packet_handler(packet_handler) {}
+
+    void Tick() {
+        while (serial.available()) {
+            // if write would overflow, clear the buffer
+            if (bufferIndex >= kMaxPacketSize) {
+                bufferIndex = 0;
+            }
+
+            buffer[bufferIndex] = serial.read();
+            bufferIndex++;
+            // here, bufferIndex is at most kMaxPacketSize
+        }
+
+        if (bufferIndex >= 2 && buffer[bufferIndex - 2] == kPacketDelimeter1 &&
+            buffer[bufferIndex - 1] == kPacketDelimeter2) {
+            packet_handler(buffer, bufferIndex - 2);  // excludes the delimeters
+            bufferIndex = 0;
+        }
+    }
+
+   private:
+    static const size_t kMaxPacketSize = 256;
+
+    static const uint8_t kPacketDelimeter1 = 0b10101010;
+    static const uint8_t kPacketDelimeter2 = 0b01010101;
+
+    HardwareSerial& serial;
+    std::function<void(uint8_t*, size_t)> packet_handler;
+
+    uint8_t buffer[kMaxPacketSize];
+    size_t bufferIndex = 0;  // also equals the number of bytes in the buffer
+};
+
 class SerialForwarder {
    public:
     SerialForwarder(std::string label, HardwareSerial& from, HardwareSerial& to)

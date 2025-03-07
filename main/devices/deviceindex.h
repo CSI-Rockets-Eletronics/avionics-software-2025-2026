@@ -1,6 +1,7 @@
 #include "dev_dht.h"
 #include "dev_fs_injector_transducers.h"
 #include "dev_fs_lox_gn2_transducers.h"
+#include "dev_fs_pi_packet_broadcaster.h"
 #include "dev_fs_relays.h"
 #include "dev_fs_thermocouples.h"
 #include "dev_gps.h"

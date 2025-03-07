@@ -8,7 +8,10 @@ namespace avionics {
 static Node fs_scientific1{
     "FsScientific1",
     MacAddress{"f4:12:fa:83:de:cc"},
-    {DeviceType::DevFsLoxGn2Transducers},
+    {
+        DeviceType::DevFsLoxGn2Transducers,
+        DeviceType::DevFsPiPacketBroadcaster,
+    },
 };
 
 static Node fs_scientific2{
