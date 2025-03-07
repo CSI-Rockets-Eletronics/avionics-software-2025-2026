@@ -34,8 +34,8 @@ class DevFsThermocouples : public Device {
         FsThermocouplesPacket thermo_packet{
             .ts = micros(),
             // if there are faults, values will be NaN
-            .lox_celsius = (float)tc4_celsius,
-            .gn2_celsius = (float)tc5_celsius,
+            .lox_celsius = CoalesceNaN(tc4_celsius),
+            .gn2_celsius = CoalesceNaN(tc5_celsius),
             ._dummy = 0,
         };
         Send(DeviceType::DevFsInjectorTransducers, thermo_packet);
@@ -67,6 +67,11 @@ class DevFsThermocouples : public Device {
             Serial.println("FAULT: Thermocouple is short-circuited to GND.");
         if (error & MAX31855_FAULT_SHORT_VCC)
             Serial.println("FAULT: Thermocouple is short-circuited to VCC.");
+    }
+
+    // JSON doesn't allow NaN; also convert double to float
+    float CoalesceNaN(double value) {
+        return isnan(value) ? 0.0f : (float)value;
     }
 };
 
