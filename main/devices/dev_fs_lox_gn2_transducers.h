@@ -123,7 +123,7 @@ class DevFsLoxGn2Transducers : public Device {
     MovingMedianADC<Adafruit_ADS1115> lox_upper{
         "lox_upper", i2c0,     ADCAddress::GND, ADCMode::SingleEnded_0,
         kRate,       GAIN_ONE, kContinuous,     kWindowSize,
-        400.0,
+        364.0,
     };
 
     // https://kulite.com//assets/media/2017/06/CTL-190.pdf; with AD620
