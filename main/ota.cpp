@@ -14,8 +14,8 @@ static const int kWifiTimeoutMs = 5000;
 // give up if a request takes longer than this
 static const int kHttpTimeoutMs = 10000;
 
-static const char *kWifiSsid = "Darknet";
-static const char *kWifiPassword = "Blueberries";
+static const char *kWifiSsid = "Columbia University";
+static const char *kWifiPassword = nullptr;
 
 static const char *kHost = "csiwiki.me.columbia.edu";
 static const int kPort = 4009;
