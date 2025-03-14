@@ -22,3 +22,6 @@
 [submodule "components/Adafruit-MAX31855-library/Adafruit-MAX31855-library"]
 	path = components/Adafruit-MAX31855-library/Adafruit-MAX31855-library
 	url = https://github.com/adafruit/Adafruit-MAX31855-library.git
+[submodule "components/Adafruit_MAX31856/Adafruit_MAX31856"]
+	path = components/Adafruit_MAX31856/Adafruit_MAX31856
+	url = https://github.com/adafruit/Adafruit_MAX31856
