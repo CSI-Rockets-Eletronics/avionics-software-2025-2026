@@ -140,7 +140,7 @@ class DevFsLoxGn2Transducers : public Device {
         ADCAddress::VIN,
         ADCMode::SingleEnded_1,
         kRate,
-        GAIN_ONE,  // 10k PSI = 4.5V; we read up to 5k PSI
+        GAIN_TWOTHIRDS,  // 10k PSI = 4.5V; we read up to 5k PSI
         kContinuous,
         kWindowSize,
         1260.0,
@@ -153,7 +153,7 @@ class DevFsLoxGn2Transducers : public Device {
         ADCAddress::VIN,
         ADCMode::SingleEnded_1,
         kRate,
-        GAIN_ONE,  // 10k PSI = 4.5V; we read up to 5k PSI
+        GAIN_TWOTHIRDS,  // 10k PSI = 4.5V; we read up to 5k PSI
         kContinuous,
         kWindowSize,
         1260.0,
