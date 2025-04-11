@@ -23,7 +23,7 @@ class DevFsThermocouples : public Device {
    public:
     void Setup() override {
         if (!tc3.begin()) Die("tc3 init failed");
-        tc3.setThermocoupleType(MAX31856_TCTYPE_T);
+        tc3.setThermocoupleType(MAX31856_TCTYPE_K);
 
         if (!tc4.begin()) Die("tc4 init failed");
         // if (!tc5.begin()) Die("tc5 init failed");
