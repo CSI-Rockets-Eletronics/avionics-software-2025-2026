@@ -45,6 +45,10 @@ class DevFsRelays : public Device {
     const MS kFireDomePilotRunOpenDelayMs = 30000;     // T-0s
     const MS kFireDomePilotRunCloseDelayMs = 40000;    // T+10s
 
+    // safety to make sure we don't hold open solenoids for too long
+    // in the CUSTOM state
+    const MS kMaxCustomOpenDurationMs = 45000;  // 45s
+
     FsState cur_state = FsState::STANDBY;
 
     // time of entering the current state
@@ -170,6 +174,11 @@ class DevFsRelays : public Device {
         if (cur_state == FsState::GN2_PULSE_FILL_C &&
             time_in_state >= kFillCPulseDurationMs) {
             cur_state = FsState::GN2_STANDBY;
+        }
+
+        if (cur_state == FsState::CUSTOM &&
+            time_in_state >= kMaxCustomOpenDurationMs) {
+            cur_state = FsState::STANDBY;
         }
     }
 
