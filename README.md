@@ -24,3 +24,13 @@ Then, generate ssh key if needed: `ssh-keygen -t ed25519 -C "your_email@example.
 Now, copy it to the remote: `ssh-copy-id -i ~/.ssh/id_ed25519.pub csiwiki`
 
 Next, idf.py must be activated. Typically, you should be able to just run `source activate`. If the envrionment remains the same, you need to run `source ~/.espressif/python_env/idf5.1_py3.9_env/bin/activate` instead. Finally, run `./deploy_ota.sh `.
+
+## Ignoring Local VS Code Settings
+
+The `.vscode/settings.json` file often contains computer-specific settings, such as the ESP COM port, which are automatically updated by the C++ and Espressif IDF extensions. To prevent these local changes from appearing as unstaged changes in git, you can tell git to ignore modifications to this file using:
+
+```
+git update-index --skip-worktree .vscode/settings.json
+```
+
+This will keep your local settings out of version control while still allowing the file to exist in the repository for others.
