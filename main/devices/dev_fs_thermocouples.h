@@ -107,7 +107,7 @@ class DevFsThermocouples : public Device {
             Serial.println("Over/Under Voltage Fault");
         if (fault & MAX31856_FAULT_OPEN)
             Serial.println("Thermocouple Open Fault");
-    }
+    } 
 
     // JSON doesn't allow NaN; also convert double to float
     float CoalesceNaN(double value) {

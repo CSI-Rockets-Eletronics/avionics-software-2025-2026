@@ -10,6 +10,7 @@ enum class RelayPin : int {
     PILOT_VENT = 6,
     DOME_PILOT_OPEN = 8,
     RUN = 18,
+    FIVE_TWO = 99,
     WATER_SUPPRESSION = 16,
     IGNITER = 17,
 };
@@ -20,6 +21,7 @@ struct RelayStates {
     bool pilot_vent = false;
     bool dome_pilot_open = false;
     bool run = false;
+    bool five_two = false;
     bool water_suppression = false;
     bool igniter = false;
 };
@@ -65,6 +67,7 @@ class DevFsRelays : public Device {
         SetPinToOutput(RelayPin::PILOT_VENT);
         SetPinToOutput(RelayPin::DOME_PILOT_OPEN);
         SetPinToOutput(RelayPin::RUN);
+        SetPinToOutput(RelayPin::FIVE_TWO);
         SetPinToOutput(RelayPin::WATER_SUPPRESSION);
         SetPinToOutput(RelayPin::IGNITER);
     }
@@ -225,6 +228,7 @@ class DevFsRelays : public Device {
                     // do nothing; igniter is off
                 } else if (time_in_state < kFireDomePilotRunCloseDelayMs) {
                     relay_states.run = true;
+                    relay_states.five_two = true;
                 } else {
                     // do nothing; run is off
                 }
@@ -240,6 +244,7 @@ class DevFsRelays : public Device {
                 break;
             case FsState::FIRE_MANUAL_RUN:
                 relay_states.run = true;
+                relay_states.five_two = true;
                 break;
         }
 
@@ -262,6 +267,7 @@ class DevFsRelays : public Device {
         relay_states.pilot_vent = command_packet.pilot_vent;
         relay_states.dome_pilot_open = command_packet.dome_pilot_open;
         relay_states.run = command_packet.run;
+        relay_states.five_two = command_packet.five_two;
         relay_states.water_suppression = command_packet.water_suppression;
         relay_states.igniter = command_packet.igniter;
     }
@@ -272,6 +278,7 @@ class DevFsRelays : public Device {
         FlushRelay(RelayPin::PILOT_VENT, relay_states.pilot_vent);
         FlushRelay(RelayPin::DOME_PILOT_OPEN, relay_states.dome_pilot_open);
         FlushRelay(RelayPin::RUN, relay_states.run);
+        FlushRelay(RelayPin::FIVE_TWO, relay_states.five_two);
         FlushRelay(RelayPin::WATER_SUPPRESSION, relay_states.water_suppression);
         FlushRelay(RelayPin::IGNITER, relay_states.igniter);
     }
@@ -293,6 +300,7 @@ class DevFsRelays : public Device {
             .pilot_vent = relay_states.pilot_vent,
             .dome_pilot_open = relay_states.dome_pilot_open,
             .run = relay_states.run,
+            .five_two = relay_states.five_two,
             .water_suppression = relay_states.water_suppression,
             .igniter = relay_states.igniter,
         };
