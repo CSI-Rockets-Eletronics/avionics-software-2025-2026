@@ -10,7 +10,7 @@ enum class RelayPin : int {
     PILOT_VENT = 6,
     DOME_PILOT_OPEN = 8,
     RUN = 18,
-    FIVE_TWO = 99,
+    FIVE_TWO = 2,
     WATER_SUPPRESSION = 16,
     IGNITER = 17,
 };
