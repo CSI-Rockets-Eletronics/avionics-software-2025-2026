@@ -81,7 +81,7 @@ struct FsStatePacket {
 struct FsLoxGn2TransducersPacket {
     uint64_t ts;           // 8 bytes
     float lox_upper;       // 4 bytes
-    float lox_lower;       // 4 bytes
+    float chamber;         // 4 bytes
     float gn2_manifold_1;  // 4 bytes
     float gn2_manifold_2;  // 4 bytes
 };

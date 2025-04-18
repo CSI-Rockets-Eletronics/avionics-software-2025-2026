@@ -23,7 +23,7 @@ class DevFsLoxGn2Transducers : public Device {
 
     void Loop() override {
         lox_upper.Tick();
-        lox_lower.Tick();
+        chamber.Tick();
         gn2_manifold_1.Tick();
         gn2_manifold_2.Tick();
 
@@ -31,7 +31,7 @@ class DevFsLoxGn2Transducers : public Device {
         FsLoxGn2TransducersPacket fs_transducers_packet{
             .ts = micros(),
             .lox_upper = lox_upper.GetLatestPsi(),
-            .lox_lower = lox_lower.GetLatestPsi(),
+            .chamber = chamber.GetLatestPsi(),
             .gn2_manifold_1 = gn2_manifold_1.GetLatestPsi(),
             .gn2_manifold_2 = gn2_manifold_2.GetLatestPsi(),
         };
@@ -43,7 +43,7 @@ class DevFsLoxGn2Transducers : public Device {
         serial_forwarder.Tick();
 
         // lox_upper.PrintLatestPsi();
-        // lox_lower.PrintLatestPsi();
+        // chamber.PrintLatestPsi();
         // gn2_manifold_1.PrintLatestPsi();
         // gn2_manifold_2.PrintLatestPsi();
 
@@ -70,7 +70,7 @@ class DevFsLoxGn2Transducers : public Device {
 
     void Recalibrate() {
         lox_upper.Recalibrate(kCalibrateSamples);
-        lox_lower.Recalibrate(kCalibrateSamples);
+        chamber.Recalibrate(kCalibrateSamples);
         gn2_manifold_1.Recalibrate(kCalibrateSamples);
         gn2_manifold_2.Recalibrate(kCalibrateSamples);
     }
@@ -127,10 +127,10 @@ class DevFsLoxGn2Transducers : public Device {
     };
 
     // https://kulite.com//assets/media/2017/06/CTL-190.pdf; with AD620
-    MovingMedianADC<Adafruit_ADS1115> lox_lower{
-        "lox_lower", i2c1,     ADCAddress::GND, ADCMode::SingleEnded_0,
-        kRate,       GAIN_ONE, kContinuous,     kWindowSize,
-        1.0,  // TODO calibrate
+    MovingMedianADC<Adafruit_ADS1115> chamber{
+        "chamber", i2c1,     ADCAddress::GND, ADCMode::SingleEnded_0,
+        kRate,     GAIN_ONE, kContinuous,     kWindowSize,
+        363.0,
     };
 
     // https://www.dataq.com/resources/pdfs/datasheets/WNK81MA.pdf
