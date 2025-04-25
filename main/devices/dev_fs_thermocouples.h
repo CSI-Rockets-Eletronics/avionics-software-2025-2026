@@ -9,14 +9,16 @@ using namespace avionics;
 class DevFsThermocouples : public Device {
    private:
     static const int kClkPin = 37;
-    static const int kMosiPin = 40;  // TODO
+    static const int kMosiPin = 40;
     static const int kMisoPin = 39;
 
-    static const int kCs3Pin = 14;  // TODO
+    static const int kCs3Pin = 14;
     static const int kCs4Pin = 13;
+    static const int kCs5Pin = 12;
 
     Adafruit_MAX31856 tc3{kCs3Pin, kMosiPin, kMisoPin, kClkPin};
-    Adafruit_MAX31855 tc4{kClkPin, kCs4Pin, kMisoPin};
+    // Adafruit_MAX31855 tc4{kClkPin, kCs4Pin, kMisoPin};
+    Adafruit_MAX31856 tc5{kCs5Pin, kMosiPin, kMisoPin, kClkPin};
 
     utils::FrequencyLogger thermocouples_freq_logger{"Thermocouples"};
 
@@ -25,26 +27,28 @@ class DevFsThermocouples : public Device {
         if (!tc3.begin()) Die("tc3 init failed");
         tc3.setThermocoupleType(MAX31856_TCTYPE_K);
 
-        if (!tc4.begin()) Die("tc4 init failed");
-        // if (!tc5.begin()) Die("tc5 init failed");
+        // if (!tc4.begin()) Die("tc4 init failed");
+
+        if (!tc5.begin()) Die("tc5 init failed");
+        tc5.setThermocoupleType(MAX31856_TCTYPE_K);
     }
 
     void Loop() override {
         double tc3_celsius = tc3.readThermocoupleTemperature();
-        double tc4_celsius = tc4.readCelsius();
-        // double tc5_celsius = tc5.readCelsius();
+        // double tc4_celsius = tc4.readCelsius();
+        double tc5_celsius = tc5.readThermocoupleTemperature();
 
         Handle31856Fault("tc3", tc3, tc3_celsius);
-        Handle31855Fault("tc4", tc4, tc4_celsius);
-        // Handle31855Fault("tc5", tc5, tc5_celsius);
+        // Handle31855Fault("tc4", tc4, tc4_celsius);
+        Handle31856Fault("tc5", tc5, tc5_celsius);
 
         FsThermocouplesPacket thermo_packet{
             .ts = micros(),
             // if there are faults, values will be NaN
-            .lox_celsius = CoalesceNaN(tc4_celsius),
-            // .gn2_celsius = CoalesceNaN(tc5_celsius),
+            // .lox_celsius = CoalesceNaN(tc4_celsius),
+            .lox_celsius = 0,
             .gn2_celsius = CoalesceNaN(tc3_celsius),
-            ._dummy = 0,
+            .gn2_surface_celsius = CoalesceNaN(tc5_celsius),
         };
         Send(DeviceType::DevFsInjectorTransducers, thermo_packet);
 
@@ -107,7 +111,7 @@ class DevFsThermocouples : public Device {
             Serial.println("Over/Under Voltage Fault");
         if (fault & MAX31856_FAULT_OPEN)
             Serial.println("Thermocouple Open Fault");
-    } 
+    }
 
     // JSON doesn't allow NaN; also convert double to float
     float CoalesceNaN(double value) {

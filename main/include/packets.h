@@ -93,12 +93,12 @@ struct FsInjectorTransducersPacket {
     float injector_manifold_2;  // 4 bytes
 };
 
-// size: 17 bytes
+// size: 20 bytes
 struct FsThermocouplesPacket {
-    uint64_t ts;        // 8 bytes
-    float lox_celsius;  // 4 bytes
-    float gn2_celsius;  // 4 bytes
-    uint8_t _dummy;     // 1 byte
+    uint64_t ts;                // 8 bytes
+    float lox_celsius;          // 4 bytes
+    float gn2_celsius;          // 4 bytes
+    float gn2_surface_celsius;  // 4 bytes
 };
 
 // ===== AVIONICS PACKETS =====
