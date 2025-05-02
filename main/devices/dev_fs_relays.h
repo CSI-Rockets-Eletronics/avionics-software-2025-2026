@@ -40,12 +40,11 @@ class DevFsRelays : public Device {
     const MS kFillBPulseDurationMs = 5000;
     const MS kFillCPulseDurationMs = 10000;
 
-    // dome pilot opens at T-30s
-    const MS kFireDomePilotCloseDelayMs = 5000;        // T-25s
-    const MS kFireDomePilotIgniterOnDelayMs = 23000;   // T-7s
-    const MS kFireDomePilotIgniterOffDelayMs = 29000;  // T-1s
-    const MS kFireDomePilotRunOpenDelayMs = 30000;     // T-0s
-    const MS kFireDomePilotRunCloseDelayMs = 40000;    // T+10s
+    // igniter turns on at t-7s
+    const MS kFireIgniterOffDelayMs = 3500;      // T-3.5s
+    const MS kFireDomePilotOpenDelayMs = 4000;   // T-3s
+    const MS kFireRunOpenDelayMs = 7000;         // T-0s
+    const MS kFireBackToStandbyDelayMs = 17000;  // T+10s
 
     // safety to make sure we don't hold open solenoids for too long
     // in the CUSTOM state
@@ -179,6 +178,11 @@ class DevFsRelays : public Device {
             cur_state = FsState::GN2_STANDBY;
         }
 
+        if (cur_state == FsState::FIRE &&
+            time_in_state >= kFireBackToStandbyDelayMs) {
+            cur_state = FsState::STANDBY;
+        }
+
         if (cur_state == FsState::CUSTOM &&
             time_in_state >= kMaxCustomOpenDurationMs) {
             cur_state = FsState::STANDBY;
@@ -218,19 +222,16 @@ class DevFsRelays : public Device {
                 relay_states.gn2_fill = true;
                 break;
             case FsState::FIRE:
-                if (time_in_state < kFireDomePilotCloseDelayMs) {
-                    relay_states.dome_pilot_open = true;
-                } else if (time_in_state < kFireDomePilotIgniterOnDelayMs) {
-                    // do nothing; dome pilot is closed
-                } else if (time_in_state < kFireDomePilotIgniterOffDelayMs) {
+                if (time_in_state < kFireIgniterOffDelayMs) {
                     relay_states.igniter = true;
-                } else if (time_in_state < kFireDomePilotRunOpenDelayMs) {
+                } else if (time_in_state < kFireDomePilotOpenDelayMs) {
                     // do nothing; igniter is off
-                } else if (time_in_state < kFireDomePilotRunCloseDelayMs) {
+                } else if (time_in_state < kFireRunOpenDelayMs) {
+                    relay_states.dome_pilot_open = true;
+                } else if (time_in_state < kFireBackToStandbyDelayMs) {
+                    relay_states.dome_pilot_open = true;
                     relay_states.run = true;
                     relay_states.five_two = true;
-                } else {
-                    // do nothing; run is off
                 }
                 break;
             case FsState::FIRE_MANUAL_DOME_PILOT_OPEN:
