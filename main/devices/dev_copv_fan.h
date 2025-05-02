@@ -20,28 +20,31 @@ class DevCopvFan : public Device {
         Serial.begin(115200);
 
         servo.attach(kServoPin);
-        servo.writeMicroseconds(kPulseMax);  // Default to max
-        Serial.println("Ready for L/M/H commands");
+        phase = 0;
+        phaseStartMillis = millis();
+        servo.writeMicroseconds(kPulseMax);  // Start at high power
+        Serial.println("Phase 0: High power (5s)");
     }
 
     void Loop() override {
-        if (Serial.available()) {
-            char c = Serial.read();
-            if (c == 'L') {
-                servo.writeMicroseconds(kPulseMin);
-                Serial.println("Manual: L -> Min throttle");
-            } else if (c == 'M') {
-                servo.writeMicroseconds(kPulseMedium);
-                Serial.println("Manual: M -> Medium throttle");
-            } else if (c == 'H') {
-                servo.writeMicroseconds(kPulseMax);
-                Serial.println("Manual: H -> Max throttle");
-            }
+        unsigned long now = millis();
+        if (phase == 0 && now - phaseStartMillis >= 5000) {
+            servo.writeMicroseconds(kPulseMin);  // Switch to low power
+            phase = 1;
+            phaseStartMillis = now;
+            Serial.println("Phase 1: Low power (5s)");
+        } else if (phase == 1 && now - phaseStartMillis >= 5000) {
+            servo.writeMicroseconds(kPulseMedium);  // Switch to medium power
+            phase = 2;
+            Serial.println("Phase 2: Medium power (indefinite)");
         }
+        // phase 2: stay at medium power indefinitely
     }
 
    private:
     Servo servo;
+    int phase = 0;
+    unsigned long phaseStartMillis = 0;
 };
 
 REGISTER_AVIONICS_DEVICE(DevCopvFan);
