@@ -25,3 +25,6 @@
 [submodule "components/Adafruit_MAX31856/Adafruit_MAX31856"]
 	path = components/Adafruit_MAX31856/Adafruit_MAX31856
 	url = https://github.com/adafruit/Adafruit_MAX31856
+[submodule "components/ESP32Servo/ESP32Servo"]
+	path = components/ESP32Servo/ESP32Servo
+	url = https://github.com/madhephaestus/ESP32Servo.git
