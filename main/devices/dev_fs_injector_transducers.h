@@ -33,24 +33,27 @@ class DevFsInjectorTransducers : public Device {
         transducers_freq_logger.Tick();
 
         FsThermocouplesPacket thermo_packet;
-        if (Receive(&thermo_packet) == 0) {
-            SendToOtherEsp32(thermo_packet);
+        FsCommandPacket command_packet;
+
+        switch (Receive(&thermo_packet, &command_packet)) {
+            case 0:
+                SendToOtherEsp32(thermo_packet);
+                break;
+            case 1:
+                if (command_packet.command == FsCommand::RESTART) {
+                    Die("Restarting by command");
+                }
+                if (command_packet.command ==
+                    FsCommand::RECALIBRATE_TRANSDUCERS) {
+                    Recalibrate();
+                }
+                break;
         }
 
         // injector_manifold_1.PrintLatestPsi();
         // injector_manifold_2.PrintLatestPsi();
 
         // delay(500);
-
-        FsCommandPacket command_packet;
-        if (Receive(&command_packet) == 0) {
-            if (command_packet.command == FsCommand::RESTART) {
-                Die("Restarting by command");
-            }
-            if (command_packet.command == FsCommand::RECALIBRATE_TRANSDUCERS) {
-                Recalibrate();
-            }
-        }
     }
 
     void Recalibrate() {
