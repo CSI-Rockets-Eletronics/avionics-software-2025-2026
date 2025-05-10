@@ -40,11 +40,12 @@ class DevFsRelays : public Device {
     const MS kFillBPulseDurationMs = 5000;
     const MS kFillCPulseDurationMs = 10000;
 
-    // igniter turns on at t-7s
-    const MS kFireIgniterOffDelayMs = 3500;      // T-3.5s
-    const MS kFireDomePilotOpenDelayMs = 4000;   // T-3s
-    const MS kFireRunOpenDelayMs = 7000;         // T-0s
-    const MS kFireBackToStandbyDelayMs = 17000;  // T+10s
+    // dome pilot opens at T-15s
+    const MS kFireDomePilotCloseDelayMs = 5000;  // T-10s
+    const MS kFireIgniterOnDelayMs = 10000;      // T-5s
+    const MS kFireIgniterOffDelayMs = 13000;     // T-2s
+    const MS kFireRunOpenDelayMs = 15000;        // T-0s
+    const MS kFireBackToStandbyDelayMs = 25000;  // T+10s
 
     // safety to make sure we don't hold open solenoids for too long
     // in the CUSTOM state
@@ -222,16 +223,16 @@ class DevFsRelays : public Device {
                 relay_states.gn2_fill = true;
                 break;
             case FsState::FIRE:
-                if (time_in_state < kFireIgniterOffDelayMs) {
+                if (time_in_state < kFireDomePilotCloseDelayMs) {
+                    relay_states.dome_pilot_open = true;
+                } else if (time_in_state < kFireIgniterOnDelayMs) {
+                    // do nothing; dome pilot is closed
+                } else if (time_in_state < kFireIgniterOffDelayMs) {
                     relay_states.igniter = true;
-                } else if (time_in_state < kFireDomePilotOpenDelayMs) {
-                    // do nothing; igniter is off
                 } else if (time_in_state < kFireRunOpenDelayMs) {
-                    relay_states.dome_pilot_open = true;
-                } else if (time_in_state < kFireBackToStandbyDelayMs) {
-                    relay_states.dome_pilot_open = true;
+                    // do nothing; igniter is off
+                } else {
                     relay_states.run = true;
-                    relay_states.five_two = true;
                 }
                 break;
             case FsState::FIRE_MANUAL_DOME_PILOT_OPEN:
