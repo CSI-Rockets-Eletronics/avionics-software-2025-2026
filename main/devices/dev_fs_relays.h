@@ -2,7 +2,8 @@
 
 using namespace avionics;
 
-// Relay pins (left to right): 5, 1, 6, 7, 15, 16, 17, 18, 8, 2, 12, 9
+// Relay pins (top row, l to r): 6, 17, 8, 48, 39, 41
+// Relay pins (bottom row, l to r): 4, 15, 21, 47, 38, 40
 
 enum class RelayPin : int {
     GN2_ABORT = 5,
