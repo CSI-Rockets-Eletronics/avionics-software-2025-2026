@@ -28,3 +28,9 @@
 [submodule "components/ESP32Servo/ESP32Servo"]
 	path = components/ESP32Servo/ESP32Servo
 	url = https://github.com/madhephaestus/ESP32Servo.git
+[submodule "components/SparkFun_MCP9600_Arduino_Library"]
+	path = components/SparkFun_MCP9600_Arduino_Library
+	url = https://github.com/sparkfun/SparkFun_MCP9600_Arduino_Library.git
+[submodule "components/FDC2214"]
+	path = components/FDC2214
+	url = https://github.com/zharijs/FDC2214.git
