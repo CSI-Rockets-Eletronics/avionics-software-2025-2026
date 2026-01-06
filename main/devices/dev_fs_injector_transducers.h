@@ -7,7 +7,7 @@
 using namespace avionics;
 using namespace moving_median_adc;
 
-class DevFsInjectorTransducers : public Device {
+class Dev : public Device {
    public:
     void Setup() override {
         // for serial to other ESP32

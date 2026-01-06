@@ -37,12 +37,6 @@ static Node rocket_radio{
     {DeviceType::DevRocketRadio},
 };
 
-static Node copv_fan{
-    "CopvFan",
-    MacAddress{"34:85:18:a4:77:cc"},
-    {DeviceType::DevCopvFan},
-};
-
 static Node pos_tracking{
     "PosTracking",
     MacAddress{"34:85:18:a5:ef:24"},

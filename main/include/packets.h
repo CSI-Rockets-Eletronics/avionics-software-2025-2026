@@ -19,7 +19,7 @@ enum class FsCommand : uint8_t {
     STATE_GN2_PULSE_FILL_B = 12,
     STATE_GN2_PULSE_FILL_C = 13,
     STATE_FIRE = 20,
-    STATE_FIRE_MANUAL_DOME_PILOT_OPEN = 21,
+    STATE_FIRE_MANUAL_PRESS_PILOT = 21,
     STATE_FIRE_MANUAL_DOME_PILOT_CLOSE = 22,
     STATE_FIRE_MANUAL_IGNITER = 23,
     STATE_FIRE_MANUAL_RUN = 24,
@@ -32,13 +32,13 @@ struct FsCommandPacket {
     FsCommand command;  // 1 byte
 
     // the solenoid state fields below are only used if command is CUSTOM
-    bool gn2_abort;          // 1 byte
+    bool gn2_drain;          // 1 byte
     bool gn2_fill;           // 1 byte
-    bool pilot_vent;         // 1 byte
-    bool dome_pilot_open;    // 1 byte
+    bool depress;            // 1 byte
+    bool press_pilot;        // 1 byte
     bool run;                // 1 byte
-    bool five_two;           // 1 byte
-    bool water_suppression;  // 1 byte
+    bool lox_fill;           // 1 byte
+    bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
 };
 
@@ -57,7 +57,7 @@ enum class FsState : uint8_t {
     FROM_FS_COMMAND(GN2_PULSE_FILL_B),
     FROM_FS_COMMAND(GN2_PULSE_FILL_C),
     FROM_FS_COMMAND(FIRE),
-    FROM_FS_COMMAND(FIRE_MANUAL_DOME_PILOT_OPEN),
+    FROM_FS_COMMAND(FIRE_MANUAL_PRESS_PILOT),
     FROM_FS_COMMAND(FIRE_MANUAL_DOME_PILOT_CLOSE),
     FROM_FS_COMMAND(FIRE_MANUAL_IGNITER),
     FROM_FS_COMMAND(FIRE_MANUAL_RUN),
@@ -67,13 +67,13 @@ enum class FsState : uint8_t {
 struct FsStatePacket {
     uint32_t ms_since_boot;  // 4 bytes
     FsState state;           // 1 byte
-    bool gn2_abort;          // 1 byte
+    bool gn2_drain;          // 1 byte
     bool gn2_fill;           // 1 byte
-    bool pilot_vent;         // 1 byte
-    bool dome_pilot_open;    // 1 byte
+    bool depress;         // 1 byte
+    bool press_pilot;    // 1 byte
     bool run;                // 1 byte
-    bool five_two;           // 1 byte
-    bool water_suppression;  // 1 byte
+    bool lox_fill;           // 1 byte
+    bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
 };
 
