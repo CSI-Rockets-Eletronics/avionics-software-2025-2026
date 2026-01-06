@@ -19,12 +19,6 @@
 [submodule "components/Adafruit_BusIO/Adafruit_BusIO"]
 	path = components/Adafruit_BusIO/Adafruit_BusIO
 	url = https://github.com/adafruit/Adafruit_BusIO.git
-[submodule "components/Adafruit-MAX31855-library/Adafruit-MAX31855-library"]
-	path = components/Adafruit-MAX31855-library/Adafruit-MAX31855-library
-	url = https://github.com/adafruit/Adafruit-MAX31855-library.git
-[submodule "components/Adafruit_MAX31856/Adafruit_MAX31856"]
-	path = components/Adafruit_MAX31856/Adafruit_MAX31856
-	url = https://github.com/adafruit/Adafruit_MAX31856
 [submodule "components/ESP32Servo/ESP32Servo"]
 	path = components/ESP32Servo/ESP32Servo
 	url = https://github.com/madhephaestus/ESP32Servo.git

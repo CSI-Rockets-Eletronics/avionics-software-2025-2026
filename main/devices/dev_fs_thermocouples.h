@@ -63,6 +63,7 @@ class DevFsThermocouples : public Device {
             .gn2_external_celsius = CoalesceNaN(gn2_external_celsius),
             .lox_upper_celsius = CoalesceNaN(lox_upper_celsius),
             .lox_lower_celsius = CoalesceNaN(lox_lower_celsius),
+            .dummy = 0,
         };
         Send(DeviceType::DevFsInjectorTransducers, thermo_packet);
 
@@ -100,9 +101,7 @@ class DevFsThermocouples : public Device {
     }
 
     // JSON doesn't allow NaN
-    float CoalesceNaN(float value) {
-        return isnan(value) ? 0.0f : value;
-    }
+    float CoalesceNaN(float value) { return isnan(value) ? 0.0f : value; }
 };
 
 REGISTER_AVIONICS_DEVICE(DevFsThermocouples);
