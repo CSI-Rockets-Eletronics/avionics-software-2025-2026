@@ -1,121 +1,107 @@
-#include <Adafruit_MAX31855.h>
-#include <Adafruit_MAX31856.h>
+#include <SparkFun_MCP9600.h>
+#include <moving_median_adc.h>
 
 #include "avionics.h"
 #include "packets.h"
 
 using namespace avionics;
+using namespace moving_median_adc;
 
 class DevFsThermocouples : public Device {
    private:
-    static const int kClkPin = 37;
-    static const int kMosiPin = 40;
-    static const int kMisoPin = 39;
+    // I2C addresses for the 4 MCP9600 thermocouples on I2C bus 0
+    static const uint8_t kGn2InternalAddress = 0x60;
+    static const uint8_t kGn2ExternalAddress = 0x61;
+    static const uint8_t kLoxUpperAddress = 0x62;
+    static const uint8_t kLoxLowerAddress = 0x63;
 
-    static const int kCs3Pin = 14;
-    static const int kCs4Pin = 13;
-    static const int kCs5Pin = 12;
+    I2CWire i2c0{0, 42, 37};
 
-    Adafruit_MAX31856 tc3{kCs3Pin, kMosiPin, kMisoPin, kClkPin};
-    // Adafruit_MAX31855 tc4{kClkPin, kCs4Pin, kMisoPin};
-    Adafruit_MAX31856 tc5{kCs5Pin, kMosiPin, kMisoPin, kClkPin};
+    MCP9600 gn2_internal;
+    MCP9600 gn2_external;
+    MCP9600 lox_upper;
+    MCP9600 lox_lower;
 
     utils::FrequencyLogger thermocouples_freq_logger{"Thermocouples"};
 
    public:
     void Setup() override {
-        if (!tc3.begin()) Die("tc3 init failed");
-        tc3.setThermocoupleType(MAX31856_TCTYPE_K);
+        // Initialize all 4 MCP9600 thermocouples on I2C bus 0
+        if (!gn2_internal.begin(kGn2InternalAddress, i2c0.wire))
+            Die("gn2_internal init failed");
+        gn2_internal.setThermocoupleType(TYPE_E);
 
-        // if (!tc4.begin()) Die("tc4 init failed");
+        if (!gn2_external.begin(kGn2ExternalAddress, i2c0.wire))
+            Die("gn2_external init failed");
+        gn2_external.setThermocoupleType(TYPE_E);
 
-        if (!tc5.begin()) Die("tc5 init failed");
-        tc5.setThermocoupleType(MAX31856_TCTYPE_K);
+        if (!lox_upper.begin(kLoxUpperAddress, i2c0.wire))
+            Die("lox_upper init failed");
+        lox_upper.setThermocoupleType(TYPE_E);
+
+        if (!lox_lower.begin(kLoxLowerAddress, i2c0.wire))
+            Die("lox_lower init failed");
+        lox_lower.setThermocoupleType(TYPE_E);
     }
 
     void Loop() override {
-        double tc3_celsius = tc3.readThermocoupleTemperature();
-        // double tc4_celsius = tc4.readCelsius();
-        double tc5_celsius = tc5.readThermocoupleTemperature();
+        // Read temperatures from all 4 MCP9600 thermocouples
+        float gn2_internal_celsius = gn2_internal.getThermocoupleTemp();
+        float gn2_external_celsius = gn2_external.getThermocoupleTemp();
+        float lox_upper_celsius = lox_upper.getThermocoupleTemp();
+        float lox_lower_celsius = lox_lower.getThermocoupleTemp();
 
-        Handle31856Fault("tc3", tc3, tc3_celsius);
-        // Handle31855Fault("tc4", tc4, tc4_celsius);
-        Handle31856Fault("tc5", tc5, tc5_celsius);
+        // Check for sensor errors
+        HandleMCP9600Fault("gn2_internal", gn2_internal, gn2_internal_celsius);
+        HandleMCP9600Fault("gn2_external", gn2_external, gn2_external_celsius);
+        HandleMCP9600Fault("lox_upper", lox_upper, lox_upper_celsius);
+        HandleMCP9600Fault("lox_lower", lox_lower, lox_lower_celsius);
 
         FsThermocouplesPacket thermo_packet{
             .ts = micros(),
-            // if there are faults, values will be NaN
-            // .lox_celsius = CoalesceNaN(tc4_celsius),
-            .lox_celsius = 0,
-            .gn2_celsius = CoalesceNaN(tc3_celsius),
-            .gn2_surface_celsius = CoalesceNaN(tc5_celsius),
+            .gn2_internal_celsius = CoalesceNaN(gn2_internal_celsius),
+            .gn2_external_celsius = CoalesceNaN(gn2_external_celsius),
+            .lox_upper_celsius = CoalesceNaN(lox_upper_celsius),
+            .lox_lower_celsius = CoalesceNaN(lox_lower_celsius),
         };
         Send(DeviceType::DevFsInjectorTransducers, thermo_packet);
 
         thermocouples_freq_logger.Tick();
 
-        // PrintCelsius("tc3", tc3_celsius);
-        // PrintCelsius("tc4", tc4_celsius);
-        // PrintCelsius("tc5", tc5_celsius);
+        // PrintCelsius("gn2_internal", gn2_internal_celsius);
+        // PrintCelsius("gn2_external", gn2_external_celsius);
+        // PrintCelsius("lox_upper", lox_upper_celsius);
+        // PrintCelsius("lox_lower", lox_lower_celsius);
 
         delay(100);
     }
 
-    void PrintCelsius(const char *label, double celsius) {
+    void PrintCelsius(const char* label, float celsius) {
         Serial.print(label);
         Serial.print(": ");
         Serial.print(celsius);
         Serial.println(" *C");
     }
 
-    void Handle31855Fault(const char *label, Adafruit_MAX31855 &tc,
-                          double &celsius) {
-        if (!isnan(celsius)) return;
+    void HandleMCP9600Fault(const char* label, MCP9600& tc, float& celsius) {
+        // Check if input range is exceeded
+        if (tc.isInputRangeExceeded()) {
+            celsius = NAN;
+            Serial.print(label);
+            Serial.println(": Input range exceeded!");
+        }
 
-        Serial.print(label);
-        Serial.println(": Thermocouple fault(s) detected!");
-
-        uint8_t error = tc.readError();
-
-        if (error & MAX31855_FAULT_OPEN)
-            Serial.println("FAULT: Thermocouple is open - no connections.");
-        if (error & MAX31855_FAULT_SHORT_GND)
-            Serial.println("FAULT: Thermocouple is short-circuited to GND.");
-        if (error & MAX31855_FAULT_SHORT_VCC)
-            Serial.println("FAULT: Thermocouple is short-circuited to VCC.");
+        // Check if sensor is connected
+        if (!tc.isConnected()) {
+            celsius = NAN;
+            Serial.print(label);
+            Serial.println(": Sensor not connected!");
+        }
     }
 
-    void Handle31856Fault(const char *label, Adafruit_MAX31856 &tc,
-                          double &celsius) {
-        uint8_t fault = tc.readFault();
-        if (!fault) return;
-
-        celsius = NAN;
-
-        Serial.print(label);
-        Serial.println(": Thermocouple fault(s) detected!");
-
-        if (fault & MAX31856_FAULT_CJRANGE)
-            Serial.println("Cold Junction Range Fault");
-        if (fault & MAX31856_FAULT_TCRANGE)
-            Serial.println("Thermocouple Range Fault");
-        if (fault & MAX31856_FAULT_CJHIGH)
-            Serial.println("Cold Junction High Fault");
-        if (fault & MAX31856_FAULT_CJLOW)
-            Serial.println("Cold Junction Low Fault");
-        if (fault & MAX31856_FAULT_TCHIGH)
-            Serial.println("Thermocouple High Fault");
-        if (fault & MAX31856_FAULT_TCLOW)
-            Serial.println("Thermocouple Low Fault");
-        if (fault & MAX31856_FAULT_OVUV)
-            Serial.println("Over/Under Voltage Fault");
-        if (fault & MAX31856_FAULT_OPEN)
-            Serial.println("Thermocouple Open Fault");
-    }
-
-    // JSON doesn't allow NaN; also convert double to float
-    float CoalesceNaN(double value) {
-        return isnan(value) ? 0.0f : (float)value;
+    // JSON doesn't allow NaN
+    float CoalesceNaN(float value) {
+        return isnan(value) ? 0.0f : value;
     }
 };
 

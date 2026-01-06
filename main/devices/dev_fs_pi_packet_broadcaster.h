@@ -35,8 +35,8 @@ class DevFsPiPacketBroadcaster : public Device {
     // time to allow Send() to complete
     static const int kSendWaitMs = 500;
 
-    static const int kPiSerialRxPin = 40;
-    static const int kPiSerialTxPin = 39;
+    static const int kPiSerialRxPin = 18;
+    static const int kPiSerialTxPin = 8;
 
     static const unsigned long kPiSerialBaud = 230400;
 
