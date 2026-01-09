@@ -31,6 +31,14 @@ static Node fs_relays{ //i2c4/5
     },
 };
 
+static Node cap_fill{
+    "CapFill",
+    MacAddress{"34:85:18:a5:87:f0"},
+    {
+        DeviceType::DevCapFill,
+    },
+}
+
 static Node rocket_radio{
     "RocketRadio",
     MacAddress{"34:85:18:a5:88:50"},

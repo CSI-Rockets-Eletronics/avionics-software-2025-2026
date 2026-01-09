@@ -107,6 +107,14 @@ struct FsThermocouplesPacket {
     uint8_t dummy;                 // 1 byte (for unique packet size)
 };
 
+// size: 17 bytes
+struct CapFillPacket {
+    uint64_t ts;            // 8 bytes
+    float cap_fill_base;    // 4 bytes
+    float cap_fill_actual;  // 4 bytes
+    int8_t board_temp;      // 1 byte
+};
+
 // ===== AVIONICS PACKETS =====
 
 // size: 23 bytes
