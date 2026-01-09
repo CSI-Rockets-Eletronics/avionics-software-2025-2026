@@ -44,6 +44,7 @@ class DevImu : public Device {
             .gx = mpu.gx,
             .gy = mpu.gy,
             .gz = mpu.gz,
+            .dummy = 0,
         };
         Send(DeviceType::DevPiSerial, imu_packet);
     }

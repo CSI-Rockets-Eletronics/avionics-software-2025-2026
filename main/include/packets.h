@@ -77,20 +77,24 @@ struct FsStatePacket {
     bool igniter;            // 1 byte
 };
 
-// size: 24 bytes
+// size: 36 bytes
 struct FsLoxGn2TransducersPacket {
     uint64_t ts;           // 8 bytes
-    float lox_upper;       // 4 bytes
-    float chamber;         // 4 bytes
-    float gn2_manifold_1;  // 4 bytes
-    float gn2_manifold_2;  // 4 bytes
+    float oxtank_1;        // 4 bytes
+    float oxtank_2;        // 4 bytes
+    float oxtank_3;        // 4 bytes
+    float copv_1;          // 4 bytes
+    float copv_2;          // 4 bytes
+    float pilot_pres;      // 4 bytes
+    float qd_pres;         // 4 bytes
 };
 
-// size: 16 bytes
+// size: 20 bytes
 struct FsInjectorTransducersPacket {
     uint64_t ts;                // 8 bytes
-    float injector_manifold_1;  // 4 bytes
-    float injector_manifold_2;  // 4 bytes
+    float injector_1;           // 4 bytes
+    float injector_2;           // 4 bytes
+    float upper_cc;             // 4 bytes
 };
 
 // size: 25 bytes
@@ -116,7 +120,7 @@ struct GpsPacket {
     float altitude;           // 4 bytes
 };
 
-// size: 20 bytes
+// size: 21 bytes
 struct ImuPacket {
     uint64_t ts;  // 8 bytes
     int16_t ax;   // 2 bytes
@@ -125,6 +129,7 @@ struct ImuPacket {
     int16_t gx;   // 2 bytes
     int16_t gy;   // 2 bytes
     int16_t gz;   // 2 bytes
+    uint8_t dummy;                 // 1 byte (for unique packet size)
 };
 
 // size: 16 bytes

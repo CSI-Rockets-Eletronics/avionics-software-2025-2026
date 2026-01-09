@@ -22,18 +22,24 @@ class DevFsLoxGn2Transducers : public Device {
     }
 
     void Loop() override {
-        lox_upper.Tick();
-        chamber.Tick();
-        gn2_manifold_1.Tick();
-        gn2_manifold_2.Tick();
+        oxtank_1.Tick();
+        oxtank_2.Tick();
+        oxtank_3.Tick();
+        copv_1.Tick();
+        copv_2.Tick();
+        pilot_pres.Tick();
+        qd_pres.Tick();
 
         // raw values (not medians)
         FsLoxGn2TransducersPacket fs_transducers_packet{
             .ts = micros(),
-            .lox_upper = lox_upper.GetLatestPsi(),
-            .chamber = chamber.GetLatestPsi(),
-            .gn2_manifold_1 = gn2_manifold_1.GetLatestPsi(),
-            .gn2_manifold_2 = gn2_manifold_2.GetLatestPsi(),
+            .oxtank_1 = oxtank_1.GetLatestPsi(),
+            .oxtank_2 = oxtank_2.GetLatestPsi(),
+            .oxtank_3 = oxtank_3.GetLatestPsi(),
+            .copv_1 = copv_1.GetLatestPsi(),
+            .copv_2 = copv_2.GetLatestPsi(),
+            .pilot_pres = pilot_pres.GetLatestPsi(),
+            .qd_pres = qd_pres.GetLatestPsi(),
         };
 
         SendToPi(fs_transducers_packet);
@@ -42,10 +48,13 @@ class DevFsLoxGn2Transducers : public Device {
 
         serial_forwarder.Tick();
 
-        // lox_upper.PrintLatestPsi();
-        // chamber.PrintLatestPsi();
-        // gn2_manifold_1.PrintLatestPsi();
-        // gn2_manifold_2.PrintLatestPsi();
+        // oxtank_1.PrintLatestPsi();
+        // oxtank_2.PrintLatestPsi();
+        // oxtank_3.PrintLatestPsi();
+        // copv_1.PrintLatestPsi();
+        // copv_2.PrintLatestPsi();
+        // pilot_pres.PrintLatestPsi();
+        // qd_pres.PrintLatestPsi();
 
         // delay(500);
 
@@ -69,10 +78,13 @@ class DevFsLoxGn2Transducers : public Device {
     }
 
     void Recalibrate() {
-        lox_upper.Recalibrate(kCalibrateSamples);
-        chamber.Recalibrate(kCalibrateSamples);
-        gn2_manifold_1.Recalibrate(kCalibrateSamples);
-        gn2_manifold_2.Recalibrate(kCalibrateSamples);
+        oxtank_1.Recalibrate(kCalibrateSamples);
+        oxtank_2.Recalibrate(kCalibrateSamples);
+        oxtank_3.Recalibrate(kCalibrateSamples);
+        copv_1.Recalibrate(kCalibrateSamples);
+        copv_2.Recalibrate(kCalibrateSamples);
+        pilot_pres.Recalibrate(kCalibrateSamples);
+        qd_pres.Recalibrate(kCalibrateSamples);
     }
 
     template <typename T>
@@ -91,8 +103,8 @@ class DevFsLoxGn2Transducers : public Device {
 
     // ===== for serial forwarding =====
 
-    static const int kForwardSerialRxPin = 15;
-    static const int kForwardSerialTxPin = 16;
+    static const int kForwardSerialRxPin = 37;
+    static const int kForwardSerialTxPin = 36;
 
     static const unsigned long kForwardSerialBaud = 230400;
 
@@ -101,8 +113,8 @@ class DevFsLoxGn2Transducers : public Device {
 
     // ===== for raspberry pi =====
 
-    static const int kPiSerialRxPin = 40;
-    static const int kPiSerialTxPin = 39;
+    static const int kPiSerialRxPin = 8;
+    static const int kPiSerialTxPin = 18;
 
     static const unsigned long kPiSerialBaud = 230400;
 
@@ -116,47 +128,93 @@ class DevFsLoxGn2Transducers : public Device {
     const int kWindowSize = 50;
     const int kCalibrateSamples = 500;
 
-    I2CWire i2c0{0, 2, 1};
-    I2CWire i2c1{1, 6, 7};
+    I2CWire i2c3{0, 47, 21};
+    I2CWire i2c4{1, 14, 13};
 
-    // https://kulite.com//assets/media/2017/06/CTL-312.pdf; with AD620
-    MovingMedianADC<Adafruit_ADS1115> lox_upper{
-        "lox_upper", i2c0,     ADCAddress::GND, ADCMode::SingleEnded_0,
-        kRate,       GAIN_ONE, kContinuous,     kWindowSize,
-        364.0,
+    // i2c3 transducers
+    MovingMedianADC<Adafruit_ADS1115> oxtank_1{
+        "oxtank_1",
+        i2c3,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_1,
+        kRate,
+        GAIN_ONE,
+        kContinuous,
+        kWindowSize,
+        1.0, //Todo
     };
 
-    // https://kulite.com//assets/media/2017/06/CTL-190.pdf; with AD620
-    MovingMedianADC<Adafruit_ADS1115> chamber{
-        "chamber", i2c1,     ADCAddress::GND, ADCMode::SingleEnded_0,
-        kRate,     GAIN_ONE, kContinuous,     kWindowSize,
-        363.0,
+    MovingMedianADC<Adafruit_ADS1115> oxtank_2{
+        "oxtank_2",
+        i2c3,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_0,
+        kRate,
+        GAIN_ONE,
+        kContinuous,
+        kWindowSize,
+        1.0, //Todo
     };
 
-    // https://www.dataq.com/resources/pdfs/datasheets/WNK81MA.pdf
-    MovingMedianADC<Adafruit_ADS1115> gn2_manifold_1{
-        "gn2_manifold_1",
-        i2c0,
+    MovingMedianADC<Adafruit_ADS1115> oxtank_3{
+        "oxtank_3",
+        i2c3,
         ADCAddress::VIN,
         ADCMode::SingleEnded_1,
         kRate,
-        GAIN_TWOTHIRDS,  // 10k PSI = 4.5V; we read up to 5k PSI
+        GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1260.0,
+        1.0, //Todo
     };
 
-    // https://www.dataq.com/resources/pdfs/datasheets/WNK81MA.pdf
-    MovingMedianADC<Adafruit_ADS1115> gn2_manifold_2{
-        "gn2_manifold_2",
-        i2c1,
+    // i2c4 transducers
+    MovingMedianADC<Adafruit_ADS1115> copv_1{
+        "copv_1",
+        i2c4,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_1,
+        kRate,
+        GAIN_ONE,
+        kContinuous,
+        kWindowSize,
+        1.0, //Todo
+    };
+
+    MovingMedianADC<Adafruit_ADS1115> copv_2{
+        "copv_2",
+        i2c4,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_0,
+        kRate,
+        GAIN_ONE,
+        kContinuous,
+        kWindowSize,
+        1.0, //Todo
+    };
+
+    MovingMedianADC<Adafruit_ADS1115> pilot_pres{
+        "pilot_pres",
+        i2c4,
         ADCAddress::VIN,
         ADCMode::SingleEnded_1,
         kRate,
-        GAIN_TWOTHIRDS,  // 10k PSI = 4.5V; we read up to 5k PSI
+        GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1260.0,
+        1.0, //Todo
+    };
+
+    MovingMedianADC<Adafruit_ADS1115> qd_pres{
+        "qd_pres",
+        i2c4,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_0,
+        kRate,
+        GAIN_ONE,
+        kContinuous,
+        kWindowSize,
+        1.0, //Todo
     };
 };
 

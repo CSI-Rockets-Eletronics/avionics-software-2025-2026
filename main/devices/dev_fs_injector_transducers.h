@@ -18,14 +18,16 @@ class Dev : public Device {
     }
 
     void Loop() override {
-        injector_manifold_1.Tick();
-        injector_manifold_2.Tick();
+        injector_1.Tick();
+        injector_2.Tick();
+        upper_cc.Tick();
 
         // raw values (not medians)
         FsInjectorTransducersPacket fs_transducers_packet{
             .ts = micros(),
-            .injector_manifold_1 = injector_manifold_1.GetLatestPsi(),
-            .injector_manifold_2 = injector_manifold_2.GetLatestPsi(),
+            .injector_1 = injector_1.GetLatestPsi(),
+            .injector_2 = injector_2.GetLatestPsi(),
+            .upper_cc = upper_cc.GetLatestPsi(),
         };
 
         SendToOtherEsp32(fs_transducers_packet);
@@ -50,15 +52,18 @@ class Dev : public Device {
                 break;
         }
 
-        // injector_manifold_1.PrintLatestPsi();
-        // injector_manifold_2.PrintLatestPsi();
+        // injector_1.PrintLatestPsi();
+        // injector_2.PrintLatestPsi();
+        // upper_cc.PrintLatestPsi();
 
         // delay(500);
     }
 
     void Recalibrate() {
-        injector_manifold_1.Recalibrate(kCalibrateSamples);
-        injector_manifold_2.Recalibrate(kCalibrateSamples);
+        injector_1.Recalibrate(kCalibrateSamples);
+        injector_2.Recalibrate(kCalibrateSamples);
+        upper_cc.Recalibrate(kCalibrateSamples);
+
     }
 
     template <typename T>
@@ -75,8 +80,8 @@ class Dev : public Device {
 
     // ===== for serial to other ESP32 =====
 
-    static const int kOtherEsp32SerialRxPin = 41;
-    static const int kOtherEsp32SerialTxPin = 42;
+    static const int kOtherEsp32SerialRxPin = 38;
+    static const int kOtherEsp32SerialTxPin = 37;
 
     static const unsigned long kOtherEsp32SerialBaud = 230400;
 
@@ -90,28 +95,41 @@ class Dev : public Device {
     const int kWindowSize = 50;
     const int kCalibrateSamples = 500;
 
-    I2CWire i2c2{0, 5, 6};
-    I2CWire i2c3{1, 7, 15};
+    I2CWire i2c1{0, 47, 21};
+    I2CWire i2c2{1, 14, 13};
 
-    // https://kulite.com//assets/media/2017/06/CTL-312.pdf; with AD620
-    MovingMedianADC<Adafruit_ADS1115> injector_manifold_1{
-        "injector_manifold_1",
-        i2c2,
+    // dataq
+    MovingMedianADC<Adafruit_ADS1115> injector_1{
+        "injector_1",
+        i2c1,
         ADCAddress::GND,
-        ADCMode::SingleEnded_0,
+        ADCMode::SingleEnded_1,
         kRate,
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        333.0,
+        1.0,  // TODO calibrate
     };
 
-    // https://kulite.com//assets/media/2017/06/CTL-190.pdf; with AD620
-    MovingMedianADC<Adafruit_ADS1115> injector_manifold_2{
-        "injector_manifold_2",
-        i2c3,
+    // dataq
+    MovingMedianADC<Adafruit_ADS1115> injector_2{
+        "injector_2",
+        i2c2,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_1,
+        kRate,
+        GAIN_ONE,
+        kContinuous,
+        kWindowSize,
+        1.0,  // TODO calibrate
+    };
+
+    // dataq
+    MovingMedianADC<Adafruit_ADS1115> upper_cc{
+        "upper_cc",
+        i2c1,
         ADCAddress::GND,
-        ADCMode::SingleEnded_0,
+        ADCMode::SingleEnded_1,
         kRate,
         GAIN_ONE,
         kContinuous,

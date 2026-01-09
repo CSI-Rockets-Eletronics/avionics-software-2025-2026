@@ -10,12 +10,13 @@ using namespace moving_median_adc;
 class DevFsThermocouples : public Device {
    private:
     // I2C addresses for the 4 MCP9600 thermocouples on I2C bus 0
+    // will need to change I2C addresses once fs board is assembled
     static const uint8_t kGn2InternalAddress = 0x60;
     static const uint8_t kGn2ExternalAddress = 0x61;
     static const uint8_t kLoxUpperAddress = 0x62;
     static const uint8_t kLoxLowerAddress = 0x63;
 
-    I2CWire i2c0{0, 42, 37};
+    I2CWire i2c0{0, 42, 37};  //I2C bus "5"
 
     MCP9600 gn2_internal;
     MCP9600 gn2_external;

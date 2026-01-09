@@ -5,24 +5,24 @@
 
 namespace avionics {
 
-static Node fs_scientific2{
+static Node fs_scientific2{ //i2c0/1
     "FsScientific2",
     MacAddress{"f4:12:fa:83:de:cc"},
     {
-        DeviceType::DevFsLoxGn2Transducers,
+        DeviceType::DevFsInjectorTransducers,
     },
 };
 
-static Node fs_scientific1{
+static Node fs_scientific1{ //i2c2/3
     "FsScientific1",
     MacAddress{"f4:12:fa:5b:42:c8"},
     {
-        DeviceType::DevFsInjectorTransducers,
+        DeviceType::DevFsLoxGn2Transducers,
         DeviceType::DevFsPiPacketBroadcaster,
     },
 };
 
-static Node fs_relays{
+static Node fs_relays{ //i2c4/5
     "FsRelays",
     MacAddress{"34:85:18:a5:80:4c"},
     {
