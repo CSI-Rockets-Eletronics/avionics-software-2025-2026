@@ -15,7 +15,7 @@ static Node fs_scientific1{ //i2c3/4
 };
 
 
-    static Node fs_scientific2{ //i2c1/2
+static Node fs_scientific2{ //i2c1/2
     "FsScientific2",
     MacAddress{"f4:12:fa:83:de:cc"},
     {

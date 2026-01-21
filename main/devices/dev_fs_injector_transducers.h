@@ -36,8 +36,9 @@ class Dev : public Device {
 
         FsThermocouplesPacket thermo_packet;
         FsCommandPacket command_packet;
+        CapFillPacket cap_fill_packet;
 
-        switch (Receive(&thermo_packet, &command_packet)) {
+        switch (Receive(&thermo_packet, &command_packet, &cap_fill_packet)) {
             case 0:
                 SendToOtherEsp32(thermo_packet);
                 break;
@@ -49,6 +50,9 @@ class Dev : public Device {
                     FsCommand::RECALIBRATE_TRANSDUCERS) {
                     Recalibrate();
                 }
+                break;
+            case 2:
+                SendToOtherEsp32(cap_fill_packet);
                 break;
         }
 
