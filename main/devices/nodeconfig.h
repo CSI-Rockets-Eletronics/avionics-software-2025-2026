@@ -30,6 +30,7 @@ static Node fs_relays{ //i2c5/6
     {
         DeviceType::DevFsRelays,
         DeviceType::DevFsThermocouples,
+        DeviceType::DevRelayImon,
     },
 };
 

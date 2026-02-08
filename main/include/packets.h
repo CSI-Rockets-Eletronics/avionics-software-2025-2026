@@ -115,6 +115,20 @@ struct CapFillPacket {
     int8_t board_temp;      // 1 byte
 };
 
+// size: 25 bytes
+struct RelayCurrentMonitorPacket {
+    uint64_t ts;                // 8 bytes
+    int16_t gn2_drain_ma;       // 2 bytes
+    int16_t gn2_fill_ma;        // 2 bytes
+    int16_t depress_ma;         // 2 bytes
+    int16_t press_pilot_ma;     // 2 bytes
+    int16_t run_ma;             // 2 bytes
+    int16_t lox_fill_ma;        // 2 bytes
+    int16_t lox_disconnect_ma;  // 2 bytes
+    int16_t igniter_ma;         // 2 bytes
+    uint8_t dummy;              // 1 byte (for unique packet size)
+};
+
 // ===== AVIONICS PACKETS =====
 
 // size: 23 bytes

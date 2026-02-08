@@ -27,6 +27,7 @@ enum class DeviceType {
     DevGroundRadio,
     DevImu,
     DevPiSerial,
+    DevRelayImon,
     DevRocketRadio,
 };
 
