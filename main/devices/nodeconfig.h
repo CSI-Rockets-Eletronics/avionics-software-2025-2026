@@ -41,7 +41,7 @@ static Node cap_fill{
     {
         DeviceType::DevCapFill,
     },
-}
+};
 
 static Node rocket_radio{
     "RocketRadio",

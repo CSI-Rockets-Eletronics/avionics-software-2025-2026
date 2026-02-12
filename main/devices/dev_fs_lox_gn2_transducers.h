@@ -66,13 +66,6 @@ class DevFsLoxGn2Transducers : public Device {
 
         // delay(500);
 
-        // Define struct for receiving EREG state from DevEregControl
-        struct EregStateData {
-            bool ereg_closed;
-            bool ereg_stage_1;
-            bool ereg_stage_2;
-        };
-
         FsCommandPacket command_packet;
         FsStatePacket state_packet;
         EregStateData ereg_state_data;

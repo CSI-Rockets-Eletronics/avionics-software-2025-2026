@@ -274,28 +274,9 @@ class DevEregControl : public Device {
     }
 
     void InitializeI2C() {
-        Serial.println("Initializing I2C buses...");
-
-        // Initialize I2C buses
-        i2c2_.begin();
-        delay(100);
-        i2c3_.begin();
-        delay(100);
-
-        Serial.println("Initializing ADCs...");
-
-        // Initialize ADCs
-        if (!ereg_upper_.Initialize())
-        {
-            Serial.println("ERROR: Failed to initialize upper ADC!");
-        }
-
-        if (!ereg_lower_.Initialize())
-        {
-            Serial.println("ERROR: Failed to initialize lower ADC!");
-        }
-
-        delay(100);
+        Serial.println("I2C buses initialized via I2CWire constructors");
+        Serial.println("ADCs initialized via MovingMedianADC constructors");
+        delay(200);
     }
 
     void ResetPID() {
