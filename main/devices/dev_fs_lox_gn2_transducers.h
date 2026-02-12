@@ -19,6 +19,11 @@ class DevFsLoxGn2Transducers : public Device {
                       kPiSerialTxPin);
 
         Recalibrate();
+
+        // Initialize EREG state to CLOSED (safe default)
+        ereg_state_.ereg_closed = true;
+        ereg_state_.ereg_stage_1 = false;
+        ereg_state_.ereg_stage_2 = false;
     }
 
     void Loop() override {
@@ -40,6 +45,9 @@ class DevFsLoxGn2Transducers : public Device {
             .copv_2 = copv_2.GetLatestPsi(),
             .pilot_pres = pilot_pres.GetLatestPsi(),
             .qd_pres = qd_pres.GetLatestPsi(),
+            .ereg_closed = ereg_state_.ereg_closed,
+            .ereg_stage_1 = ereg_state_.ereg_stage_1,
+            .ereg_stage_2 = ereg_state_.ereg_stage_2,
         };
 
         SendToPi(fs_transducers_packet);
@@ -58,10 +66,18 @@ class DevFsLoxGn2Transducers : public Device {
 
         // delay(500);
 
+        // Define struct for receiving EREG state from DevEregControl
+        struct EregStateData {
+            bool ereg_closed;
+            bool ereg_stage_1;
+            bool ereg_stage_2;
+        };
+
         FsCommandPacket command_packet;
         FsStatePacket state_packet;
+        EregStateData ereg_state_data;
 
-        switch (Receive(&command_packet, &state_packet)) {
+        switch (Receive(&command_packet, &state_packet, &ereg_state_data)) {
             case 0:
                 if (command_packet.command == FsCommand::RESTART) {
                     Die("Restarting by command");
@@ -73,6 +89,10 @@ class DevFsLoxGn2Transducers : public Device {
                 break;
             case 1:
                 SendToPi(state_packet);
+                break;
+            case 2:
+                // Received EREG state from DevEregControl
+                ereg_state_ = ereg_state_data;
                 break;
         }
     }
@@ -100,6 +120,14 @@ class DevFsLoxGn2Transducers : public Device {
     // just VS code intellisense being dumb; Serial2 is accessible globally
     HardwareSerial Serial2{2};
     utils::FrequencyLogger transducers_freq_logger{"Transducers"};
+
+    // ===== for EREG state =====
+
+    struct EregStateData {
+        bool ereg_closed;
+        bool ereg_stage_1;
+        bool ereg_stage_2;
+    } ereg_state_;
 
     // ===== for serial forwarding =====
 

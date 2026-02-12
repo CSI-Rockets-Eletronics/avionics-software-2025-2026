@@ -23,11 +23,14 @@ enum class FsCommand : uint8_t {
     STATE_FIRE_MANUAL_DOME_PILOT_CLOSE = 22,
     STATE_FIRE_MANUAL_IGNITER = 23,
     STATE_FIRE_MANUAL_RUN = 24,
+    EREG_CLOSED = 30,
+    EREG_STAGE_1 = 31,
+    EREG_STAGE_2 = 32,
     RECALIBRATE_TRANSDUCERS = 100,
     RESTART = 110,
 };
 
-// size: 9 bytes
+// size: 10 bytes
 struct FsCommandPacket {
     FsCommand command;  // 1 byte
 
@@ -40,6 +43,7 @@ struct FsCommandPacket {
     bool lox_fill;           // 1 byte
     bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
+    bool ereg_power;         // 1 byte
 };
 
 #define FROM_FS_COMMAND(COMMAND) COMMAND = (uint8_t)FsCommand::STATE_##COMMAND
@@ -63,7 +67,7 @@ enum class FsState : uint8_t {
     FROM_FS_COMMAND(FIRE_MANUAL_RUN),
 };
 
-// size: 13 bytes
+// size: 14 bytes
 struct FsStatePacket {
     uint32_t ms_since_boot;  // 4 bytes
     FsState state;           // 1 byte
@@ -75,9 +79,10 @@ struct FsStatePacket {
     bool lox_fill;           // 1 byte
     bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
+    bool ereg_power;         // 1 byte
 };
 
-// size: 36 bytes
+// size: 39 bytes
 struct FsLoxGn2TransducersPacket {
     uint64_t ts;           // 8 bytes
     float oxtank_1;        // 4 bytes
@@ -87,6 +92,9 @@ struct FsLoxGn2TransducersPacket {
     float copv_2;          // 4 bytes
     float pilot_pres;      // 4 bytes
     float qd_pres;         // 4 bytes
+    bool ereg_closed;      // 1 byte
+    bool ereg_stage_1;     // 1 byte
+    bool ereg_stage_2;     // 1 byte
 };
 
 // size: 20 bytes
@@ -115,7 +123,7 @@ struct CapFillPacket {
     int8_t board_temp;      // 1 byte
 };
 
-// size: 25 bytes
+// size: 26 bytes
 struct RelayCurrentMonitorPacket {
     uint64_t ts;                // 8 bytes
     int16_t gn2_drain_ma;       // 2 bytes
@@ -126,7 +134,7 @@ struct RelayCurrentMonitorPacket {
     int16_t lox_fill_ma;        // 2 bytes
     int16_t lox_disconnect_ma;  // 2 bytes
     int16_t igniter_ma;         // 2 bytes
-    uint8_t dummy;              // 1 byte (for unique packet size)
+    int16_t ereg_power_ma;      // 2 bytes
 };
 
 // ===== AVIONICS PACKETS =====

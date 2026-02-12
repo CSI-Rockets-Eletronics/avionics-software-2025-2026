@@ -14,6 +14,7 @@ enum class RelayPin : int {
     LOX_FILL = 47,
     LOX_DISCONNECT = 48,
     IGNITER = 40,
+    EREG_POWER = 41,
 };
 
 struct RelayStates {
@@ -25,6 +26,7 @@ struct RelayStates {
     bool lox_fill = false;
     bool lox_disconnect = false;
     bool igniter = false;
+    bool ereg_power = false;
 };
 
 using MS = unsigned long;
@@ -71,6 +73,7 @@ class DevFsRelays : public Device {
         SetPinToOutput(RelayPin::LOX_FILL);
         SetPinToOutput(RelayPin::LOX_DISCONNECT);
         SetPinToOutput(RelayPin::IGNITER);
+        SetPinToOutput(RelayPin::EREG_POWER);
     }
 
     void Loop() override {
@@ -273,6 +276,7 @@ class DevFsRelays : public Device {
         relay_states.lox_fill = command_packet.lox_fill;
         relay_states.lox_disconnect = command_packet.lox_disconnect;
         relay_states.igniter = command_packet.igniter;
+        relay_states.ereg_power = command_packet.ereg_power;
     }
 
     void FlushRelays() {
@@ -284,6 +288,7 @@ class DevFsRelays : public Device {
         FlushRelay(RelayPin::LOX_FILL, relay_states.lox_fill);
         FlushRelay(RelayPin::LOX_DISCONNECT, relay_states.lox_disconnect);
         FlushRelay(RelayPin::IGNITER, relay_states.igniter);
+        FlushRelay(RelayPin::EREG_POWER, relay_states.ereg_power);
     }
 
     void SetPinToOutput(RelayPin pin) {
@@ -306,6 +311,7 @@ class DevFsRelays : public Device {
             .lox_fill = relay_states.lox_fill,
             .lox_disconnect = relay_states.lox_disconnect,
             .igniter = relay_states.igniter,
+            .ereg_power = relay_states.ereg_power,
         };
 
         Send(DeviceType::DevFsLoxGn2Transducers, state_packet);

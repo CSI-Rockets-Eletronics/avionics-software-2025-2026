@@ -6,14 +6,15 @@ using namespace avionics;
 // Current monitoring pins for each relay eFuse
 // These are ADC-capable GPIO pins on ESP32
 enum class ImonPin : int {
-    GN2_DRAIN = 11,      // ADC1_CH0
-    GN2_FILL = 2,       // ADC1_CH1
-    DEPRESS = 16,        // ADC1_CH2
-    PRESS_PILOT = 13,    // ADC1_CH3
-    RUN = 9,            // ADC1_CH4
-    LOX_FILL = 14,       // ADC1_CH5
-    LOX_DISCONNECT = 10, // ADC1_CH6
-    IGNITER = 1,        // ADC1_CH8
+    GN2_DRAIN = 11,
+    GN2_FILL = 2,
+    DEPRESS = 16,
+    PRESS_PILOT = 13,
+    RUN = 9,
+    LOX_FILL = 14,
+    LOX_DISCONNECT = 10,
+    IGNITER = 1,
+    EREG_POWER = 3,
 };
 
 class DevRelayImon : public Device {
@@ -46,6 +47,7 @@ class DevRelayImon : public Device {
         pinMode(static_cast<int>(ImonPin::LOX_FILL), INPUT);
         pinMode(static_cast<int>(ImonPin::LOX_DISCONNECT), INPUT);
         pinMode(static_cast<int>(ImonPin::IGNITER), INPUT);
+        pinMode(static_cast<int>(ImonPin::EREG_POWER), INPUT);
 
         // Set ADC attenuation to 11dB (0-3.3V range)
         analogSetAttenuation(ADC_11db);
@@ -63,7 +65,7 @@ class DevRelayImon : public Device {
             .lox_fill_ma = ReadCurrent(ImonPin::LOX_FILL),
             .lox_disconnect_ma = ReadCurrent(ImonPin::LOX_DISCONNECT),
             .igniter_ma = ReadCurrent(ImonPin::IGNITER),
-            .dummy = 0,
+            .ereg_power_ma = ReadCurrent(ImonPin::EREG_POWER),
         };
 
         // Send to other ESP32s and Raspberry Pi

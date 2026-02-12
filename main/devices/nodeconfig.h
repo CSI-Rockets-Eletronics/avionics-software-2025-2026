@@ -11,6 +11,7 @@ static Node fs_scientific1{ //i2c3/4
     {
         DeviceType::DevFsLoxGn2Transducers,
         DeviceType::DevFsPiPacketBroadcaster,
+        DeviceType::DevEregControl,
     },
 };
 

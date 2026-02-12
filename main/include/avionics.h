@@ -18,6 +18,7 @@ enum class DeviceType {
     // sort alphabetically
     DevCapFill,
     DevDht,
+    DevEregControl,
     DevFsInjectorTransducers,
     DevFsLoxGn2Transducers,
     DevFsPiPacketBroadcaster,
