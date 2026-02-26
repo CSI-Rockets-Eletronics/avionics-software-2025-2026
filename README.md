@@ -34,3 +34,10 @@ git update-index --skip-worktree .vscode/settings.json
 ```
 
 This will keep your local settings out of version control while still allowing the file to exist in the repository for others.
+
+## Issues with Submodule libraries storing no content
+--> when trying to create a new build for the code, the submodule component folders are showing no local content, to fix this issue:
+
+Run:
+git submodule init
+git submodule update --recursive
