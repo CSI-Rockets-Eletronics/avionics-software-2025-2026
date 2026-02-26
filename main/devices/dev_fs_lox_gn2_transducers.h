@@ -1,3 +1,5 @@
+#pragma once
+
 #include <moving_median_adc.h>
 
 #include "avionics.h"
@@ -6,6 +8,15 @@
 
 using namespace avionics;
 using namespace moving_median_adc;
+
+// Shared struct used by both DevFsLoxGn2Transducers and DevEregControl.
+// Must be defined before either class so both sides of Send/Receive
+// are guaranteed to use the identical type.
+struct EregStateData {
+    bool ereg_closed;
+    bool ereg_stage_1;
+    bool ereg_stage_2;
+};
 
 class DevFsLoxGn2Transducers : public Device {
    public:
@@ -183,11 +194,7 @@ class DevFsLoxGn2Transducers : public Device {
 
     // ===== for EREG state =====
 
-    struct EregStateData {
-        bool ereg_closed;
-        bool ereg_stage_1;
-        bool ereg_stage_2;
-    } ereg_state_;
+    EregStateData ereg_state_;
 
     // ===== for serial forwarding =====
 

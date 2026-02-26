@@ -133,11 +133,8 @@ class DevEregControl : public Device {
     }
 
     void SendStateToTransducers() {
-        struct EregStateData {
-            bool ereg_closed;
-            bool ereg_stage_1;
-            bool ereg_stage_2;
-        } ereg_state_data{
+        // Uses the shared EregStateData struct defined in dev_fs_lox_gn2_transducers.h
+        EregStateData ereg_state_data{
             .ereg_closed  = (current_state_ == EREG_CLOSED),
             .ereg_stage_1 = (current_state_ == EREG_STAGE_1),
             .ereg_stage_2 = (current_state_ == EREG_STAGE_2),
