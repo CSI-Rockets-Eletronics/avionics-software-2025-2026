@@ -80,5 +80,6 @@
     "thread": "cpp",
     "cinttypes": "cpp",
     "typeinfo": "cpp"
-  }
+  },
+  "idf.currentSetup": "C:\\Users\\clegg\\esp\\v5.1.5\\esp-idf"
 }

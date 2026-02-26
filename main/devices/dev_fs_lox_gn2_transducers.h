@@ -9,6 +9,73 @@ using namespace moving_median_adc;
 
 class DevFsLoxGn2Transducers : public Device {
    public:
+    // I2C buses (needed by transducers)
+    I2CWire i2c3{0, 47, 21};
+    I2CWire i2c4{1, 14, 13};
+
+    // Public transducers - accessed by DevEregControl for PID loop
+    // i2c3 transducers
+    MovingMedianADC<Adafruit_ADS1115> oxtank_1{
+        "oxtank_1",
+        i2c3,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_1,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        1.0, //Todo
+    };
+
+    MovingMedianADC<Adafruit_ADS1115> oxtank_2{
+        "oxtank_2",
+        i2c3,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_0,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        1.0, //Todo
+    };
+
+    MovingMedianADC<Adafruit_ADS1115> oxtank_3{
+        "oxtank_3",
+        i2c3,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_1,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        1.0, //Todo
+    };
+
+    // i2c4 transducers
+    MovingMedianADC<Adafruit_ADS1115> copv_1{
+        "copv_1",
+        i2c4,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_1,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        1.0, //Todo
+    };
+
+    MovingMedianADC<Adafruit_ADS1115> copv_2{
+        "copv_2",
+        i2c4,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_0,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        1.0, //Todo
+    };
+
     void Setup() override {
         // for serial forwarding
         Serial1.begin(kForwardSerialBaud, SERIAL_8N1, kForwardSerialRxPin,
@@ -149,71 +216,7 @@ class DevFsLoxGn2Transducers : public Device {
     const int kWindowSize = 50;
     const int kCalibrateSamples = 500;
 
-    I2CWire i2c3{0, 47, 21};
-    I2CWire i2c4{1, 14, 13};
-
-    // i2c3 transducers
-    MovingMedianADC<Adafruit_ADS1115> oxtank_1{
-        "oxtank_1",
-        i2c3,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_1,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0, //Todo
-    };
-
-    MovingMedianADC<Adafruit_ADS1115> oxtank_2{
-        "oxtank_2",
-        i2c3,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_0,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0, //Todo
-    };
-
-    MovingMedianADC<Adafruit_ADS1115> oxtank_3{
-        "oxtank_3",
-        i2c3,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0, //Todo
-    };
-
-    // i2c4 transducers
-    MovingMedianADC<Adafruit_ADS1115> copv_1{
-        "copv_1",
-        i2c4,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_1,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0, //Todo
-    };
-
-    MovingMedianADC<Adafruit_ADS1115> copv_2{
-        "copv_2",
-        i2c4,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_0,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0, //Todo
-    };
-
+    // Remaining transducers that are not used by EREG
     MovingMedianADC<Adafruit_ADS1115> pilot_pres{
         "pilot_pres",
         i2c4,
