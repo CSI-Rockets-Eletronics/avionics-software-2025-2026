@@ -44,8 +44,15 @@ class DevEregControl : public Device {
         ereg_upper_psi_ = transducers_->copv_1.GetLatestPsi();
         ereg_lower_psi_ = transducers_->oxtank_1.GetLatestPsi();
 
+        if (isnan(ereg_upper_psi_) || isnan(ereg_lower_psi_)) {
+            SetState(EREG_CLOSED);
+            current_angle_ = 0.0f;
+            g_servo_.writeMicroseconds(kCenterUs);
+            return;
+        }
+
         // Safety check: automatically close EREG if lower pressure exceeds safety limit
-        if (ereg_lower_psi_ > kMaxSafePressurePsi) {
+        if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
             SetState(EREG_CLOSED);
         }
 
@@ -60,7 +67,7 @@ class DevEregControl : public Device {
         }
         else if (current_state_ == EREG_STAGE_1)
         {
-            // STAGE 1: PID control, angle clamped between 0 and 13 degrees
+            // STAGE 1: PID control, angle clamped between 0 and 22 degrees
             RunPidLoop(now, kStage1MaxAngle);
         }
         else if (current_state_ == EREG_STAGE_2)
@@ -118,7 +125,8 @@ class DevEregControl : public Device {
             case FsCommand::EREG_STAGE_2:
                 SetState(EREG_STAGE_2);
                 // Bumpless transfer: seed error history to current error
-                BumplessResetPID();
+                // got rid of it since PID is continous, we don't reset from stage 1 to 2
+                //BumplessResetPID();
                 break;
             case FsCommand::RESTART:
                 Die("Restarting by command");
@@ -218,19 +226,25 @@ class DevEregControl : public Device {
 
     // ===== Dynamic Gain Scaling =====
 
-    // Placeholder scale function: returns 1.0 (no scaling) until
-    // calibrated during testing. Replace body with empirical algorithm.
-    double GainScaleFromUpperPsi(float upper_psi) {
-        (void)upper_psi;
-        return 1.0;
-    }
-
-    // Called once per PID cycle. Scales active gains from base gains.
+    // Called once per PID cycle. Implements the MATLAB dynamic gain logic exactly:
+    // alpha = (P_hi - P_COPV) / (P_hi - P_lo), clamped to [0, 1]
+    // gain_scale = 1.0 + gain_boost_max * alpha
+    // gains = base_gains * gain_scale
     void UpdateDynamicGains(float upper_psi) {
-        const double scale = GainScaleFromUpperPsi(upper_psi);
-        kp_ = kp_base_ * scale;
-        ki_ = ki_base_ * scale;
-        kd_ = kd_base_ * scale;
+        constexpr double P_hi = 750.0;
+        constexpr double P_lo = 150.0;
+        constexpr double gain_boost_max = 1.0;
+
+        double alpha = (P_hi - static_cast<double>(upper_psi)) / (P_hi - P_lo);
+
+        if (alpha < 0.0) alpha = 0.0;
+        if (alpha > 1.0) alpha = 1.0;
+
+        const double gain_scale = 1.0 + gain_boost_max * alpha;
+
+        kp_ = kp_base_ * gain_scale;
+        ki_ = ki_base_ * gain_scale;
+        kd_ = kd_base_ * gain_scale;
     }
 
     // ===== Hardware Helpers =====
@@ -262,11 +276,11 @@ class DevEregControl : public Device {
     static constexpr int kCenterUs    = (kPulseMinUs + kPulseMaxUs) / 2;
 
     // Stage angle limits
-    static constexpr float kStage1MaxAngle = 13.0f;  // degrees
+    static constexpr float kStage1MaxAngle = 22.0f;  // degrees
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 550.0f;  // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 520.0f;  // Auto-close if ereg_lower exceeds this
 
     // PID timing
     static constexpr double kPidPeriodMs = 6.0;
@@ -293,7 +307,7 @@ class DevEregControl : public Device {
 
     // PID gains -- base values define the unscaled setpoint
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
-    double setpoint_ = 70.0;
+    double setpoint_ = 150.0;
 
     double kp_base_ = 0.035;
     double ki_base_ = 0.000;
