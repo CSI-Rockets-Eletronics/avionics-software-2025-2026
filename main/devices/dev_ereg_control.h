@@ -256,7 +256,7 @@ class DevEregControl : public Device {
 
     // ===== Configuration Constants =====
 
-    static constexpr int kServoPin    = 12;
+    static constexpr int kServoPin    = 16;
     static constexpr int kPulseMinUs  = 500;   // pulse at -90°
     static constexpr int kPulseMaxUs  = 2500;  // pulse at +90°
     static constexpr int kCenterUs    = (kPulseMinUs + kPulseMaxUs) / 2;

@@ -22,7 +22,7 @@ class DevFsLoxGn2Transducers : public Device {
    public:
     // I2C buses (needed by transducers)
     I2CWire i2c3{0, 47, 21};
-    I2CWire i2c4{1, 14, 13};
+    // I2CWire i2c4{1, 14, 13};  // Not needed - all transducers on i2c3
 
     // Public transducers - accessed by DevEregControl for PID loop
     // i2c3 transducers
@@ -38,34 +38,35 @@ class DevFsLoxGn2Transducers : public Device {
         1.0, //Todo
     };
 
-    MovingMedianADC<Adafruit_ADS1115> oxtank_2{
-        "oxtank_2",
-        i2c3,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_0,
-        RATE_ADS1115_860SPS,
-        GAIN_ONE,
-        true,
-        50,
-        1.0, //Todo
-    };
+    // TEMPORARILY DISABLED - will re-enable after testing
+    // MovingMedianADC<Adafruit_ADS1115> oxtank_2{
+    //     "oxtank_2",
+    //     i2c3,
+    //     ADCAddress::GND,
+    //     ADCMode::SingleEnded_0,
+    //     RATE_ADS1115_860SPS,
+    //     GAIN_ONE,
+    //     true,
+    //     50,
+    //     1.0, //Todo
+    // };
 
-    MovingMedianADC<Adafruit_ADS1115> oxtank_3{
-        "oxtank_3",
-        i2c3,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
-        RATE_ADS1115_860SPS,
-        GAIN_ONE,
-        true,
-        50,
-        1.0, //Todo
-    };
+    // MovingMedianADC<Adafruit_ADS1115> oxtank_3{
+    //     "oxtank_3",
+    //     i2c3,
+    //     ADCAddress::VIN,
+    //     ADCMode::SingleEnded_1,
+    //     RATE_ADS1115_860SPS,
+    //     GAIN_ONE,
+    //     true,
+    //     50,
+    //     1.0, //Todo
+    // };
 
-    // i2c4 transducers
+    // MOVED TO i2c3 FOR TESTING (originally on i2c4)
     MovingMedianADC<Adafruit_ADS1115> copv_1{
         "copv_1",
-        i2c4,
+        i2c3,
         ADCAddress::GND,
         ADCMode::SingleEnded_1,
         RATE_ADS1115_860SPS,
@@ -75,17 +76,18 @@ class DevFsLoxGn2Transducers : public Device {
         1.0, //Todo
     };
 
-    MovingMedianADC<Adafruit_ADS1115> copv_2{
-        "copv_2",
-        i2c4,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_0,
-        RATE_ADS1115_860SPS,
-        GAIN_ONE,
-        true,
-        50,
-        1.0, //Todo
-    };
+    // TEMPORARILY DISABLED - will re-enable after testing
+    // MovingMedianADC<Adafruit_ADS1115> copv_2{
+    //     "copv_2",
+    //     i2c4,
+    //     ADCAddress::GND,
+    //     ADCMode::SingleEnded_0,
+    //     RATE_ADS1115_860SPS,
+    //     GAIN_ONE,
+    //     true,
+    //     50,
+    //     1.0, //Todo
+    // };
 
     void Setup() override {
         // for serial forwarding
@@ -106,23 +108,23 @@ class DevFsLoxGn2Transducers : public Device {
 
     void Loop() override {
         oxtank_1.Tick();
-        oxtank_2.Tick();
-        oxtank_3.Tick();
+        // oxtank_2.Tick();  // DISABLED
+        // oxtank_3.Tick();  // DISABLED
         copv_1.Tick();
-        copv_2.Tick();
-        pilot_pres.Tick();
-        qd_pres.Tick();
+        // copv_2.Tick();  // DISABLED
+        // pilot_pres.Tick();  // DISABLED
+        // qd_pres.Tick();  // DISABLED
 
         // raw values (not medians)
         FsLoxGn2TransducersPacket fs_transducers_packet{
             .ts = micros(),
             .oxtank_1 = oxtank_1.GetLatestPsi(),
-            .oxtank_2 = oxtank_2.GetLatestPsi(),
-            .oxtank_3 = oxtank_3.GetLatestPsi(),
+            .oxtank_2 = 0.0,  // oxtank_2.GetLatestPsi(),  // DISABLED
+            .oxtank_3 = 0.0,  // oxtank_3.GetLatestPsi(),  // DISABLED
             .copv_1 = copv_1.GetLatestPsi(),
-            .copv_2 = copv_2.GetLatestPsi(),
-            .pilot_pres = pilot_pres.GetLatestPsi(),
-            .qd_pres = qd_pres.GetLatestPsi(),
+            .copv_2 = 0.0,  // copv_2.GetLatestPsi(),  // DISABLED
+            .pilot_pres = 0.0,  // pilot_pres.GetLatestPsi(),  // DISABLED
+            .qd_pres = 0.0,  // qd_pres.GetLatestPsi(),  // DISABLED
             .ereg_closed = ereg_state_.ereg_closed,
             .ereg_stage_1 = ereg_state_.ereg_stage_1,
             .ereg_stage_2 = ereg_state_.ereg_stage_2,
@@ -170,12 +172,12 @@ class DevFsLoxGn2Transducers : public Device {
 
     void Recalibrate() {
         oxtank_1.Recalibrate(kCalibrateSamples);
-        oxtank_2.Recalibrate(kCalibrateSamples);
-        oxtank_3.Recalibrate(kCalibrateSamples);
+        // oxtank_2.Recalibrate(kCalibrateSamples);  // DISABLED
+        // oxtank_3.Recalibrate(kCalibrateSamples);  // DISABLED
         copv_1.Recalibrate(kCalibrateSamples);
-        copv_2.Recalibrate(kCalibrateSamples);
-        pilot_pres.Recalibrate(kCalibrateSamples);
-        qd_pres.Recalibrate(kCalibrateSamples);
+        // copv_2.Recalibrate(kCalibrateSamples);  // DISABLED
+        // pilot_pres.Recalibrate(kCalibrateSamples);  // DISABLED
+        // qd_pres.Recalibrate(kCalibrateSamples);  // DISABLED
     }
 
     template <typename T>
@@ -223,30 +225,31 @@ class DevFsLoxGn2Transducers : public Device {
     const int kWindowSize = 50;
     const int kCalibrateSamples = 500;
 
+    // TEMPORARILY DISABLED - will re-enable after testing
     // Remaining transducers that are not used by EREG
-    MovingMedianADC<Adafruit_ADS1115> pilot_pres{
-        "pilot_pres",
-        i2c4,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0, //Todo
-    };
+    // MovingMedianADC<Adafruit_ADS1115> pilot_pres{
+    //     "pilot_pres",
+    //     i2c4,
+    //     ADCAddress::VIN,
+    //     ADCMode::SingleEnded_1,
+    //     kRate,
+    //     GAIN_ONE,
+    //     kContinuous,
+    //     kWindowSize,
+    //     1.0, //Todo
+    // };
 
-    MovingMedianADC<Adafruit_ADS1115> qd_pres{
-        "qd_pres",
-        i2c4,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_0,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0, //Todo
-    };
+    // MovingMedianADC<Adafruit_ADS1115> qd_pres{
+    //     "qd_pres",
+    //     i2c4,
+    //     ADCAddress::VIN,
+    //     ADCMode::SingleEnded_0,
+    //     kRate,
+    //     GAIN_ONE,
+    //     kContinuous,
+    //     kWindowSize,
+    //     1.0, //Todo
+    // };
 };
 
 REGISTER_AVIONICS_DEVICE(DevFsLoxGn2Transducers);

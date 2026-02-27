@@ -14,6 +14,13 @@ extern "C" void app_main() {
     initArduino();
 
     Serial.begin(kSerialBaud);
+
+    // Simple heartbeat to confirm code is running
+    for (int i = 0; i < 5; i++) {
+        Serial.println("working");
+        delay(500);
+    }
+
     WiFi.mode(WIFI_STA);
 
     MacAddress this_mac_address = GetThisMacAddress();

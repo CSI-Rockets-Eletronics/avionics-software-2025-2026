@@ -113,6 +113,7 @@ class DevFsInjectorTransducers : public Device {
         kContinuous,
         kWindowSize,
         1.0,  // TODO calibrate
+        true,  // debug_skip_init - ignore I2C failures
     };
 
     // dataq
@@ -126,6 +127,7 @@ class DevFsInjectorTransducers : public Device {
         kContinuous,
         kWindowSize,
         1.0,  // TODO calibrate
+        true,  // debug_skip_init - ignore I2C failures
     };
 
     // dataq
@@ -139,6 +141,7 @@ class DevFsInjectorTransducers : public Device {
         kContinuous,
         kWindowSize,
         1.0,  // TODO calibrate
+        true,  // debug_skip_init - ignore I2C failures
     };
 };
 
