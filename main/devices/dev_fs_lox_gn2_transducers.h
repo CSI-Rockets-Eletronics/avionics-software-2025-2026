@@ -68,7 +68,7 @@ class DevFsLoxGn2Transducers : public Device {
         "copv_1",
         i2c3,
         ADCAddress::GND,
-        ADCMode::SingleEnded_1,
+        ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
         true,
