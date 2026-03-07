@@ -26,6 +26,9 @@ class DevFsPiPacketBroadcaster : public Device {
             Send(DeviceType::DevFsInjectorTransducers, *command_packet);
             delay(kSendWaitMs);
             Send(DeviceType::DevFsLoxGn2Transducers, *command_packet);
+            delay(kSendWaitMs);
+            // Send EREG commands to the EREG control device
+            Send(DeviceType::DevEregControl, *command_packet);
         } else {
             Serial.println("Unknown packet from Raspberry Pi");
         }

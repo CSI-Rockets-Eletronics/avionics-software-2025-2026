@@ -82,12 +82,11 @@ struct FsStatePacket {
     bool ereg_power;         // 1 byte
 };
 
-// size: 39 bytes
+// size: 35 bytes
 struct FsLoxGn2TransducersPacket {
     uint64_t ts;           // 8 bytes
     float oxtank_1;        // 4 bytes
     float oxtank_2;        // 4 bytes
-    float oxtank_3;        // 4 bytes
     float copv_1;          // 4 bytes
     float copv_2;          // 4 bytes
     float pilot_pres;      // 4 bytes

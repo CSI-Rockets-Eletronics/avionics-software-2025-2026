@@ -9,71 +9,62 @@ using namespace moving_median_adc;
 
 class DevFsThermocouples : public Device {
    private:
-    // I2C addresses for the 4 MCP9600 thermocouples on I2C bus 0
-    // will need to change I2C addresses once fs board is assembled
-    static const uint8_t kGn2InternalAddress = 0x60;
-    static const uint8_t kGn2ExternalAddress = 0x61;
-    static const uint8_t kLoxUpperAddress = 0x62;
-    static const uint8_t kLoxLowerAddress = 0x63;
+    // I2C addresses for the 3 MCP9600 thermocouples on i2c0
+    // Devices found on i2c0 (SDA=42, SCL=37): 0x64, 0x65, 0x66
+    static const uint8_t kGn2InternalAddress = 0x64;
+    static const uint8_t kLoxLowerAddress = 0x65;
+    static const uint8_t kLoxUpperAddress = 0x66;
 
-    I2CWire i2c0{0, 42, 37};  //I2C bus "5"
+    I2CWire i2c0{0, 42, 37};  // I2C bus 0
 
     MCP9600 gn2_internal;
-    MCP9600 gn2_external;
-    MCP9600 lox_upper;
     MCP9600 lox_lower;
+    MCP9600 lox_upper;
 
     utils::FrequencyLogger thermocouples_freq_logger{"Thermocouples"};
 
    public:
     void Setup() override {
-        // Initialize all 4 MCP9600 thermocouples on I2C bus 0
+        // Initialize the 3 MCP9600 thermocouples on I2C bus 0
         if (!gn2_internal.begin(kGn2InternalAddress, i2c0.wire))
             Die("gn2_internal init failed");
         gn2_internal.setThermocoupleType(TYPE_E);
 
-        if (!gn2_external.begin(kGn2ExternalAddress, i2c0.wire))
-            Die("gn2_external init failed");
-        gn2_external.setThermocoupleType(TYPE_E);
+        if (!lox_lower.begin(kLoxLowerAddress, i2c0.wire))
+            Die("lox_lower init failed");
+        lox_lower.setThermocoupleType(TYPE_E);
 
         if (!lox_upper.begin(kLoxUpperAddress, i2c0.wire))
             Die("lox_upper init failed");
         lox_upper.setThermocoupleType(TYPE_E);
-
-        if (!lox_lower.begin(kLoxLowerAddress, i2c0.wire))
-            Die("lox_lower init failed");
-        lox_lower.setThermocoupleType(TYPE_E);
     }
 
     void Loop() override {
-        // Read temperatures from all 4 MCP9600 thermocouples
+        // Read temperatures from the 3 MCP9600 thermocouples
         float gn2_internal_celsius = gn2_internal.getThermocoupleTemp();
-        float gn2_external_celsius = gn2_external.getThermocoupleTemp();
-        float lox_upper_celsius = lox_upper.getThermocoupleTemp();
         float lox_lower_celsius = lox_lower.getThermocoupleTemp();
+        float lox_upper_celsius = lox_upper.getThermocoupleTemp();
 
         // Check for sensor errors
         HandleMCP9600Fault("gn2_internal", gn2_internal, gn2_internal_celsius);
-        HandleMCP9600Fault("gn2_external", gn2_external, gn2_external_celsius);
-        HandleMCP9600Fault("lox_upper", lox_upper, lox_upper_celsius);
         HandleMCP9600Fault("lox_lower", lox_lower, lox_lower_celsius);
+        HandleMCP9600Fault("lox_upper", lox_upper, lox_upper_celsius);
 
         FsThermocouplesPacket thermo_packet{
             .ts = micros(),
             .gn2_internal_celsius = CoalesceNaN(gn2_internal_celsius),
-            .gn2_external_celsius = CoalesceNaN(gn2_external_celsius),
+            .gn2_external_celsius = 0.0f,  // Not connected
             .lox_upper_celsius = CoalesceNaN(lox_upper_celsius),
             .lox_lower_celsius = CoalesceNaN(lox_lower_celsius),
             .dummy = 0,
         };
-        Send(DeviceType::DevFsInjectorTransducers, thermo_packet);
+        Send(DeviceType::DevFsThermocouples, thermo_packet);
 
         thermocouples_freq_logger.Tick();
 
         // PrintCelsius("gn2_internal", gn2_internal_celsius);
-        // PrintCelsius("gn2_external", gn2_external_celsius);
-        // PrintCelsius("lox_upper", lox_upper_celsius);
         // PrintCelsius("lox_lower", lox_lower_celsius);
+        // PrintCelsius("lox_upper", lox_upper_celsius);
 
         delay(100);
     }
