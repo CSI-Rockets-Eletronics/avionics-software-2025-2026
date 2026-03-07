@@ -38,6 +38,8 @@ extern "C" void app_main() {
         EspNowSetup([](auto data, auto len) { Node::OnReceive(data, len); });
     }
 
+    Serial.println("Initialization complete - all readings ready");
+
     this_node.Run();
 
     vTaskDelete(nullptr);  // this lets other tasks run forever

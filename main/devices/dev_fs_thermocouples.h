@@ -58,7 +58,7 @@ class DevFsThermocouples : public Device {
             .lox_lower_celsius = CoalesceNaN(lox_lower_celsius),
             .dummy = 0,
         };
-        Send(DeviceType::DevFsThermocouples, thermo_packet);
+        Send(DeviceType::DevFsLoxGn2Transducers, thermo_packet);
 
         thermocouples_freq_logger.Tick();
 

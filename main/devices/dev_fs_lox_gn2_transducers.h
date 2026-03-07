@@ -25,12 +25,12 @@ class DevFsLoxGn2Transducers : public Device {
     I2CWire i2c4{1, 14, 13};
 
     // Public transducers - accessed by DevEregControl for PID loop
-    // i2c4 transducers - oxtank readings
+    // i2c4 transducers - oxtank readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> oxtank_1{
         "oxtank_1",
         i2c4,
         ADCAddress::GND,
-        ADCMode::SingleEnded_1,
+        ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
         true,
@@ -42,7 +42,7 @@ class DevFsLoxGn2Transducers : public Device {
         "oxtank_2",
         i2c4,
         ADCAddress::GND,
-        ADCMode::SingleEnded_0,
+        ADCMode::SingleEnded_1,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
         true,
@@ -50,12 +50,12 @@ class DevFsLoxGn2Transducers : public Device {
         1.0, //Todo
     };
 
-    // i2c4 transducers - copv readings
+    // i2c3 transducers - copv readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> copv_1{
         "copv_1",
-        i2c4,
+        i2c3,
         ADCAddress::GND,
-        ADCMode::SingleEnded_2,
+        ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
         true,
@@ -65,9 +65,9 @@ class DevFsLoxGn2Transducers : public Device {
 
     MovingMedianADC<Adafruit_ADS1115> copv_2{
         "copv_2",
-        i2c4,
+        i2c3,
         ADCAddress::GND,
-        ADCMode::SingleEnded_3,
+        ADCMode::SingleEnded_1,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
         true,
@@ -132,8 +132,10 @@ class DevFsLoxGn2Transducers : public Device {
         FsCommandPacket command_packet;
         FsStatePacket state_packet;
         EregStateData ereg_state_data;
+        RelayCurrentMonitorPacket relay_imon_packet;
+        FsThermocouplesPacket thermo_packet;
 
-        switch (Receive(&command_packet, &state_packet, &ereg_state_data)) {
+        switch (Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet)) {
             case 0:
                 if (command_packet.command == FsCommand::RESTART) {
                     Die("Restarting by command");
@@ -149,6 +151,14 @@ class DevFsLoxGn2Transducers : public Device {
             case 2:
                 // Received EREG state from DevEregControl
                 ereg_state_ = ereg_state_data;
+                break;
+            case 3:
+                // Received relay current monitor data from DevRelayImon
+                SendToPi(relay_imon_packet);
+                break;
+            case 4:
+                // Received thermocouple data from DevFsThermocouples
+                SendToPi(thermo_packet);
                 break;
         }
     }
@@ -207,12 +217,12 @@ class DevFsLoxGn2Transducers : public Device {
     const int kWindowSize = 50;
     const int kCalibrateSamples = 500;
 
-    // i2c4 transducers - pilot and qd pressure readings (VCC address)
+    // i2c3 transducers - pilot and qd pressure readings (ADC @ VIN address)
     MovingMedianADC<Adafruit_ADS1115> pilot_pres{
         "pilot_pres",
-        i2c4,
-        ADCAddress::VCC,
-        ADCMode::SingleEnded_1,
+        i2c3,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_0,
         kRate,
         GAIN_ONE,
         kContinuous,
@@ -222,9 +232,9 @@ class DevFsLoxGn2Transducers : public Device {
 
     MovingMedianADC<Adafruit_ADS1115> qd_pres{
         "qd_pres",
-        i2c4,
-        ADCAddress::VCC,
-        ADCMode::SingleEnded_0,
+        i2c3,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_1,
         kRate,
         GAIN_ONE,
         kContinuous,

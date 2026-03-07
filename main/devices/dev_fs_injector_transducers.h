@@ -36,9 +36,8 @@ class DevFsInjectorTransducers : public Device {
 
         FsThermocouplesPacket thermo_packet;
         FsCommandPacket command_packet;
-        CapFillPacket cap_fill_packet;
 
-        switch (Receive(&thermo_packet, &command_packet, &cap_fill_packet)) {
+        switch (Receive(&thermo_packet, &command_packet)) {
             case 0:
                 SendToOtherEsp32(thermo_packet);
                 break;
@@ -50,9 +49,6 @@ class DevFsInjectorTransducers : public Device {
                     FsCommand::RECALIBRATE_TRANSDUCERS) {
                     Recalibrate();
                 }
-                break;
-            case 2:
-                SendToOtherEsp32(cap_fill_packet);
                 break;
         }
 
@@ -102,12 +98,12 @@ class DevFsInjectorTransducers : public Device {
     I2CWire i2c1{0, 47, 21};
     I2CWire i2c2{1, 14, 13};
 
-    // dataq
+    // dataq - using AIN0 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> injector_1{
         "injector_1",
         i2c1,
         ADCAddress::GND,
-        ADCMode::SingleEnded_1,
+        ADCMode::SingleEnded_0,
         kRate,
         GAIN_ONE,
         kContinuous,
@@ -116,12 +112,12 @@ class DevFsInjectorTransducers : public Device {
         true,  // debug_skip_init - ignore I2C failures
     };
 
-    // dataq
+    // dataq - using AIN0 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> injector_2{
         "injector_2",
         i2c2,
         ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
+        ADCMode::SingleEnded_0,
         kRate,
         GAIN_ONE,
         kContinuous,
@@ -130,7 +126,7 @@ class DevFsInjectorTransducers : public Device {
         true,  // debug_skip_init - ignore I2C failures
     };
 
-    // dataq
+    // dataq - using AIN1 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> upper_cc{
         "upper_cc",
         i2c1,
