@@ -21,8 +21,8 @@ struct EregStateData {
 class DevFsLoxGn2Transducers : public Device {
    public:
     // I2C buses (needed by transducers)
-    I2CWire i2c3{0, 47, 21};
-    I2CWire i2c4{1, 14, 13};
+    I2CWire i2c3{3, 47, 21};  // Changed from bus 0 to bus 3
+    I2CWire i2c4{4, 14, 13};  // Changed from bus 1 to bus 4
 
     // Public transducers - accessed by DevEregControl for PID loop
     // i2c4 transducers - oxtank readings (ADC @ GND address)
@@ -76,20 +76,28 @@ class DevFsLoxGn2Transducers : public Device {
     };
 
     void Setup() override {
+        Serial.println("    DevFsLoxGn2Transducers::Setup() - Starting");
+
         // for serial forwarding
+        Serial.println("    Initializing Serial1 for forwarding");
         Serial1.begin(kForwardSerialBaud, SERIAL_8N1, kForwardSerialRxPin,
                       kForwardSerialTxPin);
 
         // for raspberry pi
+        Serial.println("    Initializing Serial2 for Raspberry Pi");
         Serial2.begin(kPiSerialBaud, SERIAL_8N1, kPiSerialRxPin,
                       kPiSerialTxPin);
 
+        Serial.println("    Calibrating transducers (this may take a moment)...");
         Recalibrate();
+        Serial.println("    Transducers calibrated");
 
         // Initialize EREG state to CLOSED (safe default)
         ereg_state_.ereg_closed = true;
         ereg_state_.ereg_stage_1 = false;
         ereg_state_.ereg_stage_2 = false;
+
+        Serial.println("    DevFsLoxGn2Transducers::Setup() - Complete");
     }
 
     void Loop() override {
@@ -174,6 +182,8 @@ class DevFsLoxGn2Transducers : public Device {
 
     template <typename T>
     void SendToPi(const T& data) {
+        Serial.print("[PI TX] Sending packet to Raspberry Pi, size: ");
+        Serial.println(sizeof(data));
         Serial2.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
         Serial2.write(kPacketDelimeter1);
         Serial2.write(kPacketDelimeter2);

@@ -15,7 +15,7 @@ class DevFsThermocouples : public Device {
     static const uint8_t kLoxLowerAddress = 0x65;
     static const uint8_t kLoxUpperAddress = 0x66;
 
-    I2CWire i2c0{0, 42, 37};  // I2C bus 0
+    I2CWire i2c0{0, 42, 37, 400000};  // I2C bus 0, 400kHz (same as working scanner)
 
     MCP9600 gn2_internal;
     MCP9600 lox_lower;
@@ -26,17 +26,90 @@ class DevFsThermocouples : public Device {
    public:
     void Setup() override {
         // Initialize the 3 MCP9600 thermocouples on I2C bus 0
-        if (!gn2_internal.begin(kGn2InternalAddress, i2c0.wire))
-            Die("gn2_internal init failed");
-        gn2_internal.setThermocoupleType(TYPE_E);
+        // MCP9600 is known to be "fussy" with I2C communication
+        // Multiple retries and delays are needed for reliable initialization
 
-        if (!lox_lower.begin(kLoxLowerAddress, i2c0.wire))
-            Die("lox_lower init failed");
-        lox_lower.setThermocoupleType(TYPE_E);
+        // Add initial delay for I2C bus to stabilize
+        delay(200);
 
-        if (!lox_upper.begin(kLoxUpperAddress, i2c0.wire))
-            Die("lox_upper init failed");
-        lox_upper.setThermocoupleType(TYPE_E);
+        // Initialize with retries - MCP9600 often fails on first attempt
+        if (!InitMCP9600WithRetries(gn2_internal, kGn2InternalAddress, "gn2_internal"))
+            Die("gn2_internal init failed after retries");
+        delay(200);
+
+        if (!InitMCP9600WithRetries(lox_lower, kLoxLowerAddress, "lox_lower"))
+            Die("lox_lower init failed after retries");
+        delay(200);
+
+        if (!InitMCP9600WithRetries(lox_upper, kLoxUpperAddress, "lox_upper"))
+            Die("lox_upper init failed after retries");
+        delay(200);
+
+        Serial.println("All MCP9600 thermocouples initialized successfully");
+    }
+
+    bool InitMCP9600WithRetries(MCP9600& tc, uint8_t address, const char* name) {
+        const int maxRetries = 5;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            Serial.print("Initializing ");
+            Serial.print(name);
+            Serial.print(" at 0x");
+            Serial.print(address, HEX);
+            Serial.print(" (attempt ");
+            Serial.print(attempt);
+            Serial.print("/");
+            Serial.print(maxRetries);
+            Serial.println(")");
+
+            // Per MCP9600 library source: begin() calls checkDeviceID() which reads
+            // the device ID register twice (first read often fails, second succeeds)
+            // Do NOT call isConnected() after begin() as it will likely fail
+            if (tc.begin(address, i2c0.wire)) {
+                Serial.print(name);
+                Serial.println(" begin() succeeded");
+
+                // Wait for device to be ready
+                delay(100);
+
+                // Set thermocouple type
+                uint8_t result = tc.setThermocoupleType(TYPE_E);
+                if (result == 0) {
+                    Serial.print(name);
+                    Serial.println(" type set to TYPE_E");
+
+                    // Wait before verification
+                    delay(100);
+
+                    // Verify the type was set correctly
+                    Thermocouple_Type readType = tc.getThermocoupleType();
+                    if (readType == TYPE_E) {
+                        Serial.print(name);
+                        Serial.println(" INITIALIZATION SUCCESSFUL");
+                        return true;
+                    } else {
+                        Serial.print(name);
+                        Serial.print(" type verification failed - got ");
+                        Serial.println(readType);
+                    }
+                } else {
+                    Serial.print(name);
+                    Serial.print(" setThermocoupleType failed with code ");
+                    Serial.println(result);
+                }
+            } else {
+                Serial.print(name);
+                Serial.println(" begin() returned false - device ID check failed");
+            }
+
+            // Wait before retry, increasing delay with each attempt
+            Serial.print("Waiting before retry...");
+            delay(300 * attempt);
+            Serial.println("retrying");
+        }
+
+        Serial.print(name);
+        Serial.println(" FAILED AFTER ALL RETRIES");
+        return false;
     }
 
     void Loop() override {

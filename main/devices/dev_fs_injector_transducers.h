@@ -95,8 +95,8 @@ class DevFsInjectorTransducers : public Device {
     const int kWindowSize = 50;
     const int kCalibrateSamples = 500;
 
-    I2CWire i2c1{0, 47, 21};
-    I2CWire i2c2{1, 14, 13};
+    I2CWire i2c1{1, 47, 21};  // Changed from bus 0 to bus 1
+    I2CWire i2c2{2, 14, 13};  // Changed from bus 1 to bus 2
 
     // dataq - using AIN0 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> injector_1{

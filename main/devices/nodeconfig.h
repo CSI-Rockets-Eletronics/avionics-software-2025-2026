@@ -30,7 +30,7 @@ static Node fs_relays{ //i2c5/6
     MacAddress{"50:78:7d:35:1f:8c"},
     {
         DeviceType::DevFsRelays,
-        DeviceType::DevFsThermocouples,  // Commented out - no power yet
+        // DeviceType::DevFsThermocouples,  // Commented out - no power yet
         DeviceType::DevRelayImon,
     },
 };
