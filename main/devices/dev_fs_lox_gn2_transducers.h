@@ -182,11 +182,39 @@ class DevFsLoxGn2Transducers : public Device {
 
     template <typename T>
     void SendToPi(const T& data) {
-        Serial.print("[PI TX] Sending packet to Raspberry Pi, size: ");
-        Serial.println(sizeof(data));
-        Serial2.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
-        Serial2.write(kPacketDelimeter1);
-        Serial2.write(kPacketDelimeter2);
+        size_t packet_size = sizeof(data);
+        const uint8_t* data_ptr = reinterpret_cast<const uint8_t*>(&data);
+
+        Serial.print("[PI TX] Sending packet, size: ");
+        Serial.print(packet_size);
+
+        // Show first few bytes of actual data to confirm it's not all zeros
+        Serial.print(" bytes, data preview: 0x");
+        for (size_t i = 0; i < min(packet_size, (size_t)4); i++) {
+            if (data_ptr[i] < 0x10) Serial.print("0");
+            Serial.print(data_ptr[i], HEX);
+            Serial.print(" ");
+        }
+
+        // Write packet data
+        size_t bytes_written = Serial2.write(data_ptr, packet_size);
+
+        // Write delimiters
+        size_t delim1_written = Serial2.write(kPacketDelimeter1);
+        size_t delim2_written = Serial2.write(kPacketDelimeter2);
+
+        // Verify all bytes were written
+        if (bytes_written != packet_size) {
+            Serial.print(" [ERROR: Only wrote ");
+            Serial.print(bytes_written);
+            Serial.print("/");
+            Serial.print(packet_size);
+            Serial.println(" bytes!]");
+        } else if (delim1_written != 1 || delim2_written != 1) {
+            Serial.println(" [ERROR: Failed to write delimiters!]");
+        } else {
+            Serial.println(" [OK]");
+        }
     }
 
    private:
@@ -212,10 +240,10 @@ class DevFsLoxGn2Transducers : public Device {
 
     // ===== for raspberry pi =====
 
-    static const int kPiSerialRxPin = 8;
-    static const int kPiSerialTxPin = 18;
+    static const int kPiSerialRxPin = 18;  // ESP32 RX <- Pi TX
+    static const int kPiSerialTxPin = 8;   // ESP32 TX -> Pi RX
 
-    static const unsigned long kPiSerialBaud = 230400;
+    static const unsigned long kPiSerialBaud = 115200;
 
     static const uint8_t kPacketDelimeter1 = 0b10101010;
     static const uint8_t kPacketDelimeter2 = 0b01010101;
@@ -225,7 +253,7 @@ class DevFsLoxGn2Transducers : public Device {
     const uint16_t kRate = RATE_ADS1115_860SPS;
     const bool kContinuous = true;
     const int kWindowSize = 50;
-    const int kCalibrateSamples = 500;
+    const int kCalibrateSamples = 100;  // Reduced from 500 for faster calibration
 
     // i2c3 transducers - pilot and qd pressure readings (ADC @ VIN address)
     MovingMedianADC<Adafruit_ADS1115> pilot_pres{

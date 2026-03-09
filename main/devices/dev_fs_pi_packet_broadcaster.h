@@ -45,10 +45,10 @@ class DevFsPiPacketBroadcaster : public Device {
     // time to allow Send() to complete
     static const int kSendWaitMs = 500;
 
-    static const int kPiSerialRxPin = 8;
-    static const int kPiSerialTxPin = 18;
+    static const int kPiSerialRxPin = 18;  // ESP32 RX <- Pi TX
+    static const int kPiSerialTxPin = 8;   // ESP32 TX -> Pi RX
 
-    static const unsigned long kPiSerialBaud = 230400;
+    static const unsigned long kPiSerialBaud = 115200;
 
     // just VS code intellisense being dumb; Serial2 is accessible globally
     HardwareSerial Serial2{2};
