@@ -19,27 +19,31 @@ enum class FsCommand : uint8_t {
     STATE_GN2_PULSE_FILL_B = 12,
     STATE_GN2_PULSE_FILL_C = 13,
     STATE_FIRE = 20,
-    STATE_FIRE_MANUAL_DOME_PILOT_OPEN = 21,
+    STATE_FIRE_MANUAL_PRESS_PILOT = 21,
     STATE_FIRE_MANUAL_DOME_PILOT_CLOSE = 22,
     STATE_FIRE_MANUAL_IGNITER = 23,
     STATE_FIRE_MANUAL_RUN = 24,
+    EREG_CLOSED = 30,
+    EREG_STAGE_1 = 31,
+    EREG_STAGE_2 = 32,
     RECALIBRATE_TRANSDUCERS = 100,
     RESTART = 110,
 };
 
-// size: 9 bytes
+// size: 10 bytes
 struct FsCommandPacket {
     FsCommand command;  // 1 byte
 
     // the solenoid state fields below are only used if command is CUSTOM
-    bool gn2_abort;          // 1 byte
+    bool gn2_drain;          // 1 byte
     bool gn2_fill;           // 1 byte
-    bool pilot_vent;         // 1 byte
-    bool dome_pilot_open;    // 1 byte
+    bool depress;            // 1 byte
+    bool press_pilot;        // 1 byte
     bool run;                // 1 byte
-    bool five_two;           // 1 byte
-    bool water_suppression;  // 1 byte
+    bool lox_fill;           // 1 byte
+    bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
+    bool ereg_power;         // 1 byte
 };
 
 #define FROM_FS_COMMAND(COMMAND) COMMAND = (uint8_t)FsCommand::STATE_##COMMAND
@@ -57,48 +61,79 @@ enum class FsState : uint8_t {
     FROM_FS_COMMAND(GN2_PULSE_FILL_B),
     FROM_FS_COMMAND(GN2_PULSE_FILL_C),
     FROM_FS_COMMAND(FIRE),
-    FROM_FS_COMMAND(FIRE_MANUAL_DOME_PILOT_OPEN),
+    FROM_FS_COMMAND(FIRE_MANUAL_PRESS_PILOT),
     FROM_FS_COMMAND(FIRE_MANUAL_DOME_PILOT_CLOSE),
     FROM_FS_COMMAND(FIRE_MANUAL_IGNITER),
     FROM_FS_COMMAND(FIRE_MANUAL_RUN),
 };
 
-// size: 13 bytes
+// size: 14 bytes
 struct FsStatePacket {
     uint32_t ms_since_boot;  // 4 bytes
     FsState state;           // 1 byte
-    bool gn2_abort;          // 1 byte
+    bool gn2_drain;          // 1 byte
     bool gn2_fill;           // 1 byte
-    bool pilot_vent;         // 1 byte
-    bool dome_pilot_open;    // 1 byte
+    bool depress;         // 1 byte
+    bool press_pilot;    // 1 byte
     bool run;                // 1 byte
-    bool five_two;           // 1 byte
-    bool water_suppression;  // 1 byte
+    bool lox_fill;           // 1 byte
+    bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
+    bool ereg_power;         // 1 byte
 };
 
-// size: 24 bytes
+// size: 35 bytes
 struct FsLoxGn2TransducersPacket {
     uint64_t ts;           // 8 bytes
-    float lox_upper;       // 4 bytes
-    float chamber;         // 4 bytes
-    float gn2_manifold_1;  // 4 bytes
-    float gn2_manifold_2;  // 4 bytes
-};
-
-// size: 16 bytes
-struct FsInjectorTransducersPacket {
-    uint64_t ts;                // 8 bytes
-    float injector_manifold_1;  // 4 bytes
-    float injector_manifold_2;  // 4 bytes
+    float oxtank_1;        // 4 bytes
+    float oxtank_2;        // 4 bytes
+    float copv_1;          // 4 bytes
+    float copv_2;          // 4 bytes
+    float pilot_pres;      // 4 bytes
+    float qd_pres;         // 4 bytes
+    bool ereg_closed;      // 1 byte
+    bool ereg_stage_1;     // 1 byte
+    bool ereg_stage_2;     // 1 byte
 };
 
 // size: 20 bytes
-struct FsThermocouplesPacket {
+struct FsInjectorTransducersPacket {
     uint64_t ts;                // 8 bytes
-    float lox_celsius;          // 4 bytes
-    float gn2_celsius;          // 4 bytes
-    float gn2_surface_celsius;  // 4 bytes
+    float injector_1;           // 4 bytes
+    float injector_2;           // 4 bytes
+    float upper_cc;             // 4 bytes
+};
+
+// size: 25 bytes
+struct FsThermocouplesPacket {
+    uint64_t ts;                   // 8 bytes
+    float gn2_internal_celsius;    // 4 bytes
+    float gn2_external_celsius;    // 4 bytes
+    float lox_upper_celsius;       // 4 bytes
+    float lox_lower_celsius;       // 4 bytes
+    uint8_t dummy;                 // 1 byte (for unique packet size)
+};
+
+// size: 17 bytes
+struct CapFillPacket {
+    uint64_t ts;            // 8 bytes
+    float cap_fill_base;    // 4 bytes
+    float cap_fill_actual;  // 4 bytes
+    int8_t board_temp;      // 1 byte
+};
+
+// size: 26 bytes
+struct RelayCurrentMonitorPacket {
+    uint64_t ts;                // 8 bytes
+    int16_t gn2_drain_ma;       // 2 bytes
+    int16_t gn2_fill_ma;        // 2 bytes
+    int16_t depress_ma;         // 2 bytes
+    int16_t press_pilot_ma;     // 2 bytes
+    int16_t run_ma;             // 2 bytes
+    int16_t lox_fill_ma;        // 2 bytes
+    int16_t lox_disconnect_ma;  // 2 bytes
+    int16_t igniter_ma;         // 2 bytes
+    int16_t ereg_power_ma;      // 2 bytes
 };
 
 // ===== AVIONICS PACKETS =====
@@ -114,7 +149,7 @@ struct GpsPacket {
     float altitude;           // 4 bytes
 };
 
-// size: 20 bytes
+// size: 21 bytes
 struct ImuPacket {
     uint64_t ts;  // 8 bytes
     int16_t ax;   // 2 bytes
@@ -123,6 +158,7 @@ struct ImuPacket {
     int16_t gx;   // 2 bytes
     int16_t gy;   // 2 bytes
     int16_t gz;   // 2 bytes
+    uint8_t dummy;                 // 1 byte (for unique packet size)
 };
 
 // size: 16 bytes

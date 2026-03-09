@@ -103,7 +103,13 @@ Node::Node(std::string name, MacAddress mac_address,
 }
 
 void Node::Run() {
+    Serial.print("Node::Run() - Creating ");
+    Serial.print(device_types.size());
+    Serial.println(" devices");
+
     for (auto type : device_types) {
+        Serial.print("  Creating device type: ");
+        Serial.println(static_cast<int>(type));
         auto factory = device_factories[type];
         if (!factory) {
             Die("Device factory not found");
@@ -111,8 +117,19 @@ void Node::Run() {
         devices_.push_back(factory());
     }
 
-    for (auto& dev : devices_) {
+    Serial.println("Setting up devices and creating tasks...");
+    for (size_t i = 0; i < devices_.size(); i++) {
+        auto& dev = devices_[i];
+        Serial.print("  Setting up device ");
+        Serial.print(i);
+        Serial.print(" (type: ");
+        Serial.print(static_cast<int>(device_types[i]));
+        Serial.println(")");
+
         dev->Setup();
+
+        Serial.print("  Creating task for device ");
+        Serial.println(i);
 
         // certain libraries crash if the task isn't pinned to core 0
         auto res = xTaskCreatePinnedToCore(
@@ -129,6 +146,7 @@ void Node::Run() {
             Die("Failed to create device loop task");
         }
     }
+    Serial.println("All devices initialized and tasks created");
 }
 
 std::optional<std::reference_wrapper<Node>> Node::FindNode(MacAddress mac) {
@@ -188,6 +206,9 @@ void Node::OnReceive(uint8_t* bytes, size_t len) {
     }
 
     DeviceType from_device = *reinterpret_cast<const DeviceType*>(bytes);
+    Serial.print("[DEVICE RX] Packet queued for device type: ");
+    Serial.println(static_cast<int>(from_device));
+
     auto maybe_dev = FindDevice(from_device);
     if (!maybe_dev) {
         Serial.println("Device not found, ignoring...");

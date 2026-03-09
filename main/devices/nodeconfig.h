@@ -5,40 +5,48 @@
 
 namespace avionics {
 
-static Node fs_scientific1{
+static Node fs_scientific1{ //i2c3/4
     "FsScientific1",
-    MacAddress{"f4:12:fa:83:de:cc"},
+    MacAddress{"50:78:7d:35:20:48"},
     {
         DeviceType::DevFsLoxGn2Transducers,
-        DeviceType::DevFsPiPacketBroadcaster,
+        //DeviceType::DevFsPiPacketBroadcaster,
+        //DeviceType::DevEregControl,
     },
 };
 
-static Node fs_scientific2{
+
+static Node fs_scientific2{ //i2c1/2
     "FsScientific2",
-    MacAddress{"f4:12:fa:5b:42:c8"},
+    MacAddress{"50:78:7d:35:20:58"},
     {
         DeviceType::DevFsInjectorTransducers,
-        DeviceType::DevFsThermocouples,
     },
 };
 
-static Node fs_relays{
+
+static Node fs_relays{ //i2c5/6
     "FsRelays",
-    MacAddress{"34:85:18:a5:80:4c"},
-    {DeviceType::DevFsRelays},
+    MacAddress{"50:78:7d:35:1f:8c"},
+    {
+        DeviceType::DevFsRelays,
+        // DeviceType::DevFsThermocouples,  // Commented out - no power yet
+        DeviceType::DevRelayImon,
+    },
+};
+
+static Node cap_fill{
+    "CapFill",
+    MacAddress{"34:85:18:a5:87:f0"},
+    {
+        // DeviceType::DevCapFill,  // Commented out - no power yet
+    },
 };
 
 static Node rocket_radio{
     "RocketRadio",
     MacAddress{"34:85:18:a5:88:50"},
     {DeviceType::DevRocketRadio},
-};
-
-static Node copv_fan{
-    "CopvFan",
-    MacAddress{"34:85:18:a4:77:cc"},
-    {DeviceType::DevCopvFan},
 };
 
 static Node pos_tracking{
