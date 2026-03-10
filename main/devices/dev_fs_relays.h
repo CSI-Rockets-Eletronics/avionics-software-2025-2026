@@ -103,7 +103,11 @@ class DevFsRelays : public Device {
             return;
         }
 
+        Serial.print("[FS RELAYS] Received FsCommandPacket, command: ");
+        Serial.println(static_cast<int>(command_packet.command));
+
         if (command_packet.command == FsCommand::RESTART) {
+            Serial.println("[FS RELAYS] RESTART command received - rebooting!");
             Die("Restarting by command");
             return;
         }
@@ -163,8 +167,15 @@ class DevFsRelays : public Device {
             enter_depress_pulse_ms = millis();
         }
 
-        Serial.print("Entered state: ");
-        Serial.println(static_cast<int>(cur_state));
+        Serial.print("[FS RELAYS] Entered state: ");
+        Serial.print(static_cast<int>(cur_state));
+        if (prev_state != cur_state) {
+            Serial.print(" (changed from ");
+            Serial.print(static_cast<int>(prev_state));
+            Serial.println(")");
+        } else {
+            Serial.println(" (no change)");
+        }
     }
 
     void TransitionStates() {
@@ -195,8 +206,10 @@ class DevFsRelays : public Device {
     }
 
     void UpdateRelayStates() {
-        // reset all relay states
+        // reset all relay states except ereg_power (persists beyond CUSTOM timeout)
+        bool preserve_ereg_power = relay_states.ereg_power;
         relay_states = RelayStates();
+        relay_states.ereg_power = preserve_ereg_power;
 
         // set all relays except for the pilot vent
 

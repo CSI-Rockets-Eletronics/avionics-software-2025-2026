@@ -206,12 +206,12 @@ void Node::OnReceive(uint8_t* bytes, size_t len) {
     }
 
     DeviceType from_device = *reinterpret_cast<const DeviceType*>(bytes);
-    Serial.print("[DEVICE RX] Packet queued for device type: ");
-    Serial.println(static_cast<int>(from_device));
+    // Serial.print("[DEVICE RX] Packet queued for device type: ");
+    // Serial.println(static_cast<int>(from_device));
 
     auto maybe_dev = FindDevice(from_device);
     if (!maybe_dev) {
-        Serial.println("Device not found, ignoring...");
+        // Serial.println("Device not found, ignoring...");
         return;
     }
     auto& dev = maybe_dev->get();

@@ -49,8 +49,15 @@ ReceiveCallback on_receive_cb;
 static void OnDataReceived(const esp_now_recv_info_t* _info,
                            const uint8_t* data, int len) {
     // note: EspNowSend may call this function with _info == nullptr
-    Serial.print("[ESP-NOW RX] Received packet, length: ");
-    Serial.println(len);
+    // Serial.print("[ESP-NOW RX] Received packet, length: ");
+    // Serial.print(len);
+    // Serial.print(" bytes, data: 0x");
+    // for (int i = 0; i < min(len, 8); i++) {
+    //     if (data[i] < 0x10) Serial.print("0");
+    //     Serial.print(data[i], HEX);
+    //     Serial.print(" ");
+    // }
+    // Serial.println();
 
     if (on_receive_cb) {
         uint8_t data_copy[len];
@@ -126,7 +133,14 @@ void EspNowSendInMutex(const MacAddress& to_address, const uint8_t* bytes,
     Serial.print("[ESP-NOW TX] Sending packet to ");
     Serial.print(to_address.ToString().c_str());
     Serial.print(", length: ");
-    Serial.println(len);
+    Serial.print(len);
+    Serial.print(" bytes, data: 0x");
+    for (size_t i = 0; i < min(len, (size_t)8); i++) {
+        if (bytes[i] < 0x10) Serial.print("0");
+        Serial.print(bytes[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println();
 
     if (esp_now_send(to_address.ReadData(), bytes, len) != ESP_OK) {
         send_in_flight = false;

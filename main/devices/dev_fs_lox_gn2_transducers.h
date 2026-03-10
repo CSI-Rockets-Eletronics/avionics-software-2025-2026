@@ -145,6 +145,8 @@ class DevFsLoxGn2Transducers : public Device {
 
         switch (Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet)) {
             case 0:
+                Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
+                Serial.println(static_cast<int>(command_packet.command));
                 if (command_packet.command == FsCommand::RESTART) {
                     Die("Restarting by command");
                 }
@@ -154,18 +156,30 @@ class DevFsLoxGn2Transducers : public Device {
                 }
                 break;
             case 1:
+                // Serial.print("[GN2 TRANSDUCERS] Received FsStatePacket from FsRelays, state: ");
+                // Serial.print(static_cast<int>(state_packet.state));
+                // Serial.print(", ms_since_boot: ");
+                // Serial.println(state_packet.ms_since_boot);
                 SendToPi(state_packet);
                 break;
             case 2:
                 // Received EREG state from DevEregControl
+                // Serial.print("[GN2 TRANSDUCERS] Received EregStateData: closed=");
+                // Serial.print(ereg_state_data.ereg_closed);
+                // Serial.print(", stage1=");
+                // Serial.print(ereg_state_data.ereg_stage_1);
+                // Serial.print(", stage2=");
+                // Serial.println(ereg_state_data.ereg_stage_2);
                 ereg_state_ = ereg_state_data;
                 break;
             case 3:
                 // Received relay current monitor data from DevRelayImon
+                // Serial.println("[GN2 TRANSDUCERS] Received RelayCurrentMonitorPacket from FsRelays");
                 SendToPi(relay_imon_packet);
                 break;
             case 4:
                 // Received thermocouple data from DevFsThermocouples
+                // Serial.println("[GN2 TRANSDUCERS] Received FsThermocouplesPacket");
                 SendToPi(thermo_packet);
                 break;
         }
@@ -185,16 +199,16 @@ class DevFsLoxGn2Transducers : public Device {
         size_t packet_size = sizeof(data);
         const uint8_t* data_ptr = reinterpret_cast<const uint8_t*>(&data);
 
-        Serial.print("[PI TX] Sending packet, size: ");
-        Serial.print(packet_size);
+        // Serial.print("[PI TX] Sending packet, size: ");
+        // Serial.print(packet_size);
 
-        // Show first few bytes of actual data to confirm it's not all zeros
-        Serial.print(" bytes, data preview: 0x");
-        for (size_t i = 0; i < min(packet_size, (size_t)4); i++) {
-            if (data_ptr[i] < 0x10) Serial.print("0");
-            Serial.print(data_ptr[i], HEX);
-            Serial.print(" ");
-        }
+        // // Show first few bytes of actual data to confirm it's not all zeros
+        // Serial.print(" bytes, data preview: 0x");
+        // for (size_t i = 0; i < min(packet_size, (size_t)4); i++) {
+        //     if (data_ptr[i] < 0x10) Serial.print("0");
+        //     Serial.print(data_ptr[i], HEX);
+        //     Serial.print(" ");
+        // }
 
         // Write packet data
         size_t bytes_written = Serial2.write(data_ptr, packet_size);
@@ -205,16 +219,17 @@ class DevFsLoxGn2Transducers : public Device {
 
         // Verify all bytes were written
         if (bytes_written != packet_size) {
-            Serial.print(" [ERROR: Only wrote ");
+            Serial.print("[PI TX ERROR] Only wrote ");
             Serial.print(bytes_written);
             Serial.print("/");
             Serial.print(packet_size);
-            Serial.println(" bytes!]");
+            Serial.println(" bytes!");
         } else if (delim1_written != 1 || delim2_written != 1) {
-            Serial.println(" [ERROR: Failed to write delimiters!]");
-        } else {
-            Serial.println(" [OK]");
+            Serial.println("[PI TX ERROR] Failed to write delimiters!");
         }
+        // else {
+        //     Serial.println(" [OK]");
+        // }
     }
 
    private:

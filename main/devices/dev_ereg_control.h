@@ -15,7 +15,7 @@ using namespace avionics;
 enum EregState
 {
     EREG_CLOSED,   // Servo at closed position (initial/safe state) - always takes precedence
-    EREG_STAGE_1,  // PID control, angle clamped 0-13 degrees
+    EREG_STAGE_1,  // PID control, angle clamped 0-22 degrees
     EREG_STAGE_2   // PID control, angle clamped 0-90 degrees
 };
 
@@ -38,18 +38,50 @@ class DevEregControl : public Device {
         // last loop iteration is never overridden by stale state.
         ParseCommand();
 
-        // Get pressure readings from transducers device
-        // ereg_upper uses copv_1, ereg_lower uses oxtank_1
-        // The transducers are already being Tick()'d in DevFsLoxGn2Transducers::Loop()
-        ereg_upper_psi_ = transducers_->copv_1.GetLatestPsi();
-        ereg_lower_psi_ = transducers_->oxtank_1.GetLatestPsi();
+        // If divergence was latched, stay CLOSED until an explicit command clears it
+        if (divergence_latched_) {
+            current_angle_ = 0.0f;
+            g_servo_.writeMicroseconds(kCenterUs);
+            return;
+        }
 
-        if (isnan(ereg_upper_psi_) || isnan(ereg_lower_psi_)) {
+        // Read all four transducers
+        float upper_1_psi = transducers_->copv_1.GetLatestPsi();
+        float upper_2_psi = transducers_->copv_2.GetLatestPsi();
+        float lower_1_psi = transducers_->oxtank_1.GetLatestPsi();
+        float lower_2_psi = transducers_->oxtank_2.GetLatestPsi();
+
+        // NaN check: if any transducer returns NaN, close immediately
+        if (isnan(upper_1_psi) || isnan(upper_2_psi) ||
+            isnan(lower_1_psi) || isnan(lower_2_psi)) {
             SetState(EREG_CLOSED);
             current_angle_ = 0.0f;
             g_servo_.writeMicroseconds(kCenterUs);
             return;
         }
+
+        // Transducer divergence check: if corresponding transducers disagree
+        // beyond threshold, a sensor has likely failed — close immediately
+        if (fabsf(upper_1_psi - upper_2_psi) > kMaxTransducerDivergencePsi) {
+            Serial.println("EREG: Upper transducer divergence! Closing (latched).");
+            divergence_latched_ = true;
+            SetState(EREG_CLOSED);
+            current_angle_ = 0.0f;
+            g_servo_.writeMicroseconds(kCenterUs);
+            return;
+        }
+        if (fabsf(lower_1_psi - lower_2_psi) > kMaxTransducerDivergencePsi) {
+            Serial.println("EREG: Lower transducer divergence! Closing (latched).");
+            divergence_latched_ = true;
+            SetState(EREG_CLOSED);
+            current_angle_ = 0.0f;
+            g_servo_.writeMicroseconds(kCenterUs);
+            return;
+        }
+
+        // Average redundant transducer pairs
+        ereg_upper_psi_ = (upper_1_psi + upper_2_psi) / 2.0f;
+        ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
 
         // Safety check: automatically close EREG if lower pressure exceeds safety limit
         if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
@@ -94,13 +126,13 @@ class DevEregControl : public Device {
             // Leaving CLOSED: only allowed when an explicit stage command arrives
             current_state_ = new_state;
             Serial.println(new_state == EREG_STAGE_1
-                ? "EREG: STAGE_1 (PID active, 0-13 deg)"
+                ? "EREG: STAGE_1 (PID active, 0-22 deg)"
                 : "EREG: STAGE_2 (PID active, 0-90 deg)");
         } else {
             // Transitioning between STAGE_1 and STAGE_2: allowed freely
             current_state_ = new_state;
             Serial.println(new_state == EREG_STAGE_1
-                ? "EREG: STAGE_1 (PID active, 0-13 deg)"
+                ? "EREG: STAGE_1 (PID active, 0-22 deg)"
                 : "EREG: STAGE_2 (PID active, 0-90 deg)");
         }
     }
@@ -114,15 +146,18 @@ class DevEregControl : public Device {
 
         switch (command_packet.command) {
             case FsCommand::EREG_CLOSED:
+                divergence_latched_ = false;
                 SetState(EREG_CLOSED);
                 break;
             case FsCommand::EREG_STAGE_1:
+                divergence_latched_ = false;
                 SetState(EREG_STAGE_1);
                 // Bumpless transfer: seed error history to current error
                 // so P and D terms don't spike on entry
                 BumplessResetPID();
                 break;
             case FsCommand::EREG_STAGE_2:
+                divergence_latched_ = false;
                 SetState(EREG_STAGE_2);
                 // Bumpless transfer: seed error history to current error
                 // got rid of it since PID is continous, we don't reset from stage 1 to 2
@@ -231,8 +266,8 @@ class DevEregControl : public Device {
     // gain_scale = 1.0 + gain_boost_max * alpha
     // gains = base_gains * gain_scale
     void UpdateDynamicGains(float upper_psi) {
-        constexpr double P_hi = 750.0;
-        constexpr double P_lo = 150.0;
+        constexpr double P_hi = 200.0;
+        constexpr double P_lo = 5.0;
         constexpr double gain_boost_max = 1.0;
 
         double alpha = (P_hi - static_cast<double>(upper_psi)) / (P_hi - P_lo);
@@ -256,7 +291,7 @@ class DevEregControl : public Device {
 
         if (last_cmd_dir_ != 0 && new_dir != 0 && new_dir != last_cmd_dir_)
         {
-            cmd_angle += (new_dir > 0) ? 0.0f : -0.0f;
+            cmd_angle += (new_dir > 0) ? 5.0f : -5.0f;
         }
 
         cmd_angle = constrain(cmd_angle, -90.0f, 90.0f);
@@ -276,11 +311,16 @@ class DevEregControl : public Device {
     static constexpr int kCenterUs    = (kPulseMinUs + kPulseMaxUs) / 2;
 
     // Stage angle limits
-    static constexpr float kStage1MaxAngle = 22.0f;  // degrees
+    static constexpr float kStage1MaxAngle = 13.0f;  // degrees
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
     static constexpr float kMaxSafePressurePsi = 520.0f;  // Auto-close if ereg_lower exceeds this
+
+    // Transducer divergence threshold -- if corresponding transducers disagree
+    // by more than this value, a sensor failure is assumed and EREG closes.
+    // TODO: Set this to an appropriate value based on transducer accuracy/noise
+    static constexpr float kMaxTransducerDivergencePsi = 50.0f;  // PLACEHOLDER — tune this
 
     // PID timing
     static constexpr double kPidPeriodMs = 6.0;
@@ -296,6 +336,7 @@ class DevEregControl : public Device {
 
     // State
     EregState current_state_ = EREG_CLOSED;
+    bool divergence_latched_  = false;  // Latches CLOSED on transducer divergence until explicit command
     float current_angle_     = 0.0f;
     float ereg_upper_psi_    = 0.0f;
     float ereg_lower_psi_    = 0.0f;
@@ -307,11 +348,11 @@ class DevEregControl : public Device {
 
     // PID gains -- base values define the unscaled setpoint
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
-    double setpoint_ = 150.0;
+    double setpoint_ = 20.0;
 
-    double kp_base_ = 0.035;
-    double ki_base_ = 0.000;
-    double kd_base_ = 0.002;
+    double kp_base_ = 0.35;
+    double ki_base_ = 2.5;
+    double kd_base_ = 0.1;
 
     double kp_ = kp_base_;
     double ki_ = ki_base_;

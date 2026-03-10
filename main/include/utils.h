@@ -96,6 +96,17 @@ class SerialForwarder {
 
         if (bufferIndex >= 2 && buffer[bufferIndex - 2] == kPacketDelimeter1 &&
             buffer[bufferIndex - 1] == kPacketDelimeter2) {
+            // Debug: print packet details
+            Serial.print("[SERIAL FWD] Forwarding packet, size: ");
+            Serial.print(bufferIndex - 2);  // exclude delimiters
+            Serial.print(" bytes, data: 0x");
+            for (size_t i = 0; i < min((size_t)8, bufferIndex - 2); i++) {
+                if (buffer[i] < 0x10) Serial.print("0");
+                Serial.print(buffer[i], HEX);
+                Serial.print(" ");
+            }
+            Serial.println();
+
             to.write(buffer, bufferIndex);  // includes the delimeters
             bufferIndex = 0;
 
