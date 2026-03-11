@@ -33,9 +33,9 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        true,
+        false,  // Changed to false - continuous mode only supports one channel per ADC
         50,
-        1.0, //Todo
+        375, //Todo
     };
 
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
@@ -45,9 +45,9 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_1,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        true,
+        false,  // Changed to false - continuous mode only supports one channel per ADC
         50,
-        1.0, //Todo
+        375, //Todo
     };
 
     // i2c3 transducers - copv readings (ADC @ GND address)
@@ -58,9 +58,9 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        true,
+        false,  // Changed to false - continuous mode only supports one channel per ADC
         50,
-        1.0, //Todo
+        1250, //Todo
     };
 
     MovingMedianADC<Adafruit_ADS1115> copv_2{
@@ -70,9 +70,9 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_1,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        true,
+        false,  // Changed to false - continuous mode only supports one channel per ADC
         50,
-        1.0, //Todo
+        1250, //Todo
     };
 
     void Setup() override {
@@ -280,7 +280,7 @@ class DevFsLoxGn2Transducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1.0, //Todo
+        375, //Todo
     };
 
     MovingMedianADC<Adafruit_ADS1115> qd_pres{
@@ -292,7 +292,7 @@ class DevFsLoxGn2Transducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1.0, //Todo
+        100, //Todo
     };
 };
 

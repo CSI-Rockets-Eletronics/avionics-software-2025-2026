@@ -54,6 +54,14 @@ class DevEregControl : public Device {
         // NaN check: if any transducer returns NaN, close immediately
         if (isnan(upper_1_psi) || isnan(upper_2_psi) ||
             isnan(lower_1_psi) || isnan(lower_2_psi)) {
+            Serial.print("EREG: NaN transducer reading! upper1=");
+            Serial.print(upper_1_psi);
+            Serial.print(" upper2=");
+            Serial.print(upper_2_psi);
+            Serial.print(" lower1=");
+            Serial.print(lower_1_psi);
+            Serial.print(" lower2=");
+            Serial.println(lower_2_psi);
             SetState(EREG_CLOSED);
             current_angle_ = 0.0f;
             g_servo_.writeMicroseconds(kCenterUs);
@@ -62,6 +70,7 @@ class DevEregControl : public Device {
 
         // Transducer divergence check: if corresponding transducers disagree
         // beyond threshold, a sensor has likely failed — close immediately
+        /*
         if (fabsf(upper_1_psi - upper_2_psi) > kMaxTransducerDivergencePsi) {
             Serial.println("EREG: Upper transducer divergence! Closing (latched).");
             divergence_latched_ = true;
@@ -70,6 +79,7 @@ class DevEregControl : public Device {
             g_servo_.writeMicroseconds(kCenterUs);
             return;
         }
+        */
         if (fabsf(lower_1_psi - lower_2_psi) > kMaxTransducerDivergencePsi) {
             Serial.println("EREG: Lower transducer divergence! Closing (latched).");
             divergence_latched_ = true;
@@ -80,11 +90,16 @@ class DevEregControl : public Device {
         }
 
         // Average redundant transducer pairs
-        ereg_upper_psi_ = (upper_1_psi + upper_2_psi) / 2.0f;
+        //ereg_upper_psi_ = (upper_1_psi + upper_2_psi) / 2.0f;
+        ereg_upper_psi_ = upper_1_psi;
         ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
 
         // Safety check: automatically close EREG if lower pressure exceeds safety limit
         if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
+            Serial.print("EREG: Overpressure! lower_psi=");
+            Serial.print(ereg_lower_psi_);
+            Serial.print(" >= limit=");
+            Serial.println(kMaxSafePressurePsi);
             SetState(EREG_CLOSED);
         }
 
@@ -266,7 +281,7 @@ class DevEregControl : public Device {
     // gain_scale = 1.0 + gain_boost_max * alpha
     // gains = base_gains * gain_scale
     void UpdateDynamicGains(float upper_psi) {
-        constexpr double P_hi = 200.0;
+        constexpr double P_hi = 110.0;
         constexpr double P_lo = 5.0;
         constexpr double gain_boost_max = 1.0;
 
@@ -315,12 +330,12 @@ class DevEregControl : public Device {
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 520.0f;  // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 30.0f;  // Auto-close if ereg_lower exceeds this
 
     // Transducer divergence threshold -- if corresponding transducers disagree
     // by more than this value, a sensor failure is assumed and EREG closes.
     // TODO: Set this to an appropriate value based on transducer accuracy/noise
-    static constexpr float kMaxTransducerDivergencePsi = 50.0f;  // PLACEHOLDER — tune this
+    static constexpr float kMaxTransducerDivergencePsi = 10.0f;  // PLACEHOLDER — tune this
 
     // PID timing
     static constexpr double kPidPeriodMs = 6.0;
@@ -352,7 +367,7 @@ class DevEregControl : public Device {
 
     double kp_base_ = 0.35;
     double ki_base_ = 2.5;
-    double kd_base_ = 0.1;
+    double kd_base_ = 0.01;
 
     double kp_ = kp_base_;
     double ki_ = ki_base_;
