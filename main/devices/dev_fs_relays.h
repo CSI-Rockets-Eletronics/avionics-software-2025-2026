@@ -33,8 +33,8 @@ using MS = unsigned long;
 
 class DevFsRelays : public Device {
    private:
-    const MS kPilotValveOpenDurationMs = 5000;
-    const MS kPilotValveClosedDurationMs = 5000;
+    const MS kPilotValveOpenDurationMs = 1000;
+    const MS kPilotValveClosedDurationMs = 9000;
 
     const MS kGN2FillOpenDurationMs = 5000;
     const MS kGN2FillClosedDurationMs = 5000;
@@ -52,7 +52,7 @@ class DevFsRelays : public Device {
 
     // safety to make sure we don't hold open solenoids for too long
     // in the CUSTOM state
-    const MS kMaxCustomOpenDurationMs = 45000;  // 45s
+    const MS kMaxCustomOpenDurationMs = 30000;  // 30s
 
     FsState cur_state = FsState::STANDBY;
 
