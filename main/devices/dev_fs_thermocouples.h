@@ -15,7 +15,7 @@ class DevFsThermocouples : public Device {
     static const uint8_t kLoxLowerAddress = 0x65;
     static const uint8_t kLoxUpperAddress = 0x66;
 
-    I2CWire i2c0{0, 42, 37, 400000};  // I2C bus 0, 400kHz (same as working scanner)
+    I2CWire i2c0{0, 42, 37, 10000};  // I2C bus 0, 10kHz (MCP9600 most reliable at 10-20kHz due to clock stretching)
 
     MCP9600 gn2_internal;
     MCP9600 lox_lower;
@@ -113,15 +113,39 @@ class DevFsThermocouples : public Device {
     }
 
     void Loop() override {
+        // DEBUG: Reading all three thermocouples
+        Serial.println("--- Thermocouple Reading Cycle ---");
+
         // Read temperatures from the 3 MCP9600 thermocouples
         float gn2_internal_celsius = gn2_internal.getThermocoupleTemp();
+        Serial.print("DEBUG: gn2_internal raw reading: ");
+        Serial.print(gn2_internal_celsius);
+        Serial.println(" C");
+
         float lox_lower_celsius = lox_lower.getThermocoupleTemp();
+        Serial.print("DEBUG: lox_lower raw reading: ");
+        Serial.print(lox_lower_celsius);
+        Serial.println(" C");
+
         float lox_upper_celsius = lox_upper.getThermocoupleTemp();
+        Serial.print("DEBUG: lox_upper raw reading: ");
+        Serial.print(lox_upper_celsius);
+        Serial.println(" C");
 
         // Check for sensor errors
+        Serial.println("DEBUG: Checking sensor faults...");
         HandleMCP9600Fault("gn2_internal", gn2_internal, gn2_internal_celsius);
         HandleMCP9600Fault("lox_lower", lox_lower, lox_lower_celsius);
         HandleMCP9600Fault("lox_upper", lox_upper, lox_upper_celsius);
+
+        // DEBUG: Verify all sensors are providing valid data
+        int valid_sensors = 0;
+        if (!isnan(gn2_internal_celsius)) valid_sensors++;
+        if (!isnan(lox_lower_celsius)) valid_sensors++;
+        if (!isnan(lox_upper_celsius)) valid_sensors++;
+        Serial.print("DEBUG: Valid sensors: ");
+        Serial.print(valid_sensors);
+        Serial.println("/3");
 
         FsThermocouplesPacket thermo_packet{
             .ts = micros(),

@@ -278,7 +278,7 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_0,
         kRate,
         GAIN_ONE,
-        kContinuous,
+        false,
         kWindowSize,
         375, //Todo
     };
@@ -290,7 +290,7 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_1,
         kRate,
         GAIN_ONE,
-        kContinuous,
+        false,
         kWindowSize,
         100, //Todo
     };

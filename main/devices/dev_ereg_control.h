@@ -80,6 +80,7 @@ class DevEregControl : public Device {
             return;
         }
         */
+        /*
         if (fabsf(lower_1_psi - lower_2_psi) > kMaxTransducerDivergencePsi) {
             Serial.println("EREG: Lower transducer divergence! Closing (latched).");
             divergence_latched_ = true;
@@ -88,11 +89,13 @@ class DevEregControl : public Device {
             g_servo_.writeMicroseconds(kCenterUs);
             return;
         }
+        */
 
         // Average redundant transducer pairs
         //ereg_upper_psi_ = (upper_1_psi + upper_2_psi) / 2.0f;
-        ereg_upper_psi_ = upper_1_psi;
-        ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
+        ereg_upper_psi_ = lower_1_psi;
+        ereg_lower_psi_ = lower_2_psi;
+        //ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
 
         // Safety check: automatically close EREG if lower pressure exceeds safety limit
         if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
@@ -330,7 +333,7 @@ class DevEregControl : public Device {
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 15.0f;  // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 60.0f;  // Auto-close if ereg_lower exceeds this
 
     // Transducer divergence threshold -- if corresponding transducers disagree
     // by more than this value, a sensor failure is assumed and EREG closes.
@@ -363,7 +366,7 @@ class DevEregControl : public Device {
 
     // PID gains -- base values define the unscaled setpoint
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
-    double setpoint_ = 20.0;
+    double setpoint_ = 50.0;
 
     double kp_base_ = 0.35;
     double ki_base_ = 2.5;
