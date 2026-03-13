@@ -179,8 +179,8 @@ class DevEregControl : public Device {
                     break;
             }
             // Always broadcast current state after any command
-            SendStateToTransducers();
-            return;
+            SendStateToTransducers(); 
+            return; 
         }
 
         // Try parsing as FsEregGainsPacket
