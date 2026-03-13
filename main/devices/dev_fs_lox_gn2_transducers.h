@@ -40,8 +40,8 @@ class DevFsLoxGn2Transducers : public Device {
 
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
         "oxtank_2",
-        i2c4,
-        ADCAddress::GND,
+        i2c3,
+        ADCAddress::VIN,
         ADCMode::SingleEnded_1,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
@@ -49,6 +49,7 @@ class DevFsLoxGn2Transducers : public Device {
         50,
         375, //Todo
     };
+
 
     // i2c3 transducers - copv readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> copv_1{
@@ -73,6 +74,32 @@ class DevFsLoxGn2Transducers : public Device {
         false,  // Changed to false - continuous mode only supports one channel per ADC
         50,
         1250, //Todo
+    };
+
+    // i2c3 transducers - pilot and qd pressure readings (ADC @ VIN address)
+    MovingMedianADC<Adafruit_ADS1115> pilot_pres{
+        "pilot_pres",
+        i2c3,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_0,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        false,  // Changed to false - continuous mode only supports one channel per ADC
+        50,
+        375, //Todo
+    };
+
+    MovingMedianADC<Adafruit_ADS1115> qd_pres{
+        "qd_pres",
+        i2c4,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_1,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        false,  // Changed to false - continuous mode only supports one channel per ADC
+        50,
+        375, //Todo
+        true   // debug_skip_init - TEMPORARILY skipping hardware init to avoid boot loop
     };
 
     void Setup() override {
@@ -138,17 +165,16 @@ class DevFsLoxGn2Transducers : public Device {
         // delay(500);
 
         FsCommandPacket command_packet;
-        FsEregGainsPacket gains_packet;
         FsStatePacket state_packet;
         EregStateData ereg_state_data;
         RelayCurrentMonitorPacket relay_imon_packet;
         FsThermocouplesPacket thermo_packet;
 
-        switch (Receive(&command_packet, &gains_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet)) {
+        switch (Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet)) {
             case 0:
                 Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
                 Serial.println(static_cast<int>(command_packet.command));
-                
+
                 // Forward EREG commands to DevEregControl
                 if (command_packet.command == FsCommand::EREG_CLOSED ||
                     command_packet.command == FsCommand::EREG_STAGE_1 ||
@@ -156,7 +182,7 @@ class DevFsLoxGn2Transducers : public Device {
                     Serial.println("[GN2 TRANSDUCERS] Forwarding EREG command to DevEregControl");
                     Send(DeviceType::DevEregControl, command_packet);
                 }
-                
+
                 if (command_packet.command == FsCommand::RESTART) {
                     Die("Restarting by command");
                 }
@@ -166,18 +192,13 @@ class DevFsLoxGn2Transducers : public Device {
                 }
                 break;
             case 1:
-                // Received FsEregGainsPacket - forward to EREG device
-                Serial.println("[GN2 TRANSDUCERS] Received FsEregGainsPacket, forwarding to DevEregControl");
-                Send(DeviceType::DevEregControl, gains_packet);
-                break;
-            case 2:
                 // Serial.print("[GN2 TRANSDUCERS] Received FsStatePacket from FsRelays, state: ");
                 // Serial.print(static_cast<int>(state_packet.state));
                 // Serial.print(", ms_since_boot: ");
                 // Serial.println(state_packet.ms_since_boot);
                 SendToPi(state_packet);
                 break;
-            case 3:
+            case 2:
                 // Received EREG state from DevEregControl
                 // Serial.print("[GN2 TRANSDUCERS] Received EregStateData: closed=");
                 // Serial.print(ereg_state_data.ereg_closed);
@@ -187,12 +208,12 @@ class DevFsLoxGn2Transducers : public Device {
                 // Serial.println(ereg_state_data.ereg_stage_2);
                 ereg_state_ = ereg_state_data;
                 break;
-            case 4:
+            case 3:
                 // Received relay current monitor data from DevRelayImon
                 // Serial.println("[GN2 TRANSDUCERS] Received RelayCurrentMonitorPacket from FsRelays");
                 SendToPi(relay_imon_packet);
                 break;
-            case 5:
+            case 4:
                 // Received thermocouple data from DevFsThermocouples
                 // Serial.println("[GN2 TRANSDUCERS] Received FsThermocouplesPacket");
                 SendToPi(thermo_packet);
@@ -284,31 +305,7 @@ class DevFsLoxGn2Transducers : public Device {
     const bool kContinuous = true;
     const int kWindowSize = 50;
     const int kCalibrateSamples = 100;  // Reduced from 500 for faster calibration
-
-    // i2c3 transducers - pilot and qd pressure readings (ADC @ VIN address)
-    MovingMedianADC<Adafruit_ADS1115> pilot_pres{
-        "pilot_pres",
-        i2c3,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_0,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        375, //Todo
-    };
-
-    MovingMedianADC<Adafruit_ADS1115> qd_pres{
-        "qd_pres",
-        i2c3,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        100, //Todo
-    };
 };
+
 
 REGISTER_AVIONICS_DEVICE(DevFsLoxGn2Transducers);

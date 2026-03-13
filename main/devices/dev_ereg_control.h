@@ -52,20 +52,26 @@ class DevEregControl : public Device {
         float lower_2_psi = transducers_->oxtank_2.GetLatestPsi();
 
         // NaN check: if any transducer returns NaN, close immediately
-            if (isnan(upper_1_psi) || isnan(upper_2_psi) ||
-                isnan(lower_1_psi) || isnan(lower_2_psi)) {
-                Serial.print("EREG: NaN transducer reading! ...");
-                SetState(EREG_CLOSED);
-                SendStateToTransducers(); 
-                current_angle_ = 0.0f;
-                g_servo_.writeMicroseconds(kCenterUs);
-                return;
-            }
+        if (isnan(upper_1_psi) || isnan(upper_2_psi) ||
+            isnan(lower_1_psi) || isnan(lower_2_psi)) {
+            Serial.print("EREG: NaN transducer reading! upper1=");
+            Serial.print(upper_1_psi);
+            Serial.print(" upper2=");
+            Serial.print(upper_2_psi);
+            Serial.print(" lower1=");
+            Serial.print(lower_1_psi);
+            Serial.print(" lower2=");
+            Serial.println(lower_2_psi);
+            SetState(EREG_CLOSED);
+            current_angle_ = 0.0f;
+            g_servo_.writeMicroseconds(kCenterUs);
+            return;
+        }
 
         // Transducer divergence check: if corresponding transducers disagree
         // beyond threshold, a sensor has likely failed — close immediately
-        
-        if (fabsf(upper_1_psi - upper_2_psi) > 50.0f) {
+        /*
+        if (fabsf(upper_1_psi - upper_2_psi) > kMaxTransducerDivergencePsi) {
             Serial.println("EREG: Upper transducer divergence! Closing (latched).");
             divergence_latched_ = true;
             SetState(EREG_CLOSED);
@@ -73,21 +79,22 @@ class DevEregControl : public Device {
             g_servo_.writeMicroseconds(kCenterUs);
             return;
         }
-        
-            if (fabsf(lower_1_psi - lower_2_psi) > 30.0f) {
+        */
+       /*
+        if (fabsf(lower_1_psi - lower_2_psi) > kMaxTransducerDivergencePsi) {
             Serial.println("EREG: Lower transducer divergence! Closing (latched).");
             divergence_latched_ = true;
             SetState(EREG_CLOSED);
-            SendStateToTransducers(); 
             current_angle_ = 0.0f;
             g_servo_.writeMicroseconds(kCenterUs);
             return;
         }
+        */
 
         // Average redundant transducer pairs
-        ereg_upper_psi_ = (upper_1_psi + upper_2_psi) / 2.0f;
-        //ereg_upper_psi_ = upper_1_psi;
-        ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
+        //ereg_upper_psi_ = (upper_1_psi + upper_2_psi) / 2.0f;
+        ereg_upper_psi_ = upper_1_psi;
+        ereg_lower_psi_ = lower_2_psi;
 
         // Safety check: automatically close EREG if lower pressure exceeds safety limit
         if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
@@ -96,7 +103,6 @@ class DevEregControl : public Device {
             Serial.print(" >= limit=");
             Serial.println(kMaxSafePressurePsi);
             SetState(EREG_CLOSED);
-            SendStateToTransducers();
         }
 
         unsigned long now = millis();
@@ -149,54 +155,41 @@ class DevEregControl : public Device {
     }
 
     void ParseCommand() {
-        // Try parsing as standard FsCommandPacket first
         FsCommandPacket command_packet;
-        if (Receive(&command_packet) == 0) {
-            switch (command_packet.command) {
-                case FsCommand::EREG_CLOSED:
-                    divergence_latched_ = false;
-                    SetState(EREG_CLOSED);
-                    break;
-                case FsCommand::EREG_STAGE_1:
-                    divergence_latched_ = false;
-                    SetState(EREG_STAGE_1);
-                    // Bumpless transfer: seed error history to current error
-                    // so P and D terms don't spike on entry
-                    BumplessResetPID();
-                    break;
-                case FsCommand::EREG_STAGE_2:
-                    divergence_latched_ = false;
-                    SetState(EREG_STAGE_2);
-                    // Bumpless transfer: seed error history to current error
-                    // got rid of it since PID is continous, we don't reset from stage 1 to 2
-                    //BumplessResetPID();
-                    break;
-                case FsCommand::RESTART:
-                    Die("Restarting by command");
-                    break;
-                default:
-                    // ignore commands we don't handle
-                    break;
-            }
-            // Always broadcast current state after any command
-            SendStateToTransducers(); 
-            return; 
+
+        if (Receive(&command_packet) != 0) {
+            return;
         }
 
-        // Try parsing as FsEregGainsPacket
-        FsEregGainsPacket gains_packet;
-        if (Receive(&gains_packet) == 0 && gains_packet.command == FsCommand::EREG_SET_GAINS) {
-            kp_base_ = static_cast<double>(gains_packet.kp);
-            ki_base_ = static_cast<double>(gains_packet.ki);
-            kd_base_ = static_cast<double>(gains_packet.kd);
-            
-            Serial.print("EREG: Gains updated - Kp=");
-            Serial.print(kp_base_, 3);
-            Serial.print(", Ki=");
-            Serial.print(ki_base_, 3);
-            Serial.print(", Kd=");
-            Serial.println(kd_base_, 4);
+        switch (command_packet.command) {
+            case FsCommand::EREG_CLOSED:
+                divergence_latched_ = false;
+                SetState(EREG_CLOSED);
+                break;
+            case FsCommand::EREG_STAGE_1:
+                divergence_latched_ = false;
+                SetState(EREG_STAGE_1);
+                // Bumpless transfer: seed error history to current error
+                // so P and D terms don't spike on entry
+                BumplessResetPID();
+                break;
+            case FsCommand::EREG_STAGE_2:
+                divergence_latched_ = false;
+                SetState(EREG_STAGE_2);
+                // Bumpless transfer: seed error history to current error
+                // got rid of it since PID is continous, we don't reset from stage 1 to 2
+                //BumplessResetPID();
+                break;
+            case FsCommand::RESTART:
+                Die("Restarting by command");
+                break;
+            default:
+                // ignore commands we don't handle
+                break;
         }
+
+        // Always broadcast current state after any command
+        SendStateToTransducers();
     }
 
     void SendStateToTransducers() {
@@ -290,8 +283,8 @@ class DevEregControl : public Device {
     // gain_scale = 1.0 + gain_boost_max * alpha
     // gains = base_gains * gain_scale
     void UpdateDynamicGains(float upper_psi) {
-        constexpr double P_hi = 110.0;
-        constexpr double P_lo = 5.0;
+        constexpr double P_hi = 4500.0;
+        constexpr double P_lo = 450.0;
         constexpr double gain_boost_max = 1.0;
 
         double alpha = (P_hi - static_cast<double>(upper_psi)) / (P_hi - P_lo);
@@ -339,12 +332,12 @@ class DevEregControl : public Device {
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 15.0f;  // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 490.0f;  // Auto-close if ereg_lower exceeds this
 
     // Transducer divergence threshold -- if corresponding transducers disagree
     // by more than this value, a sensor failure is assumed and EREG closes.
     // TODO: Set this to an appropriate value based on transducer accuracy/noise
-    static constexpr float kMaxTransducerDivergencePsi = 30.0f;  // PLACEHOLDER — tune this
+    static constexpr float kMaxTransducerDivergencePsi = 10.0f;  // PLACEHOLDER — tune this
 
     // PID timing
     static constexpr double kPidPeriodMs = 6.0;
@@ -374,9 +367,9 @@ class DevEregControl : public Device {
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
     double setpoint_ = 450.0;
 
-    double kp_base_ = 0.35;
-    double ki_base_ = 2.5;
-    double kd_base_ = 0.01;
+    double kp_base_ = 0.13;
+    double ki_base_ = 0.6;
+    double kd_base_ = 0.00025;
 
     double kp_ = kp_base_;
     double ki_ = ki_base_;

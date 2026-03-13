@@ -46,25 +46,12 @@ class DevFsPiPacketBroadcaster : public Device {
             // Send to DevFsInjectorTransducers (ESP-NOW)
             Serial.println("[PI RX] Sending to DevFsInjectorTransducers (ESP-NOW)");
             Send(DeviceType::DevFsInjectorTransducers, *command_packet);
-            
+
             Serial.println("[PI RX] Command broadcast complete");
-        } else if (size == sizeof(FsEregGainsPacket)) {
-            FsEregGainsPacket* gains_packet = (FsEregGainsPacket*)buffer;
-            Serial.print("[PI RX] Received FsEregGainsPacket, command: ");
-            Serial.println(static_cast<int>(gains_packet->command));
-            
-            // Forward to DevFsLoxGn2Transducers (local)
-            // This device will forward to DevEregControl
-            Serial.println("[PI RX] Sending FsEregGainsPacket to DevFsLoxGn2Transducers (local)");
-            Send(DeviceType::DevFsLoxGn2Transducers, *gains_packet);
-            
-            Serial.println("[PI RX] Gains packet forwarded");
         } else {
             Serial.print("[PI RX] Unknown packet from Raspberry Pi (expected ");
             Serial.print(sizeof(FsCommandPacket));
-            Serial.print(" bytes for FsCommandPacket or ");
-            Serial.print(sizeof(FsEregGainsPacket));
-            Serial.println(" bytes for FsEregGainsPacket)");
+            Serial.println(" bytes for FsCommandPacket)");
         }
     }
 
