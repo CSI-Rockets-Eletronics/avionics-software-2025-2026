@@ -52,21 +52,15 @@ class DevEregControl : public Device {
         float lower_2_psi = transducers_->oxtank_2.GetLatestPsi();
 
         // NaN check: if any transducer returns NaN, close immediately
-        if (isnan(upper_1_psi) || isnan(upper_2_psi) ||
-            isnan(lower_1_psi) || isnan(lower_2_psi)) {
-            Serial.print("EREG: NaN transducer reading! upper1=");
-            Serial.print(upper_1_psi);
-            Serial.print(" upper2=");
-            Serial.print(upper_2_psi);
-            Serial.print(" lower1=");
-            Serial.print(lower_1_psi);
-            Serial.print(" lower2=");
-            Serial.println(lower_2_psi);
-            SetState(EREG_CLOSED);
-            current_angle_ = 0.0f;
-            g_servo_.writeMicroseconds(kCenterUs);
-            return;
-        }
+            if (isnan(upper_1_psi) || isnan(upper_2_psi) ||
+                isnan(lower_1_psi) || isnan(lower_2_psi)) {
+                Serial.print("EREG: NaN transducer reading! ...");
+                SetState(EREG_CLOSED);
+                SendStateToTransducers(); 
+                current_angle_ = 0.0f;
+                g_servo_.writeMicroseconds(kCenterUs);
+                return;
+            }
 
         // Transducer divergence check: if corresponding transducers disagree
         // beyond threshold, a sensor has likely failed — close immediately
@@ -80,10 +74,11 @@ class DevEregControl : public Device {
             return;
         }
         */
-        if (fabsf(lower_1_psi - lower_2_psi) > kMaxTransducerDivergencePsi) {
+            if (fabsf(lower_1_psi - lower_2_psi) > kMaxTransducerDivergencePsi) {
             Serial.println("EREG: Lower transducer divergence! Closing (latched).");
             divergence_latched_ = true;
             SetState(EREG_CLOSED);
+            SendStateToTransducers(); 
             current_angle_ = 0.0f;
             g_servo_.writeMicroseconds(kCenterUs);
             return;
@@ -101,6 +96,7 @@ class DevEregControl : public Device {
             Serial.print(" >= limit=");
             Serial.println(kMaxSafePressurePsi);
             SetState(EREG_CLOSED);
+            SendStateToTransducers();
         }
 
         unsigned long now = millis();

@@ -33,28 +33,38 @@ class DevFsPiPacketBroadcaster : public Device {
             Serial.print("[PI RX] Broadcasting FsCommandPacket to other nodes, command: ");
             Serial.println(static_cast<int>(command_packet->command));
 
-            // relays has the highest priority
-            // Local - no delays needed between these
-            Serial.println("[PI RX] Sending to DevEregControl (local)");
-            Send(DeviceType::DevEregControl, *command_packet);
-
+            // Send to DevFsLoxGn2Transducers (local)
+            // This device will forward EREG commands to DevEregControl
             Serial.println("[PI RX] Sending to DevFsLoxGn2Transducers (local)");
             Send(DeviceType::DevFsLoxGn2Transducers, *command_packet);
 
-            // First ESP-NOW send - no delay needed before it since nothing is in-flight
+            // Send to DevFsRelays (ESP-NOW)
             Serial.println("[PI RX] Sending to DevFsRelays (ESP-NOW)");
             Send(DeviceType::DevFsRelays, *command_packet);
-            delay(kSendWaitMs);  // wait for DevFsRelays ESP-NOW to complete
+            delay(kSendWaitMs);  // wait for ESP-NOW to complete
 
-            // Second ESP-NOW send
+            // Send to DevFsInjectorTransducers (ESP-NOW)
             Serial.println("[PI RX] Sending to DevFsInjectorTransducers (ESP-NOW)");
             Send(DeviceType::DevFsInjectorTransducers, *command_packet);
-
+            
             Serial.println("[PI RX] Command broadcast complete");
+        } else if (size == sizeof(FsEregGainsPacket)) {
+            FsEregGainsPacket* gains_packet = (FsEregGainsPacket*)buffer;
+            Serial.print("[PI RX] Received FsEregGainsPacket, command: ");
+            Serial.println(static_cast<int>(gains_packet->command));
+            
+            // Forward to DevFsLoxGn2Transducers (local)
+            // This device will forward to DevEregControl
+            Serial.println("[PI RX] Sending FsEregGainsPacket to DevFsLoxGn2Transducers (local)");
+            Send(DeviceType::DevFsLoxGn2Transducers, *gains_packet);
+            
+            Serial.println("[PI RX] Gains packet forwarded");
         } else {
             Serial.print("[PI RX] Unknown packet from Raspberry Pi (expected ");
             Serial.print(sizeof(FsCommandPacket));
-            Serial.println(" bytes for FsCommandPacket)");
+            Serial.print(" bytes for FsCommandPacket or ");
+            Serial.print(sizeof(FsEregGainsPacket));
+            Serial.println(" bytes for FsEregGainsPacket)");
         }
     }
 
