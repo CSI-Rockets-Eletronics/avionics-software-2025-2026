@@ -153,41 +153,54 @@ class DevEregControl : public Device {
     }
 
     void ParseCommand() {
+        // Try parsing as standard FsCommandPacket first
         FsCommandPacket command_packet;
-
-        if (Receive(&command_packet) != 0) {
+        if (Receive(&command_packet) == 0) {
+            switch (command_packet.command) {
+                case FsCommand::EREG_CLOSED:
+                    divergence_latched_ = false;
+                    SetState(EREG_CLOSED);
+                    break;
+                case FsCommand::EREG_STAGE_1:
+                    divergence_latched_ = false;
+                    SetState(EREG_STAGE_1);
+                    // Bumpless transfer: seed error history to current error
+                    // so P and D terms don't spike on entry
+                    BumplessResetPID();
+                    break;
+                case FsCommand::EREG_STAGE_2:
+                    divergence_latched_ = false;
+                    SetState(EREG_STAGE_2);
+                    // Bumpless transfer: seed error history to current error
+                    // got rid of it since PID is continous, we don't reset from stage 1 to 2
+                    //BumplessResetPID();
+                    break;
+                case FsCommand::RESTART:
+                    Die("Restarting by command");
+                    break;
+                default:
+                    // ignore commands we don't handle
+                    break;
+            }
+            // Always broadcast current state after any command
+            SendStateToTransducers();
             return;
         }
 
-        switch (command_packet.command) {
-            case FsCommand::EREG_CLOSED:
-                divergence_latched_ = false;
-                SetState(EREG_CLOSED);
-                break;
-            case FsCommand::EREG_STAGE_1:
-                divergence_latched_ = false;
-                SetState(EREG_STAGE_1);
-                // Bumpless transfer: seed error history to current error
-                // so P and D terms don't spike on entry
-                BumplessResetPID();
-                break;
-            case FsCommand::EREG_STAGE_2:
-                divergence_latched_ = false;
-                SetState(EREG_STAGE_2);
-                // Bumpless transfer: seed error history to current error
-                // got rid of it since PID is continous, we don't reset from stage 1 to 2
-                //BumplessResetPID();
-                break;
-            case FsCommand::RESTART:
-                Die("Restarting by command");
-                break;
-            default:
-                // ignore commands we don't handle
-                break;
+        // Try parsing as FsEregGainsPacket
+        FsEregGainsPacket gains_packet;
+        if (Receive(&gains_packet) == 0 && gains_packet.command == FsCommand::EREG_SET_GAINS) {
+            kp_base_ = static_cast<double>(gains_packet.kp);
+            ki_base_ = static_cast<double>(gains_packet.ki);
+            kd_base_ = static_cast<double>(gains_packet.kd);
+            
+            Serial.print("EREG: Gains updated - Kp=");
+            Serial.print(kp_base_, 3);
+            Serial.print(", Ki=");
+            Serial.print(ki_base_, 3);
+            Serial.print(", Kd=");
+            Serial.println(kd_base_, 4);
         }
-
-        // Always broadcast current state after any command
-        SendStateToTransducers();
     }
 
     void SendStateToTransducers() {

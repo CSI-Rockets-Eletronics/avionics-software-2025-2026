@@ -26,6 +26,7 @@ enum class FsCommand : uint8_t {
     EREG_CLOSED = 30,
     EREG_STAGE_1 = 31,
     EREG_STAGE_2 = 32,
+    EREG_SET_GAINS = 33,
     RECALIBRATE_TRANSDUCERS = 100,
     RESTART = 110,
 };
@@ -33,7 +34,6 @@ enum class FsCommand : uint8_t {
 // size: 10 bytes
 struct FsCommandPacket {
     FsCommand command;  // 1 byte
-
     // the solenoid state fields below are only used if command is CUSTOM
     bool gn2_drain;          // 1 byte
     bool gn2_fill;           // 1 byte
@@ -44,6 +44,14 @@ struct FsCommandPacket {
     bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
     bool ereg_power;         // 1 byte
+};
+
+// size: 13 bytes
+struct FsEregGainsPacket {
+    FsCommand command;  // 1 byte (must be EREG_SET_GAINS)
+    float kp;           // 4 bytes
+    float ki;           // 4 bytes
+    float kd;           // 4 bytes
 };
 
 #define FROM_FS_COMMAND(COMMAND) COMMAND = (uint8_t)FsCommand::STATE_##COMMAND
