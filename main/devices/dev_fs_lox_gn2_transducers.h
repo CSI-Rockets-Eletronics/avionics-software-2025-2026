@@ -21,8 +21,8 @@ struct EregStateData {
 class DevFsLoxGn2Transducers : public Device {
    public:
     // I2C buses (needed by transducers)
-    I2CWire i2c3{3, 47, 21};  // Changed from bus 0 to bus 3
-    I2CWire i2c4{4, 14, 13};  // Changed from bus 1 to bus 4
+    I2CWire i2c3{3, 47, 21, 400000};  // Changed from bus 0 to bus 3, 400kHz
+    I2CWire i2c4{4, 14, 13, 400000};  // Changed from bus 1 to bus 4, 400kHz
 
     // Public transducers - accessed by DevEregControl for PID loop
     // i2c4 transducers - oxtank readings (ADC @ GND address)
