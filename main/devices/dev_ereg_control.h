@@ -1,6 +1,8 @@
 // EREG (Electronic Regulator) Control Device
 // PID-based pressure regulation system with servo control
 
+//flight software integration
+
 #include <Arduino.h>
 #include <ESP32Servo.h>
 
