@@ -93,7 +93,7 @@ class DevEregControl : public Device {
 
         // Average redundant transducer pairs
         //ereg_upper_psi_ = (upper_1_psi + upper_2_psi) / 2.0f;
-        ereg_upper_psi_ = lower_1_psi;
+        ereg_upper_psi_ = upper_1_psi;
         ereg_lower_psi_ = lower_2_psi;
         //ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
 
@@ -284,8 +284,8 @@ class DevEregControl : public Device {
     // gain_scale = 1.0 + gain_boost_max * alpha
     // gains = base_gains * gain_scale
     void UpdateDynamicGains(float upper_psi) {
-        constexpr double P_hi = 110.0;
-        constexpr double P_lo = 5.0;
+        constexpr double P_hi = 4500.0;
+        constexpr double P_lo = 450.0;
         constexpr double gain_boost_max = 1.0;
 
         double alpha = (P_hi - static_cast<double>(upper_psi)) / (P_hi - P_lo);
@@ -333,7 +333,7 @@ class DevEregControl : public Device {
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 60.0f;  // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 490.0f;  // Auto-close if ereg_lower exceeds this
 
     // Transducer divergence threshold -- if corresponding transducers disagree
     // by more than this value, a sensor failure is assumed and EREG closes.
@@ -366,11 +366,11 @@ class DevEregControl : public Device {
 
     // PID gains -- base values define the unscaled setpoint
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
-    double setpoint_ = 50.0;
+    double setpoint_ = 450.0;
 
-    double kp_base_ = 0.35;
-    double ki_base_ = 2.5;
-    double kd_base_ = 0.01;
+    double kp_base_ = 0.13;
+    double ki_base_ = 0.6;
+    double kd_base_ = 0.00025;
 
     double kp_ = kp_base_;
     double ki_ = ki_base_;

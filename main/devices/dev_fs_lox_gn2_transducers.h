@@ -21,8 +21,8 @@ struct EregStateData {
 class DevFsLoxGn2Transducers : public Device {
    public:
     // I2C buses (needed by transducers)
-    I2CWire i2c3{3, 47, 21};  // Changed from bus 0 to bus 3
-    I2CWire i2c4{4, 14, 13};  // Changed from bus 1 to bus 4
+    I2CWire i2c3{3, 47, 21, 400000};  // Changed from bus 0 to bus 3, 400kHz
+    I2CWire i2c4{4, 14, 13, 400000};  // Changed from bus 1 to bus 4, 400kHz
 
     // Public transducers - accessed by DevEregControl for PID loop
     // i2c4 transducers - oxtank readings (ADC @ GND address)
@@ -40,8 +40,8 @@ class DevFsLoxGn2Transducers : public Device {
 
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
         "oxtank_2",
-        i2c4,
-        ADCAddress::GND,
+        i2c3,
+        ADCAddress::VIN,
         ADCMode::SingleEnded_1,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
@@ -49,6 +49,7 @@ class DevFsLoxGn2Transducers : public Device {
         50,
         375, //Todo
     };
+
 
     // i2c3 transducers - copv readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> copv_1{
@@ -73,6 +74,32 @@ class DevFsLoxGn2Transducers : public Device {
         false,  // Changed to false - continuous mode only supports one channel per ADC
         50,
         1250, //Todo
+    };
+
+    // i2c3 transducers - pilot and qd pressure readings (ADC @ VIN address)
+    MovingMedianADC<Adafruit_ADS1115> pilot_pres{
+        "pilot_pres",
+        i2c3,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_0,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        false,  // Changed to false - continuous mode only supports one channel per ADC
+        50,
+        375, //Todo
+    };
+
+    MovingMedianADC<Adafruit_ADS1115> qd_pres{
+        "qd_pres",
+        i2c4,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_1,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        false,  // Changed to false - continuous mode only supports one channel per ADC
+        50,
+        375, //Todo
+        true   // debug_skip_init - TEMPORARILY skipping hardware init to avoid boot loop
     };
 
     void Setup() override {
@@ -147,6 +174,15 @@ class DevFsLoxGn2Transducers : public Device {
             case 0:
                 Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
                 Serial.println(static_cast<int>(command_packet.command));
+
+                // Forward EREG commands to DevEregControl
+                if (command_packet.command == FsCommand::EREG_CLOSED ||
+                    command_packet.command == FsCommand::EREG_STAGE_1 ||
+                    command_packet.command == FsCommand::EREG_STAGE_2) {
+                    Serial.println("[GN2 TRANSDUCERS] Forwarding EREG command to DevEregControl");
+                    Send(DeviceType::DevEregControl, command_packet);
+                }
+
                 if (command_packet.command == FsCommand::RESTART) {
                     Die("Restarting by command");
                 }
@@ -269,31 +305,7 @@ class DevFsLoxGn2Transducers : public Device {
     const bool kContinuous = true;
     const int kWindowSize = 50;
     const int kCalibrateSamples = 100;  // Reduced from 500 for faster calibration
-
-    // i2c3 transducers - pilot and qd pressure readings (ADC @ VIN address)
-    MovingMedianADC<Adafruit_ADS1115> pilot_pres{
-        "pilot_pres",
-        i2c3,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_0,
-        kRate,
-        GAIN_ONE,
-        false,
-        kWindowSize,
-        375, //Todo
-    };
-
-    MovingMedianADC<Adafruit_ADS1115> qd_pres{
-        "qd_pres",
-        i2c3,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
-        kRate,
-        GAIN_ONE,
-        false,
-        kWindowSize,
-        100, //Todo
-    };
 };
+
 
 REGISTER_AVIONICS_DEVICE(DevFsLoxGn2Transducers);
