@@ -42,6 +42,7 @@ class DevEregControl : public Device {
         if (divergence_latched_) {
             current_angle_ = 0.0f;
             g_servo_.writeMicroseconds(kCenterUs);
+            SendStateToTransducers();
             return;
         }
 
@@ -65,6 +66,7 @@ class DevEregControl : public Device {
             SetState(EREG_CLOSED);
             current_angle_ = 0.0f;
             g_servo_.writeMicroseconds(kCenterUs);
+            SendStateToTransducers();
             return;
         }
 
@@ -77,6 +79,7 @@ class DevEregControl : public Device {
             SetState(EREG_CLOSED);
             current_angle_ = 0.0f;
             g_servo_.writeMicroseconds(kCenterUs);
+            SendStateToTransducers();
             return;
         }
         */
@@ -87,6 +90,7 @@ class DevEregControl : public Device {
             SetState(EREG_CLOSED);
             current_angle_ = 0.0f;
             g_servo_.writeMicroseconds(kCenterUs);
+            SendStateToTransducers();
             return;
         }
         */
@@ -125,6 +129,9 @@ class DevEregControl : public Device {
             // STAGE 2: PID control, angle clamped between 0 and 90 degrees
             RunPidLoop(now, kStage2MaxAngle);
         }
+
+        // Always broadcast current state every loop iteration
+        SendStateToTransducers();
     }
 
    private:
@@ -188,9 +195,6 @@ class DevEregControl : public Device {
                 // ignore commands we don't handle
                 break;
         }
-
-        // Always broadcast current state after any command
-        SendStateToTransducers();
     }
 
     void SendStateToTransducers() {
@@ -199,6 +203,10 @@ class DevEregControl : public Device {
             .ereg_closed  = (current_state_ == EREG_CLOSED),
             .ereg_stage_1 = (current_state_ == EREG_STAGE_1),
             .ereg_stage_2 = (current_state_ == EREG_STAGE_2),
+            .current_angle = current_angle_,
+            .p_cont = p_cont_,
+            .i_cont = i_cont_,
+            .d_cont = d_cont_,
         };
 
         Send(DeviceType::DevFsLoxGn2Transducers, ereg_state_data);
@@ -251,8 +259,13 @@ class DevEregControl : public Device {
         // Second difference of error
         const double d2e = error - 2.0 * prev_error_ + prev2_error_;
 
+        // Calculate individual PID components for telemetry
+        p_cont_ = static_cast<float>(kp_ * de);
+        i_cont_ = static_cast<float>(ki_ * error * kDt);
+        d_cont_ = static_cast<float>(kd_ * (d2e / kDt));
+
         // Δu = Kp*Δe + Ki*e*dt + Kd*(Δ²e/dt)
-        const double output = (kp_ * de) + (ki_ * error * kDt) + (kd_ * (d2e / kDt));
+        const double output = p_cont_ + i_cont_ + d_cont_;
 
         // Shift error history
         prev2_error_ = prev_error_;
@@ -363,6 +376,11 @@ class DevEregControl : public Device {
     double integral_    = 0.0;  // unused by velocity-form but retained for symmetry
     double prev_error_  = 0.0;
     double prev2_error_ = 0.0;
+
+    // PID component values (for telemetry)
+    float p_cont_ = 0.0f;
+    float i_cont_ = 0.0f;
+    float d_cont_ = 0.0f;
 
     // PID gains -- base values define the unscaled setpoint
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()

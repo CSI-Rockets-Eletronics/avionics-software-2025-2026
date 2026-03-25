@@ -16,6 +16,10 @@ struct EregStateData {
     bool ereg_closed;
     bool ereg_stage_1;
     bool ereg_stage_2;
+    float current_angle;
+    float p_cont;
+    float i_cont;
+    float d_cont;
 };
 
 class DevFsLoxGn2Transducers : public Device {
@@ -123,6 +127,10 @@ class DevFsLoxGn2Transducers : public Device {
         ereg_state_.ereg_closed = true;
         ereg_state_.ereg_stage_1 = false;
         ereg_state_.ereg_stage_2 = false;
+        ereg_state_.current_angle = 0.0f;
+        ereg_state_.p_cont = 0.0f;
+        ereg_state_.i_cont = 0.0f;
+        ereg_state_.d_cont = 0.0f;
 
         Serial.println("    DevFsLoxGn2Transducers::Setup() - Complete");
     }
@@ -134,22 +142,6 @@ class DevFsLoxGn2Transducers : public Device {
         copv_2.Tick();
         pilot_pres.Tick();
         qd_pres.Tick();
-
-        // raw values (not medians)
-        FsLoxGn2TransducersPacket fs_transducers_packet{
-            .ts = micros(),
-            .oxtank_1 = oxtank_1.GetLatestPsi(),
-            .oxtank_2 = oxtank_2.GetLatestPsi(),
-            .copv_1 = copv_1.GetLatestPsi(),
-            .copv_2 = copv_2.GetLatestPsi(),
-            .pilot_pres = pilot_pres.GetLatestPsi(),
-            .qd_pres = qd_pres.GetLatestPsi(),
-            .ereg_closed = ereg_state_.ereg_closed,
-            .ereg_stage_1 = ereg_state_.ereg_stage_1,
-            .ereg_stage_2 = ereg_state_.ereg_stage_2,
-        };
-
-        SendToPi(fs_transducers_packet);
 
         transducers_freq_logger.Tick();
 
@@ -219,6 +211,27 @@ class DevFsLoxGn2Transducers : public Device {
                 SendToPi(thermo_packet);
                 break;
         }
+
+        // Create and send transducers packet AFTER processing received messages
+        // so ereg_state_ contains the most up-to-date values
+        FsLoxGn2TransducersPacket fs_transducers_packet{
+            .ts = micros(),
+            .oxtank_1 = oxtank_1.GetLatestPsi(),
+            .oxtank_2 = oxtank_2.GetLatestPsi(),
+            .copv_1 = copv_1.GetLatestPsi(),
+            .copv_2 = copv_2.GetLatestPsi(),
+            .pilot_pres = pilot_pres.GetLatestPsi(),
+            .qd_pres = qd_pres.GetLatestPsi(),
+            .ereg_closed = ereg_state_.ereg_closed,
+            .ereg_stage_1 = ereg_state_.ereg_stage_1,
+            .ereg_stage_2 = ereg_state_.ereg_stage_2,
+            .current_angle = ereg_state_.current_angle,
+            .p_cont = ereg_state_.p_cont,
+            .i_cont = ereg_state_.i_cont,
+            .d_cont = ereg_state_.d_cont,
+        };
+
+        SendToPi(fs_transducers_packet);
     }
 
     void Recalibrate() {

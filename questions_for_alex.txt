@@ -1,0 +1,16 @@
+//questions doc for alex looking towards launch_config software development.
+
+Basic Questions:
+1. How did the relay control setup work last year?
+2. thoughts on why the pi recieved no data at all?
+    - caused by the short to the av-bay pre-launch?
+
+Areas of Concern:
+1. linking the two rasp-pis when at launch site
+2. How to seperate relay control between two ESP-32's, one being on the ground side firing station, and another
+which will be in the avionics bay.
+3. Connectivity between avionics rasp-pi until launch(ethernet quick disconnect?)
+
+Understanding of last years implementation:
+1. The pi-serial-uploader file has a different config for the packets it is going to be recieiving over UART. 
+2. Much more crucial system this year because the avionics has to control the ereg --> reading in the ptaps and actuating servo
