@@ -1,5 +1,6 @@
 #include <FDC2214.h>
 #include <Wire.h>
+#include <cmath>
 
 #include "avionics.h"
 #include "packets.h"
@@ -94,27 +95,54 @@ class DevCapFill : public Device {
             Serial.println("Warning: FDC2214 returned zero frequency");
             return 0.0f;
         }
+        // constants (in metric units)
+        const float kInductance = 10e-6f;  // 10 uH
+        const float kCapacitance = 10e-12f;  // 10 pF
+        const float kPi = 3.14159265f; 
+        const float kParasiticCap = 0f; // TODO: Measure and include parasitics
+        const float kEpsilon0 = 8.854e-12f;
+        const float kEpsilonPEEK = 3.2f; // dieletric constant of PEEK
+        const float kEpsilonAir = 1.0f; // dielectric constant of air
+        const float kEpsilonLOX = 1.5f; // dielectric constant of LOX
+        const float kHoleArea = 7.74192e-6f; // hole area
+        const float b = 0.0051054f; // outer tube inner radius
+        const float a = 0.003175f; // inner tube outer radius
+        const float kNumberOuterHoles = 2f; // number of holes in outer tube
+        const float kNumberInnerHoles = 0f; // number of holes in inner tube
+        const float L = 1.3462f; // TODO MEASURE length of the capacitor
+        const float LSpacer = 0.008509f; // Length of bottom spacer
+        const float hGap = 0.0045466f; // bottom gap 
 
-        // Placeholder equation: C = k / f^2
-        // where k is a calibration constant
-        // FDC2214 measures frequency of LC oscillator: f = 1/(2*pi*sqrt(L*C))
-        // Therefore: C = 1 / (4*pi^2*L*f^2)
-        // Assuming L = 18 uH (typical for FDC2214 eval board)
-        const float kInductance_uH = 18.0f;
-        const float kPi = 3.14159265f;
-
-        // Convert frequency reading to actual frequency in Hz
-        // FDC2214 reading is raw counts, need to convert based on reference frequency
-        // For external oscillator at 40 MHz: freq_Hz = (reading * fref) / 2^28
+        // converting measured frequency to Hz
         const float kRefFreq_MHz = 40.0f;
         float freq_MHz = (frequency * kRefFreq_MHz) / 268435456.0f;  // 2^28
         float freq_Hz = freq_MHz * 1000000.0f;
 
-        // Calculate capacitance in pF
-        // C = 1 / (4 * pi^2 * L * f^2)
-        float capacitance_pF = 1000000000000.0f / (4.0f * kPi * kPi * kInductance_uH * freq_Hz * freq_Hz);
+        // converting measured frequency to measured capacitance using modified LC tank formula
+        float capacitance_meas = (kCapacitance) * ((1)/(freq_Hz * kPi * sqrtf(kInductance * kCapacitance))^2 - 1);
 
-        return capacitance_pF;
+        // calculate probe capacitance
+        float cap_probe = capacitance_meas - kParasiticCap;
+
+        // hole correction factor
+        float kHoleCorrection = 
+            1.0f
+            - ((kNumberOuterHoles * kHoleArea) / (2.0f * kPi * b * L))
+            - ((kNumberInnerHoles * kHoleArea) / (2.0f * kPi * a * L));
+
+        // h_lox
+        float hLox =
+            (
+                (((kCapacitance - kParasiticCap) * logf(b / a)) /
+                (2.0f * kPi * kEpsilon0 * kHoleCorrection))
+                - kEpsilonAir * (L - LSpacer)
+                - kEpsilonPEEK * LSpacer
+            ) / (kEpsilonLOX - kEpsilonAir);
+
+        // final h calculation
+        float h = hLox + hGap + LSpacer;
+
+        return h;
     }
 
     template <typename T>
