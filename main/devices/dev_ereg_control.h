@@ -346,7 +346,7 @@ class DevEregControl : public Device {
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 490.0f;  // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 425.0f;  // Auto-close if ereg_lower exceeds this
 
     // Transducer divergence threshold -- if corresponding transducers disagree
     // by more than this value, a sensor failure is assumed and EREG closes.

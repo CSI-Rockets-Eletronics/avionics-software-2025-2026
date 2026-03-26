@@ -99,7 +99,7 @@ class DevCapFill : public Device {
         const float kInductance = 10e-6f;  // 10 uH
         const float kCapacitance = 10e-12f;  // 10 pF
         const float kPi = 3.14159265f; 
-        const float kParasiticCap = 0f; // TODO: Measure and include parasitics
+        const float kParasiticCap = 0.0f; // TODO: Measure and include parasitics
         const float kEpsilon0 = 8.854e-12f;
         const float kEpsilonPEEK = 3.2f; // dieletric constant of PEEK
         const float kEpsilonAir = 1.0f; // dielectric constant of air
@@ -107,8 +107,8 @@ class DevCapFill : public Device {
         const float kHoleArea = 7.74192e-6f; // hole area
         const float b = 0.0051054f; // outer tube inner radius
         const float a = 0.003175f; // inner tube outer radius
-        const float kNumberOuterHoles = 2f; // number of holes in outer tube
-        const float kNumberInnerHoles = 0f; // number of holes in inner tube
+        const float kNumberOuterHoles = 2.0f; // number of holes in outer tube
+        const float kNumberInnerHoles = 0.0f; // number of holes in inner tube
         const float L = 1.3462f; // TODO MEASURE length of the capacitor
         const float LSpacer = 0.008509f; // Length of bottom spacer
         const float hGap = 0.0045466f; // bottom gap 
@@ -119,10 +119,8 @@ class DevCapFill : public Device {
         float freq_Hz = freq_MHz * 1000000.0f;
 
         // converting measured frequency to measured capacitance using modified LC tank formula
-        float capacitance_meas = (kCapacitance) * ((1)/(freq_Hz * kPi * sqrtf(kInductance * kCapacitance))^2 - 1);
-
-        // calculate probe capacitance
-        float cap_probe = capacitance_meas - kParasiticCap;
+        float denominator = freq_Hz * kPi * sqrtf(kInductance * kCapacitance);
+        float capacitance_meas = (kCapacitance) * ((1.0f / (denominator * denominator)) - 1.0f);
 
         // hole correction factor
         float kHoleCorrection = 

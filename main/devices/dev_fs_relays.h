@@ -39,9 +39,9 @@ class DevFsRelays : public Device {
     const MS kGN2FillOpenDurationMs = 5000;
     const MS kGN2FillClosedDurationMs = 5000;
 
-    const MS kFillAPulseDurationMs = 1000;
-    const MS kFillBPulseDurationMs = 5000;
-    const MS kFillCPulseDurationMs = 10000;
+    const MS kFillAPulseDurationMs = 500;
+    const MS kFillBPulseDurationMs = 1000;
+    const MS kFillCPulseDurationMs = 5000;
 
     // dome pilot opens at T-15s
     const MS kFireDomePilotCloseDelayMs = 5000;  // T-10s
@@ -62,6 +62,12 @@ class DevFsRelays : public Device {
     MS enter_depress_pulse_ms = millis();
 
     RelayStates relay_states;
+
+    // Independent controls that persist across state changes
+    bool manual_gn2_fill = false;
+    bool manual_gn2_drain = false;
+    bool manual_lox_fill = false;
+    bool manual_lox_disconnect = false;
 
    public:
     void Setup() override {
@@ -278,6 +284,12 @@ class DevFsRelays : public Device {
             relay_states.depress =
                 time_in_pulse_pilot_period < kPilotValveOpenDurationMs;
         }
+
+        // Apply manual overrides (OR operation allows manual control without exiting state)
+        relay_states.gn2_drain = relay_states.gn2_drain || manual_gn2_drain;
+        relay_states.gn2_fill = relay_states.gn2_fill || manual_gn2_fill;
+        relay_states.lox_fill = relay_states.lox_fill || manual_lox_fill;
+        relay_states.lox_disconnect = relay_states.lox_disconnect || manual_lox_disconnect;
     }
 
     void UpdateCustomRelayStates(FsCommandPacket command_packet) {
@@ -290,6 +302,12 @@ class DevFsRelays : public Device {
         relay_states.lox_disconnect = command_packet.lox_disconnect;
         relay_states.igniter = command_packet.igniter;
         relay_states.ereg_power = command_packet.ereg_power;
+
+        // Update manual overrides (persist when leaving CUSTOM state)
+        manual_gn2_drain = command_packet.gn2_drain;
+        manual_gn2_fill = command_packet.gn2_fill;
+        manual_lox_fill = command_packet.lox_fill;
+        manual_lox_disconnect = command_packet.lox_disconnect;
     }
 
     void FlushRelays() {
