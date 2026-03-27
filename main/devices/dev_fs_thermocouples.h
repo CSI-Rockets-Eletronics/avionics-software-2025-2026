@@ -23,34 +23,33 @@ class DevFsThermocouples : public Device {
 
     utils::FrequencyLogger thermocouples_freq_logger{"Thermocouples"};
 
+    // Rate limiting for packet transmission
+    unsigned long last_packet_send_time = 0;
+    static const unsigned long kPacketSendIntervalMs = 1000;  // Send packets at most once per second
+
    public:
     void Setup() override {
-        // DISABLED: I2C initialization commented out - no hardware available
-        // Uncomment when hardware is ready
+        // Initialize the 3 MCP9600 thermocouples on I2C bus 0
+        // MCP9600 is known to be "fussy" with I2C communication
+        // Multiple retries and delays are needed for reliable initialization
 
-        // // Initialize the 3 MCP9600 thermocouples on I2C bus 0
-        // // MCP9600 is known to be "fussy" with I2C communication
-        // // Multiple retries and delays are needed for reliable initialization
+        // Add initial delay for I2C bus to stabilize
+        delay(200);
 
-        // // Add initial delay for I2C bus to stabilize
-        // delay(200);
+        // Initialize with retries - MCP9600 often fails on first attempt
+        if (!InitMCP9600WithRetries(gn2_internal, kGn2InternalAddress, "gn2_internal"))
+            Die("gn2_internal init failed after retries");
+        delay(200);
 
-        // // Initialize with retries - MCP9600 often fails on first attempt
-        // if (!InitMCP9600WithRetries(gn2_internal, kGn2InternalAddress, "gn2_internal"))
-        //     Die("gn2_internal init failed after retries");
-        // delay(200);
+        if (!InitMCP9600WithRetries(lox_lower, kLoxLowerAddress, "lox_lower"))
+            Die("lox_lower init failed after retries");
+        delay(200);
 
-        // if (!InitMCP9600WithRetries(lox_lower, kLoxLowerAddress, "lox_lower"))
-        //     Die("lox_lower init failed after retries");
-        // delay(200);
+        if (!InitMCP9600WithRetries(lox_upper, kLoxUpperAddress, "lox_upper"))
+            Die("lox_upper init failed after retries");
+        delay(200);
 
-        // if (!InitMCP9600WithRetries(lox_upper, kLoxUpperAddress, "lox_upper"))
-        //     Die("lox_upper init failed after retries");
-        // delay(200);
-
-        // Serial.println("All MCP9600 thermocouples initialized successfully");
-
-        Serial.println("Thermocouple I2C initialization DISABLED - sending zeros as data");
+        Serial.println("All MCP9600 thermocouples initialized successfully");
     }
 
     bool InitMCP9600WithRetries(MCP9600& tc, uint8_t address, const char* name) {
@@ -118,63 +117,66 @@ class DevFsThermocouples : public Device {
     }
 
     void Loop() override {
-        // DISABLED: I2C reading commented out - no hardware available
-        // Uncomment when hardware is ready
+        // DEBUG: Reading all three thermocouples
+        Serial.println("--- Thermocouple Reading Cycle ---");
 
-        // // DEBUG: Reading all three thermocouples
-        // Serial.println("--- Thermocouple Reading Cycle ---");
+        // Read temperatures from the 3 MCP9600 thermocouples
+        float gn2_internal_celsius = gn2_internal.getThermocoupleTemp();
+        Serial.print("DEBUG: gn2_internal raw reading: ");
+        Serial.print(gn2_internal_celsius);
+        Serial.println(" C");
 
-        // // Read temperatures from the 3 MCP9600 thermocouples
-        // float gn2_internal_celsius = gn2_internal.getThermocoupleTemp();
-        // Serial.print("DEBUG: gn2_internal raw reading: ");
-        // Serial.print(gn2_internal_celsius);
-        // Serial.println(" C");
+        float lox_lower_celsius = lox_lower.getThermocoupleTemp();
+        Serial.print("DEBUG: lox_lower raw reading: ");
+        Serial.print(lox_lower_celsius);
+        Serial.println(" C");
 
-        // float lox_lower_celsius = lox_lower.getThermocoupleTemp();
-        // Serial.print("DEBUG: lox_lower raw reading: ");
-        // Serial.print(lox_lower_celsius);
-        // Serial.println(" C");
+        float lox_upper_celsius = lox_upper.getThermocoupleTemp();
+        Serial.print("DEBUG: lox_upper raw reading: ");
+        Serial.print(lox_upper_celsius);
+        Serial.println(" C");
 
-        // float lox_upper_celsius = lox_upper.getThermocoupleTemp();
-        // Serial.print("DEBUG: lox_upper raw reading: ");
-        // Serial.print(lox_upper_celsius);
-        // Serial.println(" C");
+        // Check for sensor errors
+        Serial.println("DEBUG: Checking sensor faults...");
+        HandleMCP9600Fault("gn2_internal", gn2_internal, gn2_internal_celsius);
+        HandleMCP9600Fault("lox_lower", lox_lower, lox_lower_celsius);
+        HandleMCP9600Fault("lox_upper", lox_upper, lox_upper_celsius);
 
-        // // Check for sensor errors
-        // Serial.println("DEBUG: Checking sensor faults...");
-        // HandleMCP9600Fault("gn2_internal", gn2_internal, gn2_internal_celsius);
-        // HandleMCP9600Fault("lox_lower", lox_lower, lox_lower_celsius);
-        // HandleMCP9600Fault("lox_upper", lox_upper, lox_upper_celsius);
+        // DEBUG: Verify all sensors are providing valid data
+        int valid_sensors = 0;
+        if (!isnan(gn2_internal_celsius)) valid_sensors++;
+        if (!isnan(lox_lower_celsius)) valid_sensors++;
+        if (!isnan(lox_upper_celsius)) valid_sensors++;
+        Serial.print("DEBUG: Valid sensors: ");
+        Serial.print(valid_sensors);
+        Serial.println("/3");
 
-        // // DEBUG: Verify all sensors are providing valid data
-        // int valid_sensors = 0;
-        // if (!isnan(gn2_internal_celsius)) valid_sensors++;
-        // if (!isnan(lox_lower_celsius)) valid_sensors++;
-        // if (!isnan(lox_upper_celsius)) valid_sensors++;
-        // Serial.print("DEBUG: Valid sensors: ");
-        // Serial.print(valid_sensors);
-        // Serial.println("/3");
+        // Rate limit packet transmission to avoid queue overflow
+        unsigned long current_time = millis();
+        if (current_time - last_packet_send_time >= kPacketSendIntervalMs) {
+            FsThermocouplesPacket thermo_packet{
+                .ts = micros(),
+                .gn2_internal_celsius = CoalesceNaN(gn2_internal_celsius),
+                .gn2_external_celsius = 0.0f,  // Not connected
+                .lox_upper_celsius = CoalesceNaN(lox_upper_celsius),
+                .lox_lower_celsius = CoalesceNaN(lox_lower_celsius),
+                .dummy = 0,
+            };
+            Send(DeviceType::DevFsLoxGn2Transducers, thermo_packet);
+            last_packet_send_time = current_time;
 
-        // Send zeros for all thermocouple readings
-        float gn2_internal_celsius = 0.0f;
-        float lox_lower_celsius = 0.0f;
-        float lox_upper_celsius = 0.0f;
-
-        FsThermocouplesPacket thermo_packet{
-            .ts = micros(),
-            .gn2_internal_celsius = 0.0f,
-            .gn2_external_celsius = 0.0f,  // Not connected
-            .lox_upper_celsius = 0.0f,
-            .lox_lower_celsius = 0.0f,
-            .dummy = 0,
-        };
-        Send(DeviceType::DevFsLoxGn2Transducers, thermo_packet);
+            Serial.println(">>> Thermocouple packet SENT <<<");
+        } else {
+            Serial.print(">>> Packet send skipped (next send in ");
+            Serial.print(kPacketSendIntervalMs - (current_time - last_packet_send_time));
+            Serial.println(" ms) <<<");
+        }
 
         thermocouples_freq_logger.Tick();
 
-        // PrintCelsius("gn2_internal", gn2_internal_celsius);
-        // PrintCelsius("lox_lower", lox_lower_celsius);
-        // PrintCelsius("lox_upper", lox_upper_celsius);
+        PrintCelsius("gn2_internal", gn2_internal_celsius);
+        PrintCelsius("lox_lower", lox_lower_celsius);
+        PrintCelsius("lox_upper", lox_upper_celsius);
 
         delay(100);
     }
