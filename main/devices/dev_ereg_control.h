@@ -294,7 +294,7 @@ class DevEregControl : public Device {
     // gains = base_gains * gain_scale
     void UpdateDynamicGains(float upper_psi) {
         constexpr double P_hi = 4500.0;
-        constexpr double P_lo = 450.0;
+        constexpr double P_lo = 418.0;
         constexpr double gain_boost_max = 1.0;
 
         double alpha = (P_hi - static_cast<double>(upper_psi)) / (P_hi - P_lo);
@@ -342,7 +342,7 @@ class DevEregControl : public Device {
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 425.0f;  // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 450.0f; // Auto-close if ereg_lower exceeds this
 
     // Transducer divergence threshold -- if corresponding transducers disagree
     // by more than this value, a sensor failure is assumed and EREG closes.
@@ -380,7 +380,7 @@ class DevEregControl : public Device {
 
     // PID gains -- base values define the unscaled setpoint
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
-    double setpoint_ = 450.0;
+    double setpoint_ = 418.0;
 
     double kp_base_ = 0.13;
     double ki_base_ = 0.6;
