@@ -32,9 +32,9 @@ class DevFsLoxGn2Transducers : public Device {
     // i2c4 transducers - oxtank readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> oxtank_1{
         "oxtank_1",
-        i2c4,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_0,
+        i2c3,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_1,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
         false,  // Changed to false - continuous mode only supports one channel per ADC
@@ -44,12 +44,12 @@ class DevFsLoxGn2Transducers : public Device {
 
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
         "oxtank_2",
-        i2c3,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
+        i2c4,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        false,  // Changed to false - continuous mode only supports one channel per ADC
+        true,  // Changed to false - continuous mode only supports one channel per ADC
         50,
         375, //Todo
     };
@@ -63,7 +63,7 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        false,  // Changed to false - continuous mode only supports one channel per ADC
+        true,  // Changed to false - continuous mode only supports one channel per ADC
         50,
         1250, //Todo
     };
@@ -88,7 +88,7 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        false,  // Changed to false - continuous mode only supports one channel per ADC
+        true,  // Changed to false - continuous mode only supports one channel per ADC
         50,
         375, //Todo
     };
