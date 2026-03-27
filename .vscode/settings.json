@@ -84,5 +84,5 @@
     "typeinfo": "cpp"
   },
   "idf.currentSetup": "C:\\Users\\clegg\\esp\\v5.1.5\\esp-idf",
-  "idf.portWin": "COM10"
+  "idf.portWin": "COM8"
 }

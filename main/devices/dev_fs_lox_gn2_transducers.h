@@ -29,19 +29,22 @@ class DevFsLoxGn2Transducers : public Device {
     I2CWire i2c4{4, 14, 13, 400000};  // Changed from bus 1 to bus 4, 400kHz
 
     // Public transducers - accessed by DevEregControl for PID loop
-    // i2c4 transducers - oxtank readings (ADC @ GND address)
-    MovingMedianADC<Adafruit_ADS1115> oxtank_1{
-        "oxtank_1",
-        i2c3,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
-        RATE_ADS1115_860SPS,
-        GAIN_ONE,
-        false,  // Changed to false - continuous mode only supports one channel per ADC
-        50,
-        375, //Todo
-    };
+    // ACTIVE: Only using one channel per ADC for continuous mode (maximum speed)
 
+    // COMMENTED OUT - not needed for current operation
+    // MovingMedianADC<Adafruit_ADS1115> oxtank_1{
+    //     "oxtank_1",
+    //     i2c3,
+    //     ADCAddress::VIN,
+    //     ADCMode::SingleEnded_1,
+    //     RATE_ADS1115_860SPS,
+    //     GAIN_ONE,
+    //     false,
+    //     50,
+    //     375,
+    // };
+
+    // ACTIVE - i2c4 transducers - oxtank readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
         "oxtank_2",
         i2c4,
@@ -49,13 +52,13 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        true,  // Changed to false - continuous mode only supports one channel per ADC
+        true,  // Continuous mode enabled - only one channel per ADC
         50,
-        375, //Todo
+        375,
     };
 
 
-    // i2c3 transducers - copv readings (ADC @ GND address)
+    // ACTIVE - i2c3 transducers - copv readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> copv_1{
         "copv_1",
         i2c3,
@@ -63,24 +66,25 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        true,  // Changed to false - continuous mode only supports one channel per ADC
+        true,  // Continuous mode enabled - only one channel per ADC
         50,
-        1250, //Todo
+        1250,
     };
 
-    MovingMedianADC<Adafruit_ADS1115> copv_2{
-        "copv_2",
-        i2c3,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_1,
-        RATE_ADS1115_860SPS,
-        GAIN_ONE,
-        false,  // Changed to false - continuous mode only supports one channel per ADC
-        50,
-        1250, //Todo
-    };
+    // COMMENTED OUT - conflicts with copv_1 on same ADC
+    // MovingMedianADC<Adafruit_ADS1115> copv_2{
+    //     "copv_2",
+    //     i2c3,
+    //     ADCAddress::GND,
+    //     ADCMode::SingleEnded_1,
+    //     RATE_ADS1115_860SPS,
+    //     GAIN_ONE,
+    //     false,
+    //     50,
+    //     1250,
+    // };
 
-    // i2c3 transducers - pilot and qd pressure readings (ADC @ VIN address)
+    // ACTIVE - i2c3 transducers - pilot pressure readings (ADC @ VIN address)
     MovingMedianADC<Adafruit_ADS1115> pilot_pres{
         "pilot_pres",
         i2c3,
@@ -88,23 +92,24 @@ class DevFsLoxGn2Transducers : public Device {
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
-        true,  // Changed to false - continuous mode only supports one channel per ADC
+        true,  // Continuous mode enabled - only one channel per ADC
         50,
-        375, //Todo
+        375,
     };
 
-    MovingMedianADC<Adafruit_ADS1115> qd_pres{
-        "qd_pres",
-        i2c4,
-        ADCAddress::VIN,
-        ADCMode::SingleEnded_1,
-        RATE_ADS1115_860SPS,
-        GAIN_ONE,
-        false,  // Changed to false - continuous mode only supports one channel per ADC
-        50,
-        375, //Todo
-        true   // debug_skip_init - TEMPORARILY skipping hardware init to avoid boot loop
-    };
+    // COMMENTED OUT - not needed for current operation
+    // MovingMedianADC<Adafruit_ADS1115> qd_pres{
+    //     "qd_pres",
+    //     i2c4,
+    //     ADCAddress::VIN,
+    //     ADCMode::SingleEnded_1,
+    //     RATE_ADS1115_860SPS,
+    //     GAIN_ONE,
+    //     false,
+    //     50,
+    //     375,
+    //     true   // debug_skip_init - TEMPORARILY skipping hardware init to avoid boot loop
+    // };
 
     void Setup() override {
         Serial.println("    DevFsLoxGn2Transducers::Setup() - Starting");
@@ -136,12 +141,13 @@ class DevFsLoxGn2Transducers : public Device {
     }
 
     void Loop() override {
-        oxtank_1.Tick();
+        // Only tick active transducers (continuous mode for max speed)
+        // oxtank_1.Tick();  // DISABLED
         oxtank_2.Tick();
         copv_1.Tick();
-        copv_2.Tick();
+        // copv_2.Tick();  // DISABLED
         pilot_pres.Tick();
-        qd_pres.Tick();
+        // qd_pres.Tick();  // DISABLED
 
         transducers_freq_logger.Tick();
 
@@ -216,12 +222,12 @@ class DevFsLoxGn2Transducers : public Device {
         // so ereg_state_ contains the most up-to-date values
         FsLoxGn2TransducersPacket fs_transducers_packet{
             .ts = micros(),
-            .oxtank_1 = oxtank_1.GetLatestPsi(),
+            .oxtank_1 = 0.0f,  // DISABLED - set to 0
             .oxtank_2 = oxtank_2.GetLatestPsi(),
             .copv_1 = copv_1.GetLatestPsi(),
-            .copv_2 = copv_2.GetLatestPsi(),
+            .copv_2 = 0.0f,  // DISABLED - set to 0
             .pilot_pres = pilot_pres.GetLatestPsi(),
-            .qd_pres = qd_pres.GetLatestPsi(),
+            .qd_pres = 0.0f,  // DISABLED - set to 0
             .ereg_closed = ereg_state_.ereg_closed,
             .ereg_stage_1 = ereg_state_.ereg_stage_1,
             .ereg_stage_2 = ereg_state_.ereg_stage_2,
@@ -235,12 +241,13 @@ class DevFsLoxGn2Transducers : public Device {
     }
 
     void Recalibrate() {
-        oxtank_1.Recalibrate(kCalibrateSamples);
+        // Only recalibrate active transducers
+        // oxtank_1.Recalibrate(kCalibrateSamples);  // DISABLED
         oxtank_2.Recalibrate(kCalibrateSamples);
         copv_1.Recalibrate(kCalibrateSamples);
-        copv_2.Recalibrate(kCalibrateSamples);
+        // copv_2.Recalibrate(kCalibrateSamples);  // DISABLED
         pilot_pres.Recalibrate(kCalibrateSamples);
-        qd_pres.Recalibrate(kCalibrateSamples);
+        // qd_pres.Recalibrate(kCalibrateSamples);  // DISABLED
     }
 
     template <typename T>

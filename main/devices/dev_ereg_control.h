@@ -46,21 +46,17 @@ class DevEregControl : public Device {
             return;
         }
 
-        // Read all four transducers
+        // Read active transducers only (copv_1, oxtank_2)
+        // copv_2 and oxtank_1 are disabled for maximum speed
         float upper_1_psi = transducers_->copv_1.GetLatestPsi();
-        float upper_2_psi = transducers_->copv_2.GetLatestPsi();
-        float lower_1_psi = transducers_->oxtank_1.GetLatestPsi();
+        // float upper_2_psi = transducers_->copv_2.GetLatestPsi();  // DISABLED
+        // float lower_1_psi = transducers_->oxtank_1.GetLatestPsi();  // DISABLED
         float lower_2_psi = transducers_->oxtank_2.GetLatestPsi();
 
-        // NaN check: if any transducer returns NaN, close immediately
-        if (isnan(upper_1_psi) || isnan(upper_2_psi) ||
-            isnan(lower_1_psi) || isnan(lower_2_psi)) {
+        // NaN check: if any active transducer returns NaN, close immediately
+        if (isnan(upper_1_psi) || isnan(lower_2_psi)) {
             Serial.print("EREG: NaN transducer reading! upper1=");
             Serial.print(upper_1_psi);
-            Serial.print(" upper2=");
-            Serial.print(upper_2_psi);
-            Serial.print(" lower1=");
-            Serial.print(lower_1_psi);
             Serial.print(" lower2=");
             Serial.println(lower_2_psi);
             SetState(EREG_CLOSED);
