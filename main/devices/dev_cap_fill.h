@@ -31,6 +31,10 @@ class DevCapFill : public Device {
         // Serial.println("FDC2214 initialized successfully");
         // PrintDebugInfo();
 
+        // Initialize MCP9700 temperature sensor ADC pin
+        pinMode(kBoardTempPin, INPUT);
+        analogSetAttenuation(ADC_11db);  // 0-3.3V range
+
         delay(100);
     }
 
@@ -49,12 +53,15 @@ class DevCapFill : public Device {
         float cap_base = FrequencyToCapacitance(freq_base);
         float cap_actual = FrequencyToCapacitance(freq_actual);
 
+        // Read board temperature from MCP9700
+        float board_temp_c = ReadBoardTemperature();
+
         // Create packet
         CapFillPacket cap_fill_packet{
             .ts = micros(),
             .cap_fill_base = cap_base,
             .cap_fill_actual = cap_actual,
-            .board_temp = 0,  // TODO: Implement temperature reading from FDC2214
+            .board_temp = board_temp_c,
         };
 
         SendToOtherEsp32(cap_fill_packet);
@@ -68,6 +75,24 @@ class DevCapFill : public Device {
 
    private:
     // ===== Helper Methods =====
+
+    // Read temperature from MCP9700 sensor
+    // MCP9700: Vout = 500mV @ 0°C, 10mV/°C
+    // Temperature(°C) = (Vout - 500mV) / 10mV
+    float ReadBoardTemperature() {
+        // Read ADC value (12-bit: 0-4095)
+        int adc_reading = analogRead(kBoardTempPin);
+
+        // Convert ADC reading to voltage in millivolts
+        // ESP32 ADC: 0-4095 maps to 0-3300mV with 11dB attenuation
+        float voltage_mv = (adc_reading / 4095.0f) * 3300.0f;
+
+        // Convert voltage to temperature using MCP9700 formula
+        // Temp(°C) = (Vout - 500mV) / 10mV/°C
+        float temperature_c = (voltage_mv - 500.0f) / 10.0f;
+
+        return temperature_c;
+    }
 
     // Print debug information about FDC2214 status
     /*
@@ -89,8 +114,35 @@ class DevCapFill : public Device {
     */
 
     // Convert frequency reading to capacitance
-    // TODO: Replace with actual calibration equation based on LC tank parameters
+    // Using LC tank formula: f = 1 / (2π√(LC))
+    // Solving for C: C = 1 / (4π²f²L)
     float FrequencyToCapacitance(unsigned long frequency) {
+        if (frequency == 0) {
+            Serial.println("Warning: FDC2214 returned zero frequency");
+            return 0.0f;
+        }
+
+        // Constants
+        const float kInductance = 18e-6f;  // 18 uH inductance
+        const float kRefFreq_MHz = 40.0f;  // Reference frequency in MHz
+        const float kPi = 3.14159265f;
+
+        // Convert 28-bit reading to frequency in Hz
+        // FDC2214 returns a 28-bit value that represents frequency
+        // frequency_Hz = (frequency_reading * f_ref) / 2^28
+        float freq_MHz = (frequency * kRefFreq_MHz) / 268435456.0f;  // 2^28
+        float freq_Hz = freq_MHz * 1000000.0f;
+
+        // Calculate capacitance using LC tank formula
+        // C = 1 / (4π²f²L)
+        float capacitance = 1.0f / (4.0f * kPi * kPi * freq_Hz * freq_Hz * kInductance);
+
+        return capacitance;
+    }
+
+    // Convert frequency reading to height
+    // TODO: Replace with actual calibration equation based on LC tank parameters
+    float FrequencyToHeight(unsigned long frequency) {
         if (frequency == 0) {
             Serial.println("Warning: FDC2214 returned zero frequency");
             return 0.0f;
@@ -119,8 +171,10 @@ class DevCapFill : public Device {
         float freq_Hz = freq_MHz * 1000000.0f;
 
         // converting measured frequency to measured capacitance using modified LC tank formula
-        float denominator = freq_Hz * kPi * sqrtf(kInductance * kCapacitance);
-        float capacitance_meas = (kCapacitance) * ((1.0f / (denominator * denominator)) - 1.0f);
+        float capacitance_meas = (kCapacitance) * ((1)/((freq_Hz * kPi * sqrtf(kInductance * kCapacitance)) * (freq_Hz * kPi * sqrtf(kInductance * kCapacitance))) - 1);
+
+        // calculate probe capacitance
+        float cap_probe = capacitance_meas - kParasiticCap;
 
         // hole correction factor
         float kHoleCorrection = 
@@ -131,7 +185,7 @@ class DevCapFill : public Device {
         // h_lox
         float hLox =
             (
-                (((kCapacitance - kParasiticCap) * logf(b / a)) /
+                ((cap_probe * logf(b / a)) /
                 (2.0f * kPi * kEpsilon0 * kHoleCorrection))
                 - kEpsilonAir * (L - LSpacer)
                 - kEpsilonPEEK * LSpacer
@@ -151,6 +205,9 @@ class DevCapFill : public Device {
     }
 
     // ===== Constants =====
+
+    // MCP9700 Temperature Sensor Configuration
+    static const int kBoardTempPin = 10;  // GPIO 10 for analog temp sensor
 
     // I2C Configuration
     static const int kI2cSdaPin = 2;
