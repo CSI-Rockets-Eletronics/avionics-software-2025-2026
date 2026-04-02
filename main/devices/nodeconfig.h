@@ -37,9 +37,9 @@ static Node fs_relays{ //i2c5/6
 
 static Node cap_fill{
     "CapFill",
-    MacAddress{"34:85:18:a5:87:f0"},
+    MacAddress{"10:51:db:46:02:c4"},
     {
-        // DeviceType::DevCapFill,  // Commented out - no power yet
+        DeviceType::DevCapFill,
     },
 };
 

@@ -12,8 +12,8 @@ class DevCapFill : public Device {
    public:
     void Setup() override {
         // for serial to Scientific2 ESP32
-        Serial1.begin(kOtherEsp32SerialBaud, SERIAL_8N1, kOtherEsp32SerialRxPin,
-                      kOtherEsp32SerialTxPin);
+        // Serial1.begin(kOtherEsp32SerialBaud, SERIAL_8N1, kOtherEsp32SerialRxPin,
+        //               kOtherEsp32SerialTxPin);
 
         // Initialize I2C
         Wire.begin(kI2cSdaPin, kI2cSclPin);
@@ -56,15 +56,20 @@ class DevCapFill : public Device {
         // Read board temperature from MCP9700
         float board_temp_c = ReadBoardTemperature();
 
+        // Print raw frequency and temperature readings
+        Serial.println(freq_actual);
+        Serial.println(board_temp_c);
+
         // Create packet
         CapFillPacket cap_fill_packet{
             .ts = micros(),
             .cap_fill_base = cap_base,
             .cap_fill_actual = cap_actual,
-            .board_temp = board_temp_c,
+            .board_temp = static_cast<int8_t>(board_temp_c),
         };
 
-        SendToOtherEsp32(cap_fill_packet);
+        // Send via ESP-NOW to gn2transducers node
+        Send(DeviceType::DevFsLoxGn2Transducers, cap_fill_packet);
 
         freq_logger.Tick();
 
@@ -197,12 +202,12 @@ class DevCapFill : public Device {
         return h;
     }
 
-    template <typename T>
-    void SendToOtherEsp32(const T& data) {
-        Serial1.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
-        Serial1.write(kPacketDelimeter1);
-        Serial1.write(kPacketDelimeter2);
-    }
+    // template <typename T>
+    // void SendToOtherEsp32(const T& data) {
+    //     Serial1.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
+    //     Serial1.write(kPacketDelimeter1);
+    //     Serial1.write(kPacketDelimeter2);
+    // }
 
     // ===== Constants =====
 
