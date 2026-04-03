@@ -382,9 +382,9 @@ class DevEregControl : public Device {
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
     double setpoint_ = 418.0;
 
-    double kp_base_ = 0.13;
-    double ki_base_ = 0.6;
-    double kd_base_ = 0.00025;
+    double kp_base_ = 0.091;
+    double ki_base_ = 0.36;
+    double kd_base_ = 0.000275;
 
     double kp_ = kp_base_;
     double ki_ = ki_base_;
