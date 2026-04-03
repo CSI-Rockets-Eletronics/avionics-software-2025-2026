@@ -28,8 +28,8 @@ class DevCapFill : public Device {
         }
 
         // Debug: Print device ID and status
-        // Serial.println("FDC2214 initialized successfully");
-        // PrintDebugInfo();
+        Serial.println("FDC2214 initialized successfully");
+        PrintDebugInfo();
 
         // Initialize MCP9700 temperature sensor ADC pin
         pinMode(kBoardTempPin, INPUT);
@@ -39,31 +39,67 @@ class DevCapFill : public Device {
     }
 
     void Loop() override {
+        // DEBUG: Read and print status register first
+        uint16_t status = fdc.read16FDC(FDC2214_STATUS);
+        Serial.print("STATUS Reg: 0x");
+        Serial.print(status, HEX);
+        Serial.print(" - DRDY_CH1: ");
+        Serial.print((status & FDC2214_CH1_UNREADCONV) ? "YES" : "NO");
+        Serial.print(", ERR_CHAN: ");
+        Serial.print((status >> 14) & 0x03);
+        Serial.print(", ERR_AHW: ");
+        Serial.print((status >> 13) & 0x01);
+        Serial.print(", ERR_AEW: ");
+        Serial.println((status >> 12) & 0x01);
+
         // Read frequency from channel 1 (INA1/INB1 single-ended operation)
         // Channel 1: actual capacitance measurement
-        unsigned long freq_actual = fdc.getReading28(1);
+        unsigned long raw_reading = fdc.getReading28(1);
+
+        // Convert raw reading to frequency in Hz
+        float freq_actual_hz = RawReadingToFrequency(raw_reading);
 
         // For baseline, we'll use a reference reading or calibration value
         // TODO: Implement proper baseline calibration
-        unsigned long freq_base = kBaselineFrequency;
+        // float freq_base_hz = RawReadingToFrequency(kBaselineFrequency);
 
         // Convert frequency to capacitance
         // TODO: Replace with actual calibration equation
         // Placeholder conversion: C = k / f^2 (simplified lumped element model)
-        float cap_base = FrequencyToCapacitance(freq_base);
-        float cap_actual = FrequencyToCapacitance(freq_actual);
+        float cap_base = FrequencyToCapacitance(freq_actual_hz);
+        float cap_actual = FrequencyToHeight(freq_actual_hz);
 
         // Read board temperature from MCP9700
         float board_temp_c = ReadBoardTemperature();
 
-        // Print raw frequency and temperature readings
-        Serial.println(freq_actual);
+        // Print capacitance and temperature
+        Serial.print("Capacitance: ");
+        Serial.print(cap_actual * 1e12, 2);  // Convert to pF for readability
+        Serial.print(" pF | Frequency: ");
+        Serial.print(freq_actual_hz / 1000000.0f, 3);  // Convert to MHz
+        Serial.println(" MHz");
+        Serial.print("Board Temp (C): ");
         Serial.println(board_temp_c);
+
+        // Check for error flags in data register
+        uint16_t dataMSB = fdc.read16FDC(FDC2214_DATA_CH1_MSB);
+        uint16_t dataLSB = fdc.read16FDC(FDC2214_DATA_CH1_LSB);
+        Serial.print("Data MSB: 0x");
+        Serial.print(dataMSB, HEX);
+        Serial.print(", LSB: 0x");
+        Serial.println(dataLSB, HEX);
+
+        if (dataMSB & FDC2214_DATA_CHx_MASK_ERRAW) {
+            Serial.println("ERROR: Amplitude too high/low!");
+        }
+        if (dataMSB & FDC2214_DATA_CHx_MASK_ERRWD) {
+            Serial.println("ERROR: Watchdog timeout - no oscillation!");
+        }
 
         // Create packet
         CapFillPacket cap_fill_packet{
             .ts = micros(),
-            .cap_fill_base = cap_base,
+            .cap_fill_base = cap_base * 1e12f,
             .cap_fill_actual = cap_actual,
             .board_temp = static_cast<int8_t>(board_temp_c),
         };
@@ -100,106 +136,146 @@ class DevCapFill : public Device {
     }
 
     // Print debug information about FDC2214 status
-    /*
     void PrintDebugInfo() {
         uint16_t deviceId = fdc.read16FDC(FDC2214_DEVICE_ID);
         uint16_t status = fdc.read16FDC(FDC2214_STATUS);
         uint16_t config = fdc.read16FDC(FDC2214_CONFIG);
         uint16_t muxConfig = fdc.read16FDC(FDC2214_MUX_CONFIG);
+        uint16_t clockDiv = fdc.read16FDC(FDC2214_CLOCK_DIVIDERS_CH1);
+        uint16_t drive = fdc.read16FDC(FDC2214_DRIVE_CH1);
+        uint16_t dataMSB = fdc.read16FDC(FDC2214_DATA_CH1_MSB);
+        uint16_t dataLSB = fdc.read16FDC(FDC2214_DATA_CH1_LSB);
 
         Serial.print("Device ID: 0x");
         Serial.println(deviceId, HEX);
         Serial.print("Status: 0x");
         Serial.println(status, HEX);
+        Serial.print("  ERR_CHAN: ");
+        Serial.println((status >> 14) & 0x03, BIN);
+        Serial.print("  ERR_AHW: ");
+        Serial.println((status >> 13) & 0x01);
+        Serial.print("  ERR_AEW: ");
+        Serial.println((status >> 12) & 0x01);
         Serial.print("Config: 0x");
         Serial.println(config, HEX);
         Serial.print("MUX Config: 0x");
         Serial.println(muxConfig, HEX);
+        Serial.print("Clock Dividers CH1: 0x");
+        Serial.println(clockDiv, HEX);
+        Serial.print("Drive CH1: 0x");
+        Serial.println(drive, HEX);
+        Serial.print("Data CH1 MSB: 0x");
+        Serial.println(dataMSB, HEX);
+        Serial.print("Data CH1 LSB: 0x");
+        Serial.println(dataLSB, HEX);
     }
-    */
 
-    // Convert frequency reading to capacitance
-    // Using LC tank formula: f = 1 / (2π√(LC))
-    // Solving for C: C = 1 / (4π²f²L)
-    float FrequencyToCapacitance(unsigned long frequency) {
-        if (frequency == 0) {
-            Serial.println("Warning: FDC2214 returned zero frequency");
+    // Convert raw 28-bit reading to frequency in Hz
+    // FDC2214 formula: f_sensor = (raw_reading * f_ref) / 2^28
+    float RawReadingToFrequency(unsigned long raw_reading) {
+        if (raw_reading == 0) {
+            Serial.println("Warning: FDC2214 returned zero reading");
             return 0.0f;
         }
 
-        // Constants
-        const float kInductance = 18e-6f;  // 18 uH inductance
-        const float kRefFreq_MHz = 40.0f;  // Reference frequency in MHz
-        const float kPi = 3.14159265f;
+        // External oscillator: 40 MHz
+        // With FREF_DIVIDER = 2: f_ref = 40 MHz / 2 = 20 MHz
+        const float kRefFreq_MHz = 20.0f;  // Reference frequency in MHz (40 MHz / 2)
+        const float k2pow28 = 268435456.0f;  // 2^28
 
         // Convert 28-bit reading to frequency in Hz
-        // FDC2214 returns a 28-bit value that represents frequency
-        // frequency_Hz = (frequency_reading * f_ref) / 2^28
-        float freq_MHz = (frequency * kRefFreq_MHz) / 268435456.0f;  // 2^28
+        float freq_MHz = (raw_reading * kRefFreq_MHz) / k2pow28;
         float freq_Hz = freq_MHz * 1000000.0f;
 
-        // Calculate capacitance using LC tank formula
-        // C = 1 / (4π²f²L)
-        float capacitance = 1.0f / (4.0f * kPi * kPi * freq_Hz * freq_Hz * kInductance);
-
-        return capacitance;
+        return freq_Hz;
     }
 
-    // Convert frequency reading to height
-    // TODO: Replace with actual calibration equation based on LC tank parameters
+    // Convert frequency (in Hz) to capacitance
+    // Using LC tank formula: f = 1 / (2π√(LC))
+    // Solving for C: C = 1 / (4π²f²L)
+    float FrequencyToCapacitance(float freq_Hz) {
+        if (freq_Hz == 0) {
+            Serial.println("Warning: FDC2214 returned zero frequency");
+            return 0.0f;
+        }
+        // Fixed LC tank values on the board
+        const float kInductance = 10e-6f;     // L0 = 10 uH
+        const float kCapacitance = 10e-12f;   // C0 = 10 pF
+        const float kPi = 3.14159265f;
+
+        // Optional extra fixed capacitance offset
+        // Keep at zero unless you determine a known constant offset
+        // that should be removed before calibration/use.
+        const float kParasiticCap = 0.0f;
+
+        float rootTerm = freq_Hz * kPi * sqrtf(kInductance * kCapacitance);
+
+        if (rootTerm <= 0.0f) {
+            Serial.println("Error: invalid rootTerm in FrequencyToSensorCapacitance");
+            return 0.0f;
+        }
+
+        float alpha = (1.0f / rootTerm) - 1.0f;
+        float cap_sensor = kCapacitance * (alpha * alpha - 1.0f);
+
+        // Optional constant parasitic subtraction
+        cap_sensor -= kParasiticCap;
+
+        // Prevent small negative values from numerical issues
+        if (cap_sensor < 0.0f) {
+            cap_sensor = 0.0f;
+        }
+        return cap_sensor;
+    }
+
+    // Convert frequency reading to height using calibrated capacitance values.
+    // This assumes capacitance varies linearly with height after converting
+    // frequency to sensor capacitance via the Berkeley model.
     float FrequencyToHeight(unsigned long frequency) {
         if (frequency == 0) {
             Serial.println("Warning: FDC2214 returned zero frequency");
             return 0.0f;
         }
-        // constants (in metric units)
-        const float kInductance = 10e-6f;  // 10 uH
-        const float kCapacitance = 10e-12f;  // 10 pF
-        const float kPi = 3.14159265f; 
-        const float kParasiticCap = 0.0f; // TODO: Measure and include parasitics
-        const float kEpsilon0 = 8.854e-12f;
-        const float kEpsilonPEEK = 3.2f; // dieletric constant of PEEK
-        const float kEpsilonAir = 1.0f; // dielectric constant of air
-        const float kEpsilonLOX = 1.5f; // dielectric constant of LOX
-        const float kHoleArea = 7.74192e-6f; // hole area
-        const float b = 0.0051054f; // outer tube inner radius
-        const float a = 0.003175f; // inner tube outer radius
-        const float kNumberOuterHoles = 2.0f; // number of holes in outer tube
-        const float kNumberInnerHoles = 0.0f; // number of holes in inner tube
-        const float L = 1.3462f; // TODO MEASURE length of the capacitor
-        const float LSpacer = 0.008509f; // Length of bottom spacer
-        const float hGap = 0.0045466f; // bottom gap 
 
-        // converting measured frequency to Hz
-        const float kRefFreq_MHz = 40.0f;
-        float freq_MHz = (frequency * kRefFreq_MHz) / 268435456.0f;  // 2^28
-        float freq_Hz = freq_MHz * 1000000.0f;
+        // Choose full-scale height convention.
+        // This matches your previous "overall height" convention:
+        const float kFullHeight = 1.285f;  // meters
 
-        // converting measured frequency to measured capacitance using modified LC tank formula
-        float capacitance_meas = (kCapacitance) * ((1)/((freq_Hz * kPi * sqrtf(kInductance * kCapacitance)) * (freq_Hz * kPi * sqrtf(kInductance * kCapacitance))) - 1);
+        // TODO: Replace these with measured values from actual calibration:
+        // 1. Measure empty-tank frequency
+        // 2. Convert it using FrequencyToSensorCapacitance(...)
+        // 3. Store as kCapEmpty
+        //
+        // 1. Measure full-tank frequency
+        // 2. Convert it using FrequencyToSensorCapacitance(...)
+        // 3. Store as kCapFull
+        const float kCapEmpty = 0.0f;
+        const float kCapFull = 100e-12f;  // placeholder: 100 pF
 
-        // calculate probe capacitance
-        float cap_probe = capacitance_meas - kParasiticCap;
+        float cap_sensor = FrequencyToCapacitance(frequency);
 
-        // hole correction factor
-        float kHoleCorrection = 
-            1.0f
-            - ((kNumberOuterHoles * kHoleArea) / (2.0f * kPi * b * L))
-            - ((kNumberInnerHoles * kHoleArea) / (2.0f * kPi * a * L));
+        float delta_cap = kCapFull - kCapEmpty;
+        if (fabsf(delta_cap) < 1e-18f) {
+            Serial.println("Error: invalid capacitance calibration span");
+            return 0.0f;
+        }
 
-        // h_lox
-        float hLox =
-            (
-                ((cap_probe * logf(b / a)) /
-                (2.0f * kPi * kEpsilon0 * kHoleCorrection))
-                - kEpsilonAir * (L - LSpacer)
-                - kEpsilonPEEK * LSpacer
-            ) / (kEpsilonLOX - kEpsilonAir);
+        float h = kFullHeight * (cap_sensor - kCapEmpty) / delta_cap;
 
-        // final h calculation
-        float h = hLox + hGap + LSpacer;
+        // Clamp to physical range
+        if (h < 0.0f) {
+            h = 0.0f;
+        } else if (h > kFullHeight) {
+            h = kFullHeight;
+        }
 
-        return h;
+        // calculate h_tank
+        float h_tank = h + 0.0254 + 0.01; 
+
+        // calculate h_percent
+        float h_percent = (h_tank/1.3204) * 100;
+
+        return h_percent;
     }
 
     // template <typename T>
@@ -226,7 +302,7 @@ class DevCapFill : public Device {
     static const uint8_t kChannelMask = 0x02;      // Channel 1 only
     static const uint8_t kAutoscanSeq = 0x00;      // Single channel mode
     static const uint8_t kDeglitchValue = 0x001;   // 1 MHz deglitch
-    static const bool kUseIntOsc = false;          // External oscillator
+    static const bool kUseIntOsc = false;          // Use external 40 MHz oscillator
 
     // Baseline frequency for reference (to be calibrated)
     // TODO: Calibrate this value during initialization

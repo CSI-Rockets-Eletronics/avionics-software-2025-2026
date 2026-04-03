@@ -12,8 +12,8 @@ class DevFsThermocouples : public Device {
     // I2C addresses for the 3 MCP9600 thermocouples on i2c0
     // Devices found on i2c0 (SDA=42, SCL=37): 0x64, 0x65, 0x66
     static const uint8_t kGn2InternalAddress = 0x64;
-    static const uint8_t kLoxLowerAddress = 0x65;
-    static const uint8_t kLoxUpperAddress = 0x66;
+    static const uint8_t kLoxLowerAddress = 0x65; //use this
+    static const uint8_t kLoxUpperAddress = 0x66; //use this
 
     I2CWire i2c0{0, 42, 37, 10000};  // I2C bus 0, 10kHz (MCP9600 most reliable at 10-20kHz due to clock stretching)
 
