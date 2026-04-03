@@ -44,11 +44,14 @@ class DevFsRelays : public Device {
     const MS kFillCPulseDurationMs = 5000;
 
     // dome pilot opens at T-15s
-    const MS kFireDomePilotCloseDelayMs = 5000;  // T-10s
-    const MS kFireIgniterOnDelayMs = 10000;      // T-5s
-    const MS kFireIgniterOffDelayMs = 13000;     // T-2s
-    const MS kFireRunOpenDelayMs = 15000;        // T-0s
-    const MS kFireBackToStandbyDelayMs = 25000;  // T+10s
+    const MS kFireDomePilotCloseDelayMs = 5000;   // T-10s
+    const MS kFireIgniterOnDelayMs = 10000;       // T-5s
+    const MS kFireIgniterOffDelayMs = 10500;      // T-4.5s (500ms pulse)
+    const MS kFireRunOpenDelayMs = 15000;         // T-0s
+    const MS kFireBackToStandbyDelayMs = 25000;   // T+10s
+
+    // SAFETY: Maximum igniter pulse duration - NEVER exceed this
+    const MS kMaxIgniterPulseDurationMs = 500;  // 500ms max
 
     // safety to make sure we don't hold open solenoids for too long
     // in the CUSTOM state
@@ -60,6 +63,10 @@ class DevFsRelays : public Device {
     MS enter_state_ms = millis();
     // time of entering a state in which we must pulse the pilot valve
     MS enter_depress_pulse_ms = millis();
+    // time when igniter was last turned on (for safety timeout)
+    MS igniter_on_ms = 0;
+    // track if igniter is currently energized
+    bool igniter_is_on = false;
 
     RelayStates relay_states;
 
@@ -90,6 +97,9 @@ class DevFsRelays : public Device {
         if (cur_state != FsState::CUSTOM) {
             UpdateRelayStates();
         }
+
+        // SAFETY: Enforce maximum igniter pulse duration
+        EnforceIgniterSafety();
 
         FlushRelays();
         SendState();
@@ -205,6 +215,13 @@ class DevFsRelays : public Device {
             cur_state = FsState::STANDBY;
         }
 
+        // SAFETY: Auto-transition FIRE_MANUAL_IGNITER after 500ms
+        if (cur_state == FsState::FIRE_MANUAL_IGNITER &&
+            time_in_state >= kMaxIgniterPulseDurationMs) {
+            cur_state = FsState::STANDBY;
+            Serial.println("[FS RELAYS SAFETY] FIRE_MANUAL_IGNITER auto-transitioned to STANDBY after 500ms");
+        }
+
         if (cur_state == FsState::CUSTOM &&
             time_in_state >= kMaxCustomOpenDurationMs) {
             cur_state = FsState::STANDBY;
@@ -308,6 +325,38 @@ class DevFsRelays : public Device {
         manual_gn2_fill = command_packet.gn2_fill;
         manual_lox_fill = command_packet.lox_fill;
         manual_lox_disconnect = command_packet.lox_disconnect;
+    }
+
+    // SAFETY: Enforce maximum igniter pulse duration
+    // This runs every loop to ensure igniter never exceeds kMaxIgniterPulseDurationMs
+    void EnforceIgniterSafety() {
+        // Detect rising edge (igniter turned on)
+        if (relay_states.igniter && !igniter_is_on) {
+            igniter_on_ms = millis();
+            igniter_is_on = true;
+            Serial.println("[FS RELAYS SAFETY] Igniter turned ON");
+        }
+
+        // Detect falling edge (igniter turned off)
+        if (!relay_states.igniter && igniter_is_on) {
+            MS duration = millis() - igniter_on_ms;
+            igniter_is_on = false;
+            Serial.print("[FS RELAYS SAFETY] Igniter turned OFF after ");
+            Serial.print(duration);
+            Serial.println(" ms");
+        }
+
+        // SAFETY ENFORCEMENT: Force igniter off if exceeds max duration
+        if (igniter_is_on) {
+            MS time_on = millis() - igniter_on_ms;
+            if (time_on >= kMaxIgniterPulseDurationMs) {
+                relay_states.igniter = false;
+                igniter_is_on = false;
+                Serial.print("[FS RELAYS SAFETY] IGNITER SAFETY CUTOFF at ");
+                Serial.print(time_on);
+                Serial.println(" ms - FORCED OFF!");
+            }
+        }
     }
 
     void FlushRelays() {
