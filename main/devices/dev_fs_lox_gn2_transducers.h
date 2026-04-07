@@ -167,8 +167,9 @@ class DevFsLoxGn2Transducers : public Device {
         EregStateData ereg_state_data;
         RelayCurrentMonitorPacket relay_imon_packet;
         FsThermocouplesPacket thermo_packet;
+        CapFillPacket cap_fill_packet;
 
-        switch (Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet)) {
+        switch (Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet, &cap_fill_packet)) {
             case 0:
                 Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
                 Serial.println(static_cast<int>(command_packet.command));
@@ -215,6 +216,11 @@ class DevFsLoxGn2Transducers : public Device {
                 // Received thermocouple data from DevFsThermocouples
                 // Serial.println("[GN2 TRANSDUCERS] Received FsThermocouplesPacket");
                 SendToPi(thermo_packet);
+                break;
+            case 5:
+                // Received cap fill data from DevCapFill
+                Serial.println("[GN2 TRANSDUCERS] Received CapFillPacket");
+                SendToPi(cap_fill_packet);
                 break;
         }
 
