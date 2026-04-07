@@ -246,8 +246,18 @@ class DevFsRelays : public Device {
                 // this function won't be called in the CUSTOM state
                 break;
             case FsState::ABORT:
-                relay_states.gn2_drain = true;
+                // ABORT: Open depress solenoid, close all others, keep ereg power on
+                // All relay_states default to false (closed) except depress and ereg_power
                 relay_states.depress = true;
+                // Explicitly ensure all other solenoids are closed
+                relay_states.gn2_drain = false;
+                relay_states.gn2_fill = false;
+                relay_states.press_pilot = false;
+                relay_states.run = false;
+                relay_states.lox_fill = false;
+                relay_states.lox_disconnect = false;
+                relay_states.igniter = false;
+                // Keep ereg_power preserved (set above from previous state)
                 break;
             case FsState::STANDBY:
             case FsState::GN2_STANDBY:

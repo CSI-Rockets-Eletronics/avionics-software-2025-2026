@@ -11,7 +11,7 @@ class DevFsThermocouples : public Device {
    private:
     // I2C addresses for the 3 MCP9600 thermocouples on i2c0
     // Devices found on i2c0 (SDA=42, SCL=37): 0x64, 0x65, 0x66
-    static const uint8_t kGn2InternalAddress = 0x64;
+    static const uint8_t kGn2InternalAddress = 0x64; //use this
     static const uint8_t kLoxLowerAddress = 0x65; //use this
     static const uint8_t kLoxUpperAddress = 0x66; //use this
 
