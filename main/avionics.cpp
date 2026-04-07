@@ -7,7 +7,7 @@
 
 namespace avionics {
 
-static const int kQueueNumEntries = 32;
+static const int kQueueNumEntries = 128;  // Increased from 32 to handle high-frequency telemetry (335ms buffer @ 382 Hz)
 
 // entry format: [len][data], where len is a uint8_t
 static const int kQueueEntrySize = sizeof(uint8_t) + ESP_NOW_MAX_DATA_LEN;

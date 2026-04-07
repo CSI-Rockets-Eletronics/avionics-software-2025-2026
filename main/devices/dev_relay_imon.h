@@ -71,8 +71,8 @@ class DevRelayImon : public Device {
         // Send to other ESP32s and Raspberry Pi
         Send(DeviceType::DevFsLoxGn2Transducers, packet);
 
-        // Optional: Add a small delay to control sampling rate
-        delay(10);  // 100 Hz sampling rate
+        // Rate-limited to 10 Hz - current monitoring doesn't need ultra-high frequency
+        delay(100);  // 10 Hz sampling rate (reduced from 100 Hz to reduce queue congestion)
     }
 
    private:
