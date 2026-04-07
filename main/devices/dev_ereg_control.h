@@ -172,6 +172,19 @@ class DevEregControl : public Device {
                 SetState(EREG_CLOSED);
                 Serial.println("EREG: ABORT command received - closing e-reg");
                 break;
+            case FsCommand::STATE_ENGINE_PRIME:
+                // ENGINE_PRIME: Transition to EREG_STAGE_1
+                divergence_latched_ = false;
+                SetState(EREG_STAGE_1);
+                BumplessResetPID();
+                Serial.println("EREG: ENGINE_PRIME command received - entering STAGE_1");
+                break;
+            case FsCommand::STATE_FIRE:
+                // FIRE: Transition to EREG_STAGE_2
+                divergence_latched_ = false;
+                SetState(EREG_STAGE_2);
+                Serial.println("EREG: FIRE command received - entering STAGE_2");
+                break;
             case FsCommand::EREG_CLOSED:
                 divergence_latched_ = false;
                 SetState(EREG_CLOSED);

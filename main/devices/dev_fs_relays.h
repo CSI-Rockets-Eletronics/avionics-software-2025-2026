@@ -43,12 +43,14 @@ class DevFsRelays : public Device {
     const MS kFillBPulseDurationMs = 1000;
     const MS kFillCPulseDurationMs = 5000;
 
-    // dome pilot opens at T-15s
-    const MS kFireDomePilotCloseDelayMs = 5000;   // T-10s
-    const MS kFireIgniterOnDelayMs = 10000;       // T-5s
-    const MS kFireIgniterOffDelayMs = 10500;      // T-4.5s (500ms pulse)
-    const MS kFireRunOpenDelayMs = 15000;         // T-0s
-    const MS kFireBackToStandbyDelayMs = 25000;   // T+10s
+    // ENGINE_PRIME timing
+    const MS kEnginePrimePilotOpenDelayMs = 1000;  // Press pilot open for 1s before GN2 fill
+
+    // FIRE timing (starts after ENGINE_PRIME)
+    const MS kFireIgniterOnDelayMs = 0;            // Igniter fires immediately
+    const MS kFireIgniterOffDelayMs = 500;         // 500ms pulse
+    const MS kFireRunOpenDelayMs = 7000;           // Wait 7s after igniter on, then open run (T-0:00)
+    const MS kFireBackToStandbyDelayMs = 27000;    // 7s + 20s = 27s total
 
     // SAFETY: Maximum igniter pulse duration - NEVER exceed this
     const MS kMaxIgniterPulseDurationMs = 500;  // 500ms max
@@ -155,6 +157,9 @@ class DevFsRelays : public Device {
                 break;
             case FsCommand::STATE_GN2_PULSE_FILL_C:
                 cur_state = FsState::GN2_PULSE_FILL_C;
+                break;
+            case FsCommand::STATE_ENGINE_PRIME:
+                cur_state = FsState::ENGINE_PRIME;
                 break;
             case FsCommand::STATE_FIRE:
                 cur_state = FsState::FIRE;
@@ -272,16 +277,25 @@ class DevFsRelays : public Device {
             case FsState::GN2_PULSE_FILL_C:
                 relay_states.gn2_fill = true;
                 break;
+            case FsState::ENGINE_PRIME:
+                // ENGINE_PRIME: press pilot open, wait 1s, then gn2_fill opens
+                relay_states.press_pilot = true;
+                if (time_in_state >= kEnginePrimePilotOpenDelayMs) {
+                    relay_states.gn2_fill = true;
+                }
+                break;
             case FsState::FIRE:
-                if (time_in_state < kFireDomePilotCloseDelayMs) {
-                    relay_states.press_pilot = true;
-                } else if (time_in_state < kFireIgniterOnDelayMs) {
-                    // do nothing; dome pilot is closed
-                } else if (time_in_state < kFireIgniterOffDelayMs) {
+                // FIRE: continue holding press pilot + gn2 fill from ENGINE_PRIME
+                // Fire igniter immediately, wait 7s, then open run
+                // Everything stays open for 20s after run opens (27s total)
+                relay_states.press_pilot = true;
+                relay_states.gn2_fill = true;
+
+                if (time_in_state < kFireIgniterOffDelayMs) {
                     relay_states.igniter = true;
-                } else if (time_in_state < kFireRunOpenDelayMs) {
-                    // do nothing; igniter is off
-                } else {
+                }
+
+                if (time_in_state >= kFireRunOpenDelayMs) {
                     relay_states.run = true;
                 }
                 break;
