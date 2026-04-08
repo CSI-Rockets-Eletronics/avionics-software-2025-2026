@@ -20,12 +20,12 @@ class FrequencyLogger {
         tick_count++;
 
         if (millis() - last_print_time > print_interval_ms) {
-            Serial.print("[");
-            Serial.print(label.c_str());
-            Serial.print("] Frequency: ");
-            Serial.print(
-                (unsigned long)(tick_count * 1000.0 / print_interval_ms));
-            Serial.println(" Hz");
+            // Serial.print("[");
+            // Serial.print(label.c_str());
+            // Serial.print("] Frequency: ");
+            // Serial.print(
+            //     (unsigned long)(tick_count * 1000.0 / print_interval_ms));
+            // Serial.println(" Hz");
             last_print_time = millis();
             tick_count = 0;
         }

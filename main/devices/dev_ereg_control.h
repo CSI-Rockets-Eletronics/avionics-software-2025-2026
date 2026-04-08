@@ -126,8 +126,12 @@ class DevEregControl : public Device {
             RunPidLoop(now, kStage2MaxAngle);
         }
 
-        // Always broadcast current state every loop iteration
-        SendStateToTransducers();
+        // Rate-limit state broadcasts to prevent queue overflow
+        // 100 Hz is sufficient for telemetry without flooding the queue
+        if (now - last_state_broadcast_ms_ >= kStateBroadcastPeriodMs) {
+            last_state_broadcast_ms_ = now;
+            SendStateToTransducers();
+        }
     }
 
    private:
@@ -372,6 +376,9 @@ class DevEregControl : public Device {
     static constexpr double kPidPeriodMs = 6.0;
     static constexpr double kDt          = 0.006;
 
+    // State broadcast timing (rate-limited to prevent queue overflow)
+    static constexpr unsigned long kStateBroadcastPeriodMs = 10;  // 100 Hz
+
     // ===== Member Variables =====
 
     // Servo
@@ -411,6 +418,7 @@ class DevEregControl : public Device {
 
     // Timing
     unsigned long last_pid_ms_ = 0;
+    unsigned long last_state_broadcast_ms_ = 0;
 
     // Backlash compensation
     float last_cmd_angle_ = 0.0f;

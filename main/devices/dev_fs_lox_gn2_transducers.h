@@ -169,59 +169,71 @@ class DevFsLoxGn2Transducers : public Device {
         FsThermocouplesPacket thermo_packet;
         CapFillPacket cap_fill_packet;
 
-        switch (Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet, &cap_fill_packet)) {
-            case 0:
-                Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
-                Serial.println(static_cast<int>(command_packet.command));
+        // Process multiple messages per loop to drain queue faster
+        // This prevents queue overflow when multiple devices send simultaneously
+        constexpr int kMaxMessagesPerLoop = 10;
+        for (int i = 0; i < kMaxMessagesPerLoop; i++) {
+            int result = Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet, &cap_fill_packet);
 
-                // Forward EREG commands to DevEregControl
-                if (command_packet.command == FsCommand::EREG_CLOSED ||
-                    command_packet.command == FsCommand::EREG_STAGE_1 ||
-                    command_packet.command == FsCommand::EREG_STAGE_2) {
-                    Serial.println("[GN2 TRANSDUCERS] Forwarding EREG command to DevEregControl");
-                    Send(DeviceType::DevEregControl, command_packet);
-                }
+            if (result == -1) {
+                // No more messages in queue
+                break;
+            }
 
-                if (command_packet.command == FsCommand::RESTART) {
-                    Die("Restarting by command");
-                }
-                if (command_packet.command ==
-                    FsCommand::RECALIBRATE_TRANSDUCERS) {
-                    Recalibrate();
-                }
-                break;
-            case 1:
-                // Serial.print("[GN2 TRANSDUCERS] Received FsStatePacket from FsRelays, state: ");
-                // Serial.print(static_cast<int>(state_packet.state));
-                // Serial.print(", ms_since_boot: ");
-                // Serial.println(state_packet.ms_since_boot);
-                SendToPi(state_packet);
-                break;
-            case 2:
-                // Received EREG state from DevEregControl
-                // Serial.print("[GN2 TRANSDUCERS] Received EregStateData: closed=");
-                // Serial.print(ereg_state_data.ereg_closed);
-                // Serial.print(", stage1=");
-                // Serial.print(ereg_state_data.ereg_stage_1);
-                // Serial.print(", stage2=");
-                // Serial.println(ereg_state_data.ereg_stage_2);
-                ereg_state_ = ereg_state_data;
-                break;
-            case 3:
-                // Received relay current monitor data from DevRelayImon
-                // Serial.println("[GN2 TRANSDUCERS] Received RelayCurrentMonitorPacket from FsRelays");
-                SendToPi(relay_imon_packet);
-                break;
-            case 4:
-                // Received thermocouple data from DevFsThermocouples
-                // Serial.println("[GN2 TRANSDUCERS] Received FsThermocouplesPacket");
-                SendToPi(thermo_packet);
-                break;
-            case 5:
-                // Received cap fill data from DevCapFill
-                Serial.println("[GN2 TRANSDUCERS] Received CapFillPacket");
-                SendToPi(cap_fill_packet);
-                break;
+            switch (result) {
+                case 0:
+                    Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
+                    Serial.println(static_cast<int>(command_packet.command));
+
+                    // Forward EREG commands to DevEregControl
+                    if (command_packet.command == FsCommand::EREG_CLOSED ||
+                        command_packet.command == FsCommand::EREG_STAGE_1 ||
+                        command_packet.command == FsCommand::EREG_STAGE_2) {
+                        Serial.println("[GN2 TRANSDUCERS] Forwarding EREG command to DevEregControl");
+                        Send(DeviceType::DevEregControl, command_packet);
+                    }
+
+                    if (command_packet.command == FsCommand::RESTART) {
+                        Die("Restarting by command");
+                    }
+                    if (command_packet.command ==
+                        FsCommand::RECALIBRATE_TRANSDUCERS) {
+                        Recalibrate();
+                    }
+                    break;
+                case 1:
+                    // Serial.print("[GN2 TRANSDUCERS] Received FsStatePacket from FsRelays, state: ");
+                    // Serial.print(static_cast<int>(state_packet.state));
+                    // Serial.print(", ms_since_boot: ");
+                    // Serial.println(state_packet.ms_since_boot);
+                    SendToPi(state_packet);
+                    break;
+                case 2:
+                    // Received EREG state from DevEregControl
+                    // Serial.print("[GN2 TRANSDUCERS] Received EregStateData: closed=");
+                    // Serial.print(ereg_state_data.ereg_closed);
+                    // Serial.print(", stage1=");
+                    // Serial.print(ereg_state_data.ereg_stage_1);
+                    // Serial.print(", stage2=");
+                    // Serial.println(ereg_state_data.ereg_stage_2);
+                    ereg_state_ = ereg_state_data;
+                    break;
+                case 3:
+                    // Received relay current monitor data from DevRelayImon
+                    // Serial.println("[GN2 TRANSDUCERS] Received RelayCurrentMonitorPacket from FsRelays");
+                    SendToPi(relay_imon_packet);
+                    break;
+                case 4:
+                    // Received thermocouple data from DevFsThermocouples
+                    // Serial.println("[GN2 TRANSDUCERS] Received FsThermocouplesPacket");
+                    SendToPi(thermo_packet);
+                    break;
+                case 5:
+                    // Received cap fill data from DevCapFill
+                    Serial.println("[GN2 TRANSDUCERS] Received CapFillPacket");
+                    SendToPi(cap_fill_packet);
+                    break;
+            }
         }
 
         // Create and send transducers packet AFTER processing received messages
