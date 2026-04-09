@@ -32,17 +32,17 @@ class DevFsLoxGn2Transducers : public Device {
     // ACTIVE: Only using one channel per ADC for continuous mode (maximum speed)
 
     // COMMENTED OUT - not needed for current operation
-    // MovingMedianADC<Adafruit_ADS1115> oxtank_1{
-    //     "oxtank_1",
-    //     i2c3,
-    //     ADCAddress::VIN,
-    //     ADCMode::SingleEnded_1,
-    //     RATE_ADS1115_860SPS,
-    //     GAIN_ONE,
-    //     false,
-    //     50,
-    //     375,
-    // };
+    MovingMedianADC<Adafruit_ADS1115> oxtank_1{
+        "oxtank_1",
+        i2c3,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_0,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        375,
+    };
 
     // ACTIVE - i2c4 transducers - oxtank readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
@@ -171,7 +171,8 @@ class DevFsLoxGn2Transducers : public Device {
 
         // Process multiple messages per loop to drain queue faster
         // This prevents queue overflow when multiple devices send simultaneously
-        constexpr int kMaxMessagesPerLoop = 10;
+        // Increased to 100 to handle high-frequency cap fill packets (100 Hz)
+        constexpr int kMaxMessagesPerLoop = 100;
         for (int i = 0; i < kMaxMessagesPerLoop; i++) {
             int result = Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet, &cap_fill_packet);
 
