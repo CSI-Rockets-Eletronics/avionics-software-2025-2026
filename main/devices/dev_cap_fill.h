@@ -61,10 +61,13 @@ class DevCapFill : public Device {
         // Calculate probe capacitance using simple LC formula
         float probe_cap_pf = CalculateProbeCapacitance(freq_actual_hz);
 
+        // Calculate fill height percentage
+        float height_percent = CapacitanceToHeightPercent(probe_cap_pf);
+
         // Read board temperature from MCP9700
         float board_temp_c = ReadBoardTemperature();
 
-        // Print raw reading, frequency, probe capacitance, and board temp with high precision
+        // Print raw reading, frequency, probe capacitance, height, and board temp with high precision
         Serial.print("Raw: ");
         Serial.print(raw_reading);
         Serial.print(" | Freq: ");
@@ -73,16 +76,18 @@ class DevCapFill : public Device {
         Serial.print(freq_actual_hz / 1000000.0f, 6);  // MHz with 6 decimals
         Serial.print(" MHz) | Probe Cap: ");
         Serial.print(probe_cap_pf, 6);  // pF with 6 decimals
-        Serial.print(" pF | Board Temp: ");
+        Serial.print(" pF | Height: ");
+        Serial.print(height_percent, 2);
+        Serial.print(" % | Board Temp: ");
         Serial.print(board_temp_c, 2);
         Serial.println(" C");
 
         // Create packet
-        // cap_fill_base: frequency in Hz (range: ~4-8 MHz fits in float)
+        // cap_fill_base: fill height percentage (0-100%)
         // cap_fill_actual: probe capacitance in pF (range: ~0-500 pF fits in float)
         CapFillPacket cap_fill_packet{
             .ts = micros(),
-            .cap_fill_base = freq_actual_hz,        // Frequency in Hz
+            .cap_fill_base = height_percent,        // Fill height percentage
             .cap_fill_actual = probe_cap_pf,        // Probe capacitance in pF
             .board_temp = static_cast<int8_t>(board_temp_c),
         };
@@ -317,54 +322,36 @@ class DevCapFill : public Device {
         return cap_sensor;
     }
 
-    // Convert frequency reading to height using calibrated capacitance values.
-    // This assumes capacitance varies linearly with height after converting
-    // frequency to sensor capacitance via the Berkeley model.
-    float FrequencyToHeight(unsigned long frequency) {
-        if (frequency == 0) {
-            Serial.println("Warning: FDC2214 returned zero frequency");
-            return 0.0f;
+    // Calculate fill height percentage based on capacitance
+    // Continuously tracks max capacitance and uses linear interpolation
+    // between min (390pF empty) and max (tracked full) capacitance
+    float CapacitanceToHeightPercent(float probe_cap_pf) {
+        const float kMinCapacitance = 390.0f;  // Empty tank capacitance in pF
+
+        // Update max capacitance if current reading is higher
+        if (probe_cap_pf > max_capacitance_pf) {
+            max_capacitance_pf = probe_cap_pf;
         }
 
-        // Choose full-scale height convention.
-        // This matches your previous "overall height" convention:
-        const float kFullHeight = 1.285f;  // meters
+        // Calculate capacitance range
+        float cap_range = max_capacitance_pf - kMinCapacitance;
 
-        // TODO: Replace these with measured values from actual calibration:
-        // 1. Measure empty-tank frequency
-        // 2. Convert it using FrequencyToSensorCapacitance(...)
-        // 3. Store as kCapEmpty
-        //
-        // 1. Measure full-tank frequency
-        // 2. Convert it using FrequencyToSensorCapacitance(...)
-        // 3. Store as kCapFull
-        const float kCapEmpty = 0.0f;
-        const float kCapFull = 100e-12f;  // placeholder: 100 pF
-
-        float cap_sensor = FrequencyToCapacitance(frequency);
-
-        float delta_cap = kCapFull - kCapEmpty;
-        if (fabsf(delta_cap) < 1e-18f) {
-            Serial.println("Error: invalid capacitance calibration span");
-            return 0.0f;
+        // If we haven't filled yet (max == min), return 100%
+        if (cap_range < 1.0f) {  // Small threshold to avoid division by zero
+            return 100.0f;
         }
 
-        float h = kFullHeight * (cap_sensor - kCapEmpty) / delta_cap;
+        // Linear interpolation: percentage = (current - min) / (max - min) * 100
+        float height_percent = ((probe_cap_pf - kMinCapacitance) / cap_range) * 100.0f;
 
-        // Clamp to physical range
-        if (h < 0.0f) {
-            h = 0.0f;
-        } else if (h > kFullHeight) {
-            h = kFullHeight;
+        // Clamp to valid range [0, 100]
+        if (height_percent < 0.0f) {
+            height_percent = 0.0f;
+        } else if (height_percent > 100.0f) {
+            height_percent = 100.0f;
         }
 
-        // calculate h_tank
-        float h_tank = h + 0.0254 + 0.01; 
-
-        // calculate h_percent
-        float h_percent = (h_tank/1.3204) * 100;
-
-        return h_percent;
+        return height_percent;
     }
 
     // template <typename T>
@@ -416,6 +403,9 @@ class DevCapFill : public Device {
 
     FDC2214 fdc{kFdcI2cAddress};
     utils::FrequencyLogger freq_logger{"CapFill"};
+
+    // Track maximum capacitance observed for height percentage calculation
+    float max_capacitance_pf = 390.0f;  // Initialize to empty tank capacitance
 };
 
 REGISTER_AVIONICS_DEVICE(DevCapFill);
