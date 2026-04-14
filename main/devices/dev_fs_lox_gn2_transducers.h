@@ -32,6 +32,7 @@ class DevFsLoxGn2Transducers : public Device {
     // ACTIVE: Only using one channel per ADC for continuous mode (maximum speed)
 
     // COMMENTED OUT - not needed for current operation
+    /*
     MovingMedianADC<Adafruit_ADS1115> oxtank_1{
         "oxtank_1",
         i2c3,
@@ -43,6 +44,7 @@ class DevFsLoxGn2Transducers : public Device {
         50,
         375,
     };
+    */
 
     // ACTIVE - i2c4 transducers - oxtank readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
@@ -62,7 +64,7 @@ class DevFsLoxGn2Transducers : public Device {
     MovingMedianADC<Adafruit_ADS1115> copv_1{
         "copv_1",
         i2c3,
-        ADCAddress::GND,
+        ADCAddress::VIN,
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
         GAIN_ONE,
@@ -85,6 +87,7 @@ class DevFsLoxGn2Transducers : public Device {
     // };
 
     // ACTIVE - i2c3 transducers - pilot pressure readings (ADC @ VIN address)
+    /*
     MovingMedianADC<Adafruit_ADS1115> pilot_pres{
         "pilot_pres",
         i2c3,
@@ -96,6 +99,7 @@ class DevFsLoxGn2Transducers : public Device {
         50,
         375,
     };
+    */
 
     // COMMENTED OUT - not needed for current operation
     // MovingMedianADC<Adafruit_ADS1115> qd_pres{
@@ -146,7 +150,7 @@ class DevFsLoxGn2Transducers : public Device {
         oxtank_2.Tick();
         copv_1.Tick();
         // copv_2.Tick();  // DISABLED
-        pilot_pres.Tick();
+        //pilot_pres.Tick();
         // qd_pres.Tick();  // DISABLED
 
         transducers_freq_logger.Tick();
@@ -245,7 +249,7 @@ class DevFsLoxGn2Transducers : public Device {
             .oxtank_2 = oxtank_2.GetLatestPsi(),
             .copv_1 = copv_1.GetLatestPsi(),
             .copv_2 = 0.0f,  // DISABLED - set to 0
-            .pilot_pres = pilot_pres.GetLatestPsi(),
+            .pilot_pres = 0.0f, //pilot_pres.GetLatestPsi(),
             .qd_pres = 0.0f,  // DISABLED - set to 0
             .ereg_closed = ereg_state_.ereg_closed,
             .ereg_stage_1 = ereg_state_.ereg_stage_1,
@@ -265,7 +269,7 @@ class DevFsLoxGn2Transducers : public Device {
         oxtank_2.Recalibrate(kCalibrateSamples);
         copv_1.Recalibrate(kCalibrateSamples);
         // copv_2.Recalibrate(kCalibrateSamples);  // DISABLED
-        pilot_pres.Recalibrate(kCalibrateSamples);
+        //pilot_pres.Recalibrate(kCalibrateSamples);
         // qd_pres.Recalibrate(kCalibrateSamples);  // DISABLED
     }
 

@@ -50,7 +50,7 @@ class DevEregControl : public Device {
         // copv_2 and oxtank_1 are disabled for maximum speed
         float upper_1_psi = transducers_->copv_1.GetLatestPsi();
         // float upper_2_psi = transducers_->copv_2.GetLatestPsi();  // DISABLED
-        float lower_1_psi = transducers_->oxtank_1.GetLatestPsi();
+        //float lower_1_psi = transducers_->oxtank_1.GetLatestPsi();
         float lower_2_psi = transducers_->oxtank_2.GetLatestPsi();
 
         // NaN check: if any active transducer returns NaN, close immediately
@@ -80,6 +80,7 @@ class DevEregControl : public Device {
         }
         */
         
+        /*
         if (fabsf(lower_1_psi - lower_2_psi) > kMaxTransducerDivergencePsi) {
             Serial.println("EREG: Lower transducer divergence! Closing (latched).");
             divergence_latched_ = true;
@@ -89,13 +90,13 @@ class DevEregControl : public Device {
             SendStateToTransducers();
             return;
         }
-        
+        */
 
         // Average redundant transducer pairs
         //ereg_upper_psi_ = (upper_1_psi + upper_2_psi) / 2.0f;
         ereg_upper_psi_ = upper_1_psi;
-        //ereg_lower_psi_ = lower_2_psi;
-        ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
+        ereg_lower_psi_ = lower_2_psi;
+        //ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
 
         // Safety check: automatically close EREG if lower pressure exceeds safety limit
         if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
