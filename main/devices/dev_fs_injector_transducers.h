@@ -100,7 +100,7 @@ class DevFsInjectorTransducers : public Device {
 
     // dataq - using AIN0 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> injector_1{
-        "injector_1",
+        "injector_1", //injector 
         i2c1,
         ADCAddress::GND,
         ADCMode::SingleEnded_0,
@@ -108,13 +108,29 @@ class DevFsInjectorTransducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1.0,  // TODO calibrate
+        250, 
         true,  // debug_skip_init - ignore I2C failures
     };
 
+    
     // dataq - using AIN0 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> injector_2{
-        "injector_2",
+        "injector_2", //pilot ducer
+        i2c1,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_0,
+        kRate,
+        GAIN_ONE,
+        kContinuous,
+        kWindowSize,
+        375,  
+        true,
+    };
+    
+
+    // dataq - using AIN1 (sensors not connected, values set to zero)
+    MovingMedianADC<Adafruit_ADS1115> upper_cc{
+        "upper_cc", //chamber
         i2c2,
         ADCAddress::VIN,
         ADCMode::SingleEnded_0,
@@ -122,21 +138,7 @@ class DevFsInjectorTransducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1.0,  // TODO calibrate
-        true,  // debug_skip_init - ignore I2C failures
-    };
-
-    // dataq - using AIN1 (sensors not connected, values set to zero)
-    MovingMedianADC<Adafruit_ADS1115> upper_cc{
-        "upper_cc",
-        i2c1,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_1,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0,  // TODO calibrate
+        125,
         true,  // debug_skip_init - ignore I2C failures
     };
 };
