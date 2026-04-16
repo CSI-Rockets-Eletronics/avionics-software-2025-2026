@@ -324,10 +324,10 @@ class DevCapFill : public Device {
 
     // Calculate fill height percentage based on capacitance
     // Continuously tracks max capacitance and uses linear interpolation
-    // between min (390pF empty) and max (tracked full) capacitance
+    // between min (119.1474pF empty) and max (tracked full) capacitance
     float CapacitanceToHeightPercent(float probe_cap_pf) {
-        const float kMinCapacitance = 390.0f;  // Empty tank capacitance in pF
-
+        const float kMinCapacitance = 119.1474;  // Empty tank capacitance in pF
+        
         // Update max capacitance if current reading is higher
         if (probe_cap_pf > max_capacitance_pf) {
             max_capacitance_pf = probe_cap_pf;
@@ -337,19 +337,12 @@ class DevCapFill : public Device {
         float cap_range = max_capacitance_pf - kMinCapacitance;
 
         // If we haven't filled yet (max == min), return 100%
-        if (cap_range < 1.0f) {  // Small threshold to avoid division by zero
-            return 100.0f;
+        if (cap_range == 0.0f) {  // Small threshold to avoid division by zero
+            return 0.0f;
         }
 
         // Linear interpolation: percentage = (current - min) / (max - min) * 100
         float height_percent = ((probe_cap_pf - kMinCapacitance) / cap_range) * 100.0f;
-
-        // Clamp to valid range [0, 100]
-        if (height_percent < 0.0f) {
-            height_percent = 0.0f;
-        } else if (height_percent > 100.0f) {
-            height_percent = 100.0f;
-        }
 
         return height_percent;
     }
@@ -405,7 +398,7 @@ class DevCapFill : public Device {
     utils::FrequencyLogger freq_logger{"CapFill"};
 
     // Track maximum capacitance observed for height percentage calculation
-    float max_capacitance_pf = 390.0f;  // Initialize to empty tank capacitance
+    float max_capacitance_pf = 119.1474;  // Initialize to empty tank capacitance
 };
 
 REGISTER_AVIONICS_DEVICE(DevCapFill);
