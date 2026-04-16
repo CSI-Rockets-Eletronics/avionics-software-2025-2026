@@ -47,10 +47,10 @@ class DevFsRelays : public Device {
     const MS kEnginePrimePilotOpenDelayMs = 1000;  // Press pilot open for 1s before GN2 fill
 
     // FIRE timing (starts after ENGINE_PRIME)
-    const MS kFireIgniterOnDelayMs = 0;            // Igniter fires immediately
-    const MS kFireIgniterOffDelayMs = 500;         // 500ms pulse
-    const MS kFireRunOpenDelayMs = 7000;           // Wait 7s after igniter on, then open run (T-0:00)
-    const MS kFireBackToStandbyDelayMs = 27000;    // 7s + 20s = 27s total
+    const MS kFireIgniterOnDelayMs = 3000;            // Igniter fires immediately
+    const MS kFireIgniterOffDelayMs = 3500;         // 500ms pulse
+    const MS kFireRunOpenDelayMs = 10000;           // Wait 10s after igniter on, then open run (T-0:00)
+    const MS kFireBackToStandbyDelayMs = 30000;    // 30s total
 
     // SAFETY: Maximum igniter pulse duration - NEVER exceed this
     const MS kMaxIgniterPulseDurationMs = 500;  // 500ms max
