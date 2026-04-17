@@ -81,6 +81,33 @@ class DevFsThermocouples : public Device {
                     Serial.print(name);
                     Serial.println(" type set to TYPE_E");
 
+                    // Wait before setting filter
+                    delay(100);
+
+                    // Set filter coefficient to 0 (no filtering) for most responsive readings
+                    // Default filter can significantly dampen temperature readings
+                    result = tc.setFilterCoefficient(0);
+                    if (result != 0) {
+                        Serial.print(name);
+                        Serial.print(" setFilterCoefficient failed with code ");
+                        Serial.println(result);
+                    } else {
+                        Serial.print(name);
+                        Serial.println(" filter set to 0 (no filtering)");
+                    }
+
+                    // Wait before setting resolution
+                    delay(100);
+
+                    // Explicitly set to 18-bit resolution for maximum accuracy
+                    if (tc.setThermocoupleResolution(RES_18_BIT) != 0) {
+                        Serial.print(name);
+                        Serial.println(" WARNING: failed to set 18-bit resolution");
+                    } else {
+                        Serial.print(name);
+                        Serial.println(" resolution set to 18-bit");
+                    }
+
                     // Wait before verification
                     delay(100);
 
