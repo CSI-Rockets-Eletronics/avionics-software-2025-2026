@@ -115,7 +115,7 @@ class DevFsInjectorTransducers : public Device {
     
     // dataq - using AIN0 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> injector_2{
-        "injector_2", //pilot ducer
+        "upper_cc", //chamber
         i2c1,
         ADCAddress::VIN,
         ADCMode::SingleEnded_0,
@@ -130,7 +130,7 @@ class DevFsInjectorTransducers : public Device {
 
     // dataq - using AIN1 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> upper_cc{
-        "upper_cc", //chamber
+        "injector_2", //pilot ducer
         i2c2,
         ADCAddress::VIN,
         ADCMode::SingleEnded_0,

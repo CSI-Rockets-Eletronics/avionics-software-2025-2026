@@ -31,11 +31,9 @@ class DevFsLoxGn2Transducers : public Device {
     // Public transducers - accessed by DevEregControl for PID loop
     // ACTIVE: Only using one channel per ADC for continuous mode (maximum speed)
 
-    // COMMENTED OUT - not needed for current operation
-    /*
     MovingMedianADC<Adafruit_ADS1115> oxtank_1{
         "oxtank_1",
-        i2c3,
+        i2c4,
         ADCAddress::VIN,
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
@@ -44,7 +42,7 @@ class DevFsLoxGn2Transducers : public Device {
         50,
         375,
     };
-    */
+    
 
     // ACTIVE - i2c4 transducers - oxtank readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
@@ -73,18 +71,17 @@ class DevFsLoxGn2Transducers : public Device {
         1250,
     };
 
-    // COMMENTED OUT - conflicts with copv_1 on same ADC
-    // MovingMedianADC<Adafruit_ADS1115> copv_2{
-    //     "copv_2",
-    //     i2c3,
-    //     ADCAddress::GND,
-    //     ADCMode::SingleEnded_1,
-    //     RATE_ADS1115_860SPS,
-    //     GAIN_ONE,
-    //     false,
-    //     50,
-    //     1250,
-    // };
+    MovingMedianADC<Adafruit_ADS1115> copv_2{
+        "copv_2",
+        i2c3,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_0,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        1250,
+    };
 
     // ACTIVE - i2c3 transducers - pilot pressure readings (ADC @ VIN address)
     /*
