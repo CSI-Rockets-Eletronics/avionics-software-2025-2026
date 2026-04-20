@@ -114,7 +114,7 @@ class DevFsInjectorTransducers : public Device {
 
     
     // dataq - using AIN0 (sensors not connected, values set to zero)
-    MovingMedianADC<Adafruit_ADS1115> injector_2{
+    MovingMedianADC<Adafruit_ADS1115> upper_cc{
         "upper_cc", //chamber
         i2c1,
         ADCAddress::VIN,
@@ -123,13 +123,13 @@ class DevFsInjectorTransducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        375,  
+        125,  
         true,
     };
     
 
     // dataq - using AIN1 (sensors not connected, values set to zero)
-    MovingMedianADC<Adafruit_ADS1115> upper_cc{
+    MovingMedianADC<Adafruit_ADS1115> injector_2{
         "injector_2", //pilot ducer
         i2c2,
         ADCAddress::VIN,
@@ -138,7 +138,7 @@ class DevFsInjectorTransducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        125,
+        375,
         true,  // debug_skip_init - ignore I2C failures
     };
 };

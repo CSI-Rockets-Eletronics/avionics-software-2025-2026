@@ -40,7 +40,7 @@ class DevFsLoxGn2Transducers : public Device {
         GAIN_ONE,
         true,
         50,
-        375,
+        250,
     };
     
 
@@ -65,7 +65,7 @@ class DevFsLoxGn2Transducers : public Device {
         ADCAddress::VIN,
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
-        GAIN_ONE,
+        GAIN_TWOTHIRDS,
         true,  // Continuous mode enabled - only one channel per ADC
         50,
         1250,
@@ -80,7 +80,7 @@ class DevFsLoxGn2Transducers : public Device {
         GAIN_ONE,
         true,
         50,
-        1250,
+        125,
     };
 
     // ACTIVE - i2c3 transducers - pilot pressure readings (ADC @ VIN address)
@@ -143,11 +143,11 @@ class DevFsLoxGn2Transducers : public Device {
 
     void Loop() override {
         // Only tick active transducers (continuous mode for max speed)
-        // oxtank_1.Tick();  // DISABLED
+        oxtank_1.Tick();
         oxtank_2.Tick();
         copv_1.Tick();
-        // copv_2.Tick();  // DISABLED
-        //pilot_pres.Tick();
+        copv_2.Tick();
+        //pilot_pres.Tick();  // DISABLED
         // qd_pres.Tick();  // DISABLED
 
         transducers_freq_logger.Tick();
@@ -242,11 +242,11 @@ class DevFsLoxGn2Transducers : public Device {
         // so ereg_state_ contains the most up-to-date values
         FsLoxGn2TransducersPacket fs_transducers_packet{
             .ts = micros(),
-            .oxtank_1 = 0.0f,  // DISABLED - set to 0
+            .oxtank_1 = oxtank_1.GetLatestPsi(),
             .oxtank_2 = oxtank_2.GetLatestPsi(),
             .copv_1 = copv_1.GetLatestPsi(),
-            .copv_2 = 0.0f,  // DISABLED - set to 0
-            .pilot_pres = 0.0f, //pilot_pres.GetLatestPsi(),
+            .copv_2 = copv_2.GetLatestPsi(),
+            .pilot_pres = 0.0f,  // DISABLED - pilot_pres.GetLatestPsi(),
             .qd_pres = 0.0f,  // DISABLED - set to 0
             .ereg_closed = ereg_state_.ereg_closed,
             .ereg_stage_1 = ereg_state_.ereg_stage_1,
@@ -262,11 +262,11 @@ class DevFsLoxGn2Transducers : public Device {
 
     void Recalibrate() {
         // Only recalibrate active transducers
-        // oxtank_1.Recalibrate(kCalibrateSamples);  // DISABLED
+        oxtank_1.Recalibrate(kCalibrateSamples);
         oxtank_2.Recalibrate(kCalibrateSamples);
         copv_1.Recalibrate(kCalibrateSamples);
-        // copv_2.Recalibrate(kCalibrateSamples);  // DISABLED
-        //pilot_pres.Recalibrate(kCalibrateSamples);
+        copv_2.Recalibrate(kCalibrateSamples);
+        //pilot_pres.Recalibrate(kCalibrateSamples);  // DISABLED
         // qd_pres.Recalibrate(kCalibrateSamples);  // DISABLED
     }
 
