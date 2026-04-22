@@ -99,13 +99,13 @@ class DevEregControl : public Device {
         //ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
 
         // Safety check: automatically close EREG if lower pressure exceeds safety limit
-        if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
-            Serial.print("EREG: Overpressure! lower_psi=");
-            Serial.print(ereg_lower_psi_);
-            Serial.print(" >= limit=");
-            Serial.println(kMaxSafePressurePsi);
-            SetState(EREG_CLOSED);
-        }
+        // if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
+        //     Serial.print("EREG: Overpressure! lower_psi=");
+        //     Serial.print(ereg_lower_psi_);
+        //     Serial.print(" >= limit=");
+        //     Serial.println(kMaxSafePressurePsi);
+        //     SetState(EREG_CLOSED);
+        // }
 
         unsigned long now = millis();
 
@@ -258,11 +258,19 @@ class DevEregControl : public Device {
 
         current_angle_ = ApplyBacklashComp(current_angle_);
 
-        // Float-precision PWM mapping (avoids integer rounding loss)
-        float pw_f = (float)kPulseMinUs +
-                     ((current_angle_ + 90.0f) * (float)(kPulseMaxUs - kPulseMinUs) / 180.0f);
-        int pw = (int)(pw_f + 0.5f);
-        g_servo_.writeMicroseconds(pw);
+        // Pressure safety clamp: if lower pressure exceeds 500 PSI, physically close
+        // the servo but allow PID to continue calculating in the background.
+        // This ensures seamless transition back to normal control when pressure drops.
+        if (ereg_lower_psi_ > kMaxSafePressurePsi) {
+            g_servo_.writeMicroseconds(kCenterUs);
+        } else {
+            // Normal operation: map PID angle to servo microseconds
+            // Float-precision PWM mapping (avoids integer rounding loss)
+            float pw_f = (float)kPulseMinUs +
+                         ((current_angle_ + 90.0f) * (float)(kPulseMaxUs - kPulseMinUs) / 180.0f);
+            int pw = (int)(pw_f + 0.5f);
+            g_servo_.writeMicroseconds(pw);
+        }
     }
 
     // ===== PID Algorithm =====
@@ -366,7 +374,7 @@ class DevEregControl : public Device {
     static constexpr float kStage2MaxAngle = 90.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 450.0f; // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 500.0f; // Auto-close if ereg_lower exceeds this
 
     // Transducer divergence threshold -- if corresponding transducers disagree
     // by more than this value, a sensor failure is assumed and EREG closes.
