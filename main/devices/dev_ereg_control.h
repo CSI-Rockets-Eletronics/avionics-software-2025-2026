@@ -54,6 +54,7 @@ class DevEregControl : public Device {
         float lower_2_psi = transducers_->oxtank_2.GetLatestPsi();
 
         // NaN check: if any active transducer returns NaN, close immediately
+        /*
         if (isnan(upper_1_psi) || isnan(lower_2_psi)) {
             Serial.print("EREG: NaN transducer reading! upper1=");
             Serial.print(upper_1_psi);
@@ -65,6 +66,8 @@ class DevEregControl : public Device {
             SendStateToTransducers();
             return;
         }
+        */
+    
 
         // Transducer divergence check: if corresponding transducers disagree
         // beyond threshold, a sensor has likely failed — close immediately
@@ -287,13 +290,21 @@ class DevEregControl : public Device {
         // Second difference of error
         const double d2e = error - 2.0 * prev_error_ + prev2_error_;
 
-        // Calculate individual PID components for telemetry
-        p_cont_ = static_cast<float>(kp_ * de);
-        i_cont_ = static_cast<float>(ki_ * error * kDt);
-        d_cont_ = static_cast<float>(kd_ * (d2e / kDt));
+        // Compute PID components in double precision, then store float
+        // copies for telemetry. Summing the float copies would round each
+        // term before summing and degrade control precision.
+        const double p = kp_ * de;
+        const double i = ki_ * error * kDt;
+        const double d_raw = kd_ * (d2e / kDt);
+        d_filt_ = kDerivAlpha * d_raw + (1.0 - kDerivAlpha) * d_filt_;
+        const double d = d_filt_;
+
+        p_cont_ = static_cast<float>(p);
+        i_cont_ = static_cast<float>(i);
+        d_cont_ = static_cast<float>(d);
 
         // Δu = Kp*Δe + Ki*e*dt + Kd*(Δ²e/dt)
-        const double output = p_cont_ + i_cont_ + d_cont_;
+        const double output = p + i + d;
 
         // Shift error history
         prev2_error_ = prev_error_;
@@ -316,6 +327,7 @@ class DevEregControl : public Device {
         double e0    = setpoint_ - static_cast<double>(ereg_lower_psi_);
         prev_error_  = e0;
         prev2_error_ = e0;
+        d_filt_      = 0.0;
     }
 
     // ===== Dynamic Gain Scaling =====
@@ -384,6 +396,7 @@ class DevEregControl : public Device {
     // PID timing
     static constexpr double kPidPeriodMs = 6.0;
     static constexpr double kDt          = 0.006;
+    static constexpr double kDerivAlpha = 0.25;  // τ ≈ 30 ms at dt = 6 ms; first-order low-pass on D term
 
     // State broadcast timing (rate-limited to prevent queue overflow)
     static constexpr unsigned long kStateBroadcastPeriodMs = 10;  // 100 Hz
@@ -407,6 +420,7 @@ class DevEregControl : public Device {
     double integral_    = 0.0;  // unused by velocity-form but retained for symmetry
     double prev_error_  = 0.0;
     double prev2_error_ = 0.0;
+    double d_filt_      = 0.0;  // low-pass-filtered D-term state
 
     // PID component values (for telemetry)
     float p_cont_ = 0.0f;

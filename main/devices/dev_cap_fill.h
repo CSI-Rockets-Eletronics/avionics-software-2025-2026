@@ -371,7 +371,7 @@ class DevCapFill : public Device {
     static const uint8_t kChannelMask = 0x02;      // Channel 1 only
     static const uint8_t kAutoscanSeq = 0x00;      // Single channel mode
     static const uint8_t kDeglitchValue = 0x005;   // 10 MHz deglitch (was 0x001 = 1 MHz, too low for 5-6 MHz sensor)
-    static const bool kUseIntOsc = false;          // Use external 40 MHz oscillator
+    static const bool kUseIntOsc = true;           // Use internal 43.4 MHz oscillator
 
     // Baseline frequency for reference (to be calibrated)
     // TODO: Calibrate this value during initialization

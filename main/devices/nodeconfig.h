@@ -37,7 +37,7 @@ static Node fs_relays{ //i2c5/6
 
 static Node cap_fill{
     "CapFill",
-    MacAddress{"10:51:db:46:02:c4"},
+    MacAddress{"10:51:db:46:02:b8"},
     {
         DeviceType::DevCapFill,
     },
