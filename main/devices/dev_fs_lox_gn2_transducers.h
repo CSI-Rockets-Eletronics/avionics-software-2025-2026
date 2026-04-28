@@ -231,9 +231,13 @@ class DevFsLoxGn2Transducers : public Device {
                     SendToPi(thermo_packet);
                     break;
                 case 5:
+                    static unsigned long last_cap_fill_ms = 0;
+                    if (millis() - last_cap_fill_ms >= 100) {  // 10 Hz
+                        SendToPi(cap_fill_packet);
+                        last_cap_fill_ms = millis();
+                    }
                     // Received cap fill data from DevCapFill
                     Serial.println("[GN2 TRANSDUCERS] Received CapFillPacket");
-                    SendToPi(cap_fill_packet);
                     break;
             }
         }
