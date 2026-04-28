@@ -18,24 +18,41 @@ class DevCapFill : public Device {
         // Initialize I2C
         Wire.begin(kI2cSdaPin, kI2cSclPin);
 
-        // Initialize FDC2214 sensor
+        // Give FDC2214 chip time to power up and stabilize
+        delay(100);
+
+        // Initialize FDC2214 sensor with retry logic
         // Channel mask 0x02 = channel 1 only (INA1/INB1 single-ended)
         // Autoscan 0x00 = single channel mode
         // Deglitch 0x001 = 1 MHz
         // Use external oscillator = false
-        if (!fdc.begin(kChannelMask, kAutoscanSeq, kDeglitchValue, kUseIntOsc)) {
-            Die("FDC2214 initialization failed");
+        const int kMaxRetries = 5;
+        bool init_success = false;
+
+        for (int i = 0; i < kMaxRetries; i++) {
+            if (fdc.begin(kChannelMask, kAutoscanSeq, kDeglitchValue, kUseIntOsc)) {
+                init_success = true;
+                Serial.println("FDC2214 initialized successfully");
+                break;
+            }
+            Serial.printf("FDC2214 init attempt %d/%d failed, retrying...\n", i+1, kMaxRetries);
+            delay(100);  // Wait before retry to let I2C bus/chip stabilize
+        }
+
+        if (!init_success) {
+            Die("FDC2214 initialization failed after all retries");
         }
 
         // Debug: Print device ID and status
-        Serial.println("FDC2214 initialized successfully");
         PrintDebugInfo();
 
         // Initialize MCP9700 temperature sensor ADC pin
         pinMode(kBoardTempPin, INPUT);
         analogSetAttenuation(ADC_11db);  // 0-3.3V range
 
-        delay(100);
+        // Allow extra time for LC oscillator to fully stabilize and complete first conversion
+        // This helps ensure the first readings are accurate and not stale
+        delay(500);
     }
 
     void Loop() override {
