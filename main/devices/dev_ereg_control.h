@@ -433,7 +433,7 @@ class DevEregControl : public Device {
 
     double kp_base_ = 0.091;
     double ki_base_ = 0.36;
-    double kd_base_ = 0.000275;
+    double kd_base_ = 0.0004125;
 
     double kp_ = kp_base_;
     double ki_ = ki_base_;

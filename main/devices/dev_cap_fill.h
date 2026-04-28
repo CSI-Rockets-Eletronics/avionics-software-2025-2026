@@ -261,7 +261,7 @@ class DevCapFill : public Device {
             return 0.0f;
         }
 
-        const float kInductance = 10e-6f;      // L = 10 µH
+        const float kInductance = 10.0e-6f;     // L = 4.5 µH (actual measured inductor value)
         const float kBoardCap = 10e-12f;       // C_board = 10 pF (fixed capacitor on PCB)
         const float kPi = 3.14159265358979f;
 
@@ -293,7 +293,7 @@ class DevCapFill : public Device {
             return 0.0f;
         }
         // Fixed LC tank values on the board
-        const float kInductance = 10e-6f;     // L0 = 10 uH
+        const float kInductance = 10.0e-6f;    // L0 = 4.5 uH (actual measured value)
         const float kCapacitance = 10e-12f;   // C0 = 10 pF
         const float kPi = 3.14159265f;
 
@@ -324,9 +324,9 @@ class DevCapFill : public Device {
 
     // Calculate fill height percentage based on capacitance
     // Continuously tracks max capacitance and uses linear interpolation
-    // between min (119.1474pF empty) and max (tracked full) capacitance
+    // between min (128.235pF empty) and max (tracked full) capacitance
     float CapacitanceToHeightPercent(float probe_cap_pf) {
-        const float kMinCapacitance = 119.1474;  // Empty tank capacitance in pF
+        const float kMinCapacitance = 128.235;  // Empty tank capacitance in pF
         
         // Update max capacitance if current reading is higher
         if (probe_cap_pf > max_capacitance_pf) {
@@ -398,7 +398,7 @@ class DevCapFill : public Device {
     utils::FrequencyLogger freq_logger{"CapFill"};
 
     // Track maximum capacitance observed for height percentage calculation
-    float max_capacitance_pf = 119.1474;  // Initialize to empty tank capacitance
+    float max_capacitance_pf = 128.235;  // Initialize to empty tank capacitance
 };
 
 REGISTER_AVIONICS_DEVICE(DevCapFill);
