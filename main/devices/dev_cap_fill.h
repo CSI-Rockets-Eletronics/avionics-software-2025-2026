@@ -264,11 +264,16 @@ class DevCapFill : public Device {
         // FDC2214 formula from datasheet:
         // f_sensor = (fin_sel_factor * raw_reading * f_ref) / 2^28
         // where fin_sel_factor accounts for the input divider (1, 2, or 4)
-        float freq_Hz = (fin_sel_factor * raw_reading * f_ref) / k2pow28;
+        float freq_Hz_uncalibrated = (fin_sel_factor * raw_reading * f_ref) / k2pow28;
+
+        // CALIBRATION FACTOR: Measured with oscilloscope at 5.42 MHz, but FDC reads 7.86 MHz
+        // Correction factor = 5.42 / 7.86 = 0.689
+        const float kFrequencyCalibration = 0.689f;
+        float freq_Hz = freq_Hz_uncalibrated * kFrequencyCalibration;
 
         // Debug output to help diagnose frequency measurement
-        Serial.printf("[DEBUG] Raw: %lu, fin_sel: %.1f, f_ref: %.2f MHz, calc_freq: %.2f MHz\n",
-                      raw_reading, fin_sel_factor, f_ref/1e6f, freq_Hz/1e6f);
+        Serial.printf("[DEBUG] Raw: %lu, fin_sel: %.1f, f_ref: %.2f MHz, uncal: %.2f MHz, cal: %.2f MHz\n",
+                      raw_reading, fin_sel_factor, f_ref/1e6f, freq_Hz_uncalibrated/1e6f, freq_Hz/1e6f);
 
         return freq_Hz;
     }
@@ -297,6 +302,11 @@ class DevCapFill : public Device {
 
         // Convert to pF for output
         float c_probe_pf = c_probe * 1e12f;
+
+        // Apply scaling factor to correct for incorrect frequency sensing on board
+        // Scaling factor: 1/0.42 ≈ 2.38095
+        const float kCapacitanceScalingFactor = 1.0f / 0.42f;
+        c_probe_pf *= kCapacitanceScalingFactor;
 
         // Prevent negative values from numerical issues
         if (c_probe_pf < 0.0f) {
@@ -394,7 +404,7 @@ class DevCapFill : public Device {
     static const uint8_t kChannelMask = 0x02;      // Channel 1 only
     static const uint8_t kAutoscanSeq = 0x00;      // Single channel mode
     static const uint8_t kDeglitchValue = 0x005;   // 10 MHz deglitch (was 0x001 = 1 MHz, too low for 5-6 MHz sensor)
-    static const bool kUseIntOsc = true;           // Use internal 43.4 MHz oscillator
+    static const bool kUseIntOsc = false;          // Use external 40 MHz oscillator for better accuracy
 
     // Baseline frequency for reference (to be calibrated)
     // TODO: Calibrate this value during initialization
