@@ -261,8 +261,14 @@ class DevCapFill : public Device {
 
         const float k2pow28 = 268435456.0f;  // 2^28
 
-        // FDC2214 formula: f_sensor = (CH_FIN_SEL * raw_reading * f_ref) / 2^28
+        // FDC2214 formula from datasheet:
+        // f_sensor = (fin_sel_factor * raw_reading * f_ref) / 2^28
+        // where fin_sel_factor accounts for the input divider (1, 2, or 4)
         float freq_Hz = (fin_sel_factor * raw_reading * f_ref) / k2pow28;
+
+        // Debug output to help diagnose frequency measurement
+        Serial.printf("[DEBUG] Raw: %lu, fin_sel: %.1f, f_ref: %.2f MHz, calc_freq: %.2f MHz\n",
+                      raw_reading, fin_sel_factor, f_ref/1e6f, freq_Hz/1e6f);
 
         return freq_Hz;
     }
