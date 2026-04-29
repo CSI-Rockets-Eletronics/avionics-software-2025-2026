@@ -181,7 +181,10 @@ class DevFsRelays : public Device {
                 break;
         }
 
-        enter_state_ms = millis();
+        // Only reset the state timer if the state actually changed
+        if (prev_state != cur_state) {
+            enter_state_ms = millis();
+        }
 
         if (ShouldPulsePilotVent(cur_state) &&
             !ShouldPulsePilotVent(prev_state)) {
