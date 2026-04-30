@@ -114,7 +114,7 @@ class DevEregControl : public Device {
 
             // CLOSED state: hold servo at closed position
             // Resets angle so PID starts fresh if a stage is later commanded
-            if (elapsed < 1500UL) {
+            if (elapsed < 500UL) {
                 current_angle_ = 0.0f;
             } else{
                 current_angle_ = 2.0f; 
