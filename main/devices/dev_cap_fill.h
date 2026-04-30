@@ -422,8 +422,9 @@ class DevCapFill : public Device {
     static const uint8_t kPacketDelimeter1 = 0b10101010;
     static const uint8_t kPacketDelimeter2 = 0b01010101;
 
-    // Loop timing - 100 Hz for high-speed mass flow measurements
-    static const int kLoopDelayMs = 10;  // 100 Hz update rate
+    // Loop timing - reduced from 100 Hz to 20 Hz to prevent ESP-NOW queue overflow
+    // 20 Hz is still more than adequate for tank fill level monitoring
+    static const int kLoopDelayMs = 50;  // 20 Hz update rate (was 10ms/100Hz)
 
     // ===== Member Variables =====
 

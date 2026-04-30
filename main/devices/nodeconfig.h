@@ -31,7 +31,7 @@ static Node fs_relays{ //i2c5/6
     {
         DeviceType::DevFsRelays,
         DeviceType::DevFsThermocouples,
-        DeviceType::DevRelayImon,
+        // DeviceType::DevRelayImon,  // DISABLED - not in use, reduces ESP-NOW queue congestion by 10 packets/sec
     },
 };
 
