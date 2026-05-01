@@ -50,10 +50,11 @@ class DevEregControl : public Device {
         // copv_2 and oxtank_1 are disabled for maximum speed
         float upper_1_psi = transducers_->copv_1.GetLatestPsi();
         // float upper_2_psi = transducers_->copv_2.GetLatestPsi();  // DISABLED
-        // float lower_1_psi = transducers_->oxtank_1.GetLatestPsi();  // DISABLED
+        //float lower_1_psi = transducers_->oxtank_1.GetLatestPsi();
         float lower_2_psi = transducers_->oxtank_2.GetLatestPsi();
 
         // NaN check: if any active transducer returns NaN, close immediately
+        /*
         if (isnan(upper_1_psi) || isnan(lower_2_psi)) {
             Serial.print("EREG: NaN transducer reading! upper1=");
             Serial.print(upper_1_psi);
@@ -65,6 +66,8 @@ class DevEregControl : public Device {
             SendStateToTransducers();
             return;
         }
+        */
+    
 
         // Transducer divergence check: if corresponding transducers disagree
         // beyond threshold, a sensor has likely failed — close immediately
@@ -79,6 +82,7 @@ class DevEregControl : public Device {
             return;
         }
         */
+        
         /*
         if (fabsf(lower_1_psi - lower_2_psi) > kMaxTransducerDivergencePsi) {
             Serial.println("EREG: Lower transducer divergence! Closing (latched).");
@@ -98,33 +102,22 @@ class DevEregControl : public Device {
         //ereg_lower_psi_ = (lower_1_psi + lower_2_psi) / 2.0f;
 
         // Safety check: automatically close EREG if lower pressure exceeds safety limit
-        if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
-            Serial.print("EREG: Overpressure! lower_psi=");
-            Serial.print(ereg_lower_psi_);
-            Serial.print(" >= limit=");
-            Serial.println(kMaxSafePressurePsi);
-            SetState(EREG_CLOSED);
-        }
+        // if (ereg_lower_psi_ >= kMaxSafePressurePsi) {
+        //     Serial.print("EREG: Overpressure! lower_psi=");
+        //     Serial.print(ereg_lower_psi_);
+        //     Serial.print(" >= limit=");
+        //     Serial.println(kMaxSafePressurePsi);
+        //     SetState(EREG_CLOSED);
+        // }
 
         unsigned long now = millis();
 
         if (current_state_ == EREG_CLOSED)
         {
-            unsigned long elapsed = now - closed_entry_ms_;
-
             // CLOSED state: hold servo at closed position
             // Resets angle so PID starts fresh if a stage is later commanded
-            if (elapsed < 500UL) {
-                current_angle_ = 0.0f;
-            } else{
-                current_angle_ = 2.0f; 
-            }
-
-            //convert degrees to Ms - PWM formula 
-            float pw_f = (float)kPulseMinUs + ((current_angle_ + 90.0f) * (float)(kPulseMaxUs - kPulseMinUs) / 180.0f);
-            int pw = (int)(pw_f + 0.5f);
-
-            g_servo_.writeMicroseconds(pw);
+            current_angle_ = 0.0f;
+            g_servo_.writeMicroseconds(kCenterUs);
         }
         else if (current_state_ == EREG_STAGE_1)
         {
@@ -137,8 +130,12 @@ class DevEregControl : public Device {
             RunPidLoop(now, kStage2MaxAngle);
         }
 
-        // Always broadcast current state every loop iteration
-        SendStateToTransducers();
+        // Rate-limit state broadcasts to prevent queue overflow
+        // 100 Hz is sufficient for telemetry without flooding the queue
+        if (now - last_state_broadcast_ms_ >= kStateBroadcastPeriodMs) {
+            last_state_broadcast_ms_ = now;
+            SendStateToTransducers();
+        }
     }
 
    private:
@@ -153,9 +150,7 @@ class DevEregControl : public Device {
         if (new_state == EREG_CLOSED) {
             // CLOSED takes absolute precedence -- unconditionally enter it
             current_state_ = EREG_CLOSED;
-            closed_entry_ms_ = millis();
             Serial.println("EREG: CLOSED (overrides all other states)");
-
         } else if (current_state_ == EREG_CLOSED && new_state != EREG_CLOSED) {
             // Leaving CLOSED: only allowed when an explicit stage command arrives
             current_state_ = new_state;
@@ -266,11 +261,19 @@ class DevEregControl : public Device {
 
         current_angle_ = ApplyBacklashComp(current_angle_);
 
-        // Float-precision PWM mapping (avoids integer rounding loss)
-        float pw_f = (float)kPulseMinUs +
-                     ((current_angle_ + 90.0f) * (float)(kPulseMaxUs - kPulseMinUs) / 180.0f);
-        int pw = (int)(pw_f + 0.5f);
-        g_servo_.writeMicroseconds(pw);
+        // Pressure safety clamp: if lower pressure exceeds 500 PSI, physically close
+        // the servo but allow PID to continue calculating in the background.
+        // This ensures seamless transition back to normal control when pressure drops.
+        if (ereg_lower_psi_ > kMaxSafePressurePsi) {
+            g_servo_.writeMicroseconds(kCenterUs);
+        } else {
+            // Normal operation: map PID angle to servo microseconds
+            // Float-precision PWM mapping (avoids integer rounding loss)
+            float pw_f = (float)kPulseMinUs +
+                         ((current_angle_ + 90.0f) * (float)(kPulseMaxUs - kPulseMinUs) / 180.0f);
+            int pw = (int)(pw_f + 0.5f);
+            g_servo_.writeMicroseconds(pw);
+        }
     }
 
     // ===== PID Algorithm =====
@@ -287,13 +290,20 @@ class DevEregControl : public Device {
         // Second difference of error
         const double d2e = error - 2.0 * prev_error_ + prev2_error_;
 
-        // Calculate individual PID components for telemetry
-        p_cont_ = static_cast<float>(kp_ * de);
-        i_cont_ = static_cast<float>(ki_ * error * kDt);
-        d_cont_ = static_cast<float>(kd_ * (d2e / kDt));
+        // Compute PID components in double precision, then store float
+        // copies for telemetry. Summing the float copies would round each
+        // term before summing and degrade control precision.
+        const double p = kp_ * de;
+        const double i = ki_ * error * kDt;
+        const double d = kd_ * (d2e / kDt);
+
+
+        p_cont_ = static_cast<float>(p);
+        i_cont_ = static_cast<float>(i);
+        d_cont_ = static_cast<float>(d);
 
         // Δu = Kp*Δe + Ki*e*dt + Kd*(Δ²e/dt)
-        const double output = p_cont_ + i_cont_ + d_cont_;
+        const double output = p + i + d;
 
         // Shift error history
         prev2_error_ = prev_error_;
@@ -371,19 +381,23 @@ class DevEregControl : public Device {
 
     // Stage angle limits
     static constexpr float kStage1MaxAngle = 19.0f;  // degrees
-    static constexpr float kStage2MaxAngle = 90.0f;  // degrees
+    static constexpr float kStage2MaxAngle = 80.0f;  // degrees
 
     // Safety limits
-    static constexpr float kMaxSafePressurePsi = 450.0f; // Auto-close if ereg_lower exceeds this
+    static constexpr float kMaxSafePressurePsi = 500.0f; // Auto-close if ereg_lower exceeds this
 
     // Transducer divergence threshold -- if corresponding transducers disagree
     // by more than this value, a sensor failure is assumed and EREG closes.
     // TODO: Set this to an appropriate value based on transducer accuracy/noise
-    static constexpr float kMaxTransducerDivergencePsi = 10.0f;  // PLACEHOLDER — tune this
+    static constexpr float kMaxTransducerDivergencePsi = 40.0f;  // PLACEHOLDER — tune this
 
     // PID timing
     static constexpr double kPidPeriodMs = 6.0;
     static constexpr double kDt          = 0.006;
+    //static constexpr double kDerivAlpha = 0.25;  // τ ≈ 30 ms at dt = 6 ms; first-order low-pass on D term
+
+    // State broadcast timing (rate-limited to prevent queue overflow)
+    static constexpr unsigned long kStateBroadcastPeriodMs = 10;  // 100 Hz
 
     // ===== Member Variables =====
 
@@ -404,6 +418,7 @@ class DevEregControl : public Device {
     double integral_    = 0.0;  // unused by velocity-form but retained for symmetry
     double prev_error_  = 0.0;
     double prev2_error_ = 0.0;
+    //double d_filt_      = 0.0;  // low-pass-filtered D-term state
 
     // PID component values (for telemetry)
     float p_cont_ = 0.0f;
@@ -414,9 +429,9 @@ class DevEregControl : public Device {
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
     double setpoint_ = 418.0;
 
-    double kp_base_ = 0.091;
+    double kp_base_ = 0.2;
     double ki_base_ = 0.36;
-    double kd_base_ = 0.000275;
+    double kd_base_ = 0.00034375;
 
     double kp_ = kp_base_;
     double ki_ = ki_base_;
@@ -424,10 +439,7 @@ class DevEregControl : public Device {
 
     // Timing
     unsigned long last_pid_ms_ = 0;
-    unsigned long closed_entry_ms_ = 0;  
-
-
-
+    unsigned long last_state_broadcast_ms_ = 0;
 
     // Backlash compensation
     float last_cmd_angle_ = 0.0f;

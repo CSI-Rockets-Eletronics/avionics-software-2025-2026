@@ -271,10 +271,6 @@ class DevCapFill : public Device {
         const float kFrequencyCalibration = 0.689f;
         float freq_Hz = freq_Hz_uncalibrated * kFrequencyCalibration;
 
-        // Debug output to help diagnose frequency measurement
-        Serial.printf("[DEBUG] Raw: %lu, fin_sel: %.1f, f_ref: %.2f MHz, uncal: %.2f MHz, cal: %.2f MHz\n",
-                      raw_reading, fin_sel_factor, f_ref/1e6f, freq_Hz_uncalibrated/1e6f, freq_Hz/1e6f);
-
         return freq_Hz;
     }
 
@@ -305,7 +301,7 @@ class DevCapFill : public Device {
 
         // Apply scaling factor to correct for incorrect frequency sensing on board
         // Scaling factor: 1/0.42 ≈ 2.38095
-        const float kCapacitanceScalingFactor = 1.0f / 0.42f;
+        const float kCapacitanceScalingFactor = 1.0f;
         c_probe_pf *= kCapacitanceScalingFactor;
 
         // Prevent negative values from numerical issues
@@ -359,7 +355,7 @@ class DevCapFill : public Device {
     // Continuously tracks max capacitance and uses linear interpolation
     // between min (128.235pF empty) and max (tracked full) capacitance
     float CapacitanceToHeightPercent(float probe_cap_pf) {
-        const float kMinCapacitance = 128.235;  // Empty tank capacitance in pF
+        const float kMinCapacitance = 271.275574;  // Empty tank capacitance in pF
         
         // Update max capacitance if current reading is higher
         if (probe_cap_pf > max_capacitance_pf) {
