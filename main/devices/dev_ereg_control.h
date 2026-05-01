@@ -114,10 +114,21 @@ class DevEregControl : public Device {
 
         if (current_state_ == EREG_CLOSED)
         {
+            unsigned long elapsed = now - closed_entry_ms_;
+
             // CLOSED state: hold servo at closed position
             // Resets angle so PID starts fresh if a stage is later commanded
-            current_angle_ = 0.0f;
-            g_servo_.writeMicroseconds(kCenterUs);
+            if (elapsed < 500UL) {
+                current_angle_ = 0.0f;
+            } else{
+                current_angle_ = 2.0f; 
+            }
+
+            //convert degrees to Ms - PWM formula 
+            float pw_f = (float)kPulseMinUs + ((current_angle_ + 90.0f) * (float)(kPulseMaxUs - kPulseMinUs) / 180.0f);
+            int pw = (int)(pw_f + 0.5f);
+
+            g_servo_.writeMicroseconds(pw);
         }
         else if (current_state_ == EREG_STAGE_1)
         {
@@ -440,6 +451,8 @@ class DevEregControl : public Device {
     // Timing
     unsigned long last_pid_ms_ = 0;
     unsigned long last_state_broadcast_ms_ = 0;
+    unsigned long closed_entry_ms_ = 0;  
+
 
     // Backlash compensation
     float last_cmd_angle_ = 0.0f;
