@@ -65,7 +65,7 @@ class DevFsPiPacketBroadcaster : public Device {
     static const int kPiSerialRxPin = 18;  // ESP32 RX <- Pi TX
     static const int kPiSerialTxPin = 8;   // ESP32 TX -> Pi RX
 
-    static const unsigned long kPiSerialBaud = 115200;
+    static const unsigned long kPiSerialBaud = 230400;  // Increased from 115200 for higher bandwidth
 
     // just VS code intellisense being dumb; Serial2 is accessible globally
     HardwareSerial Serial2{2};

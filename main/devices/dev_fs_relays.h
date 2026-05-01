@@ -181,7 +181,10 @@ class DevFsRelays : public Device {
                 break;
         }
 
-        enter_state_ms = millis();
+        // Only reset the state timer if the state actually changed
+        if (prev_state != cur_state) {
+            enter_state_ms = millis();
+        }
 
         if (ShouldPulsePilotVent(cur_state) &&
             !ShouldPulsePilotVent(prev_state)) {
@@ -286,12 +289,14 @@ class DevFsRelays : public Device {
                 break;
             case FsState::FIRE:
                 // FIRE: continue holding press pilot + gn2 fill from ENGINE_PRIME
-                // Fire igniter immediately, wait 7s, then open run
-                // Everything stays open for 20s after run opens (27s total)
+                // Wait 10s for ereg_Stage2 to activate, then fire igniter for 500ms
+                // Wait 7s after igniter on, then open run
+                // Everything stays open for 20s after run opens (37s total)
                 relay_states.press_pilot = true;
                 relay_states.gn2_fill = true;
 
-                if (time_in_state < kFireIgniterOffDelayMs) {
+                if (time_in_state >= kFireIgniterOnDelayMs &&
+                    time_in_state < kFireIgniterOffDelayMs) {
                     relay_states.igniter = true;
                 }
 
