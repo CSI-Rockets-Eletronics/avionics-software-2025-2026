@@ -22,15 +22,23 @@ class DevFsInjectorTransducers : public Device {
         injector_2.Tick();
         upper_cc.Tick();
 
-        // raw values (not medians)
-        FsInjectorTransducersPacket fs_transducers_packet{
-            .ts = micros(),
-            .injector_1 = injector_1.GetLatestPsi(),
-            .injector_2 = injector_2.GetLatestPsi(),
-            .upper_cc = upper_cc.GetLatestPsi(),
-        };
+        // Rate limit packet transmission to prevent overwhelming serial/queue
+        // Only send transducer data at 50 Hz (every 20ms)
+        static unsigned long last_packet_send_ms = 0;
+        unsigned long current_ms = millis();
 
-        SendToOtherEsp32(fs_transducers_packet);
+        if (current_ms - last_packet_send_ms >= kPacketSendIntervalMs) {
+            // raw values (not medians)
+            FsInjectorTransducersPacket fs_transducers_packet{
+                .ts = micros(),
+                .injector_1 = injector_1.GetLatestPsi(),
+                .injector_2 = injector_2.GetLatestPsi(),
+                .upper_cc = upper_cc.GetLatestPsi(),
+            };
+
+            SendToOtherEsp32(fs_transducers_packet);
+            last_packet_send_ms = current_ms;
+        }
 
         transducers_freq_logger.Tick();
 
@@ -94,6 +102,9 @@ class DevFsInjectorTransducers : public Device {
     const bool kContinuous = true;
     const int kWindowSize = 50;
     const int kCalibrateSamples = 500;
+
+    // Rate limiting for packet transmission
+    static const unsigned long kPacketSendIntervalMs = 20;  // 50 Hz
 
     I2CWire i2c1{1, 47, 21};  // Changed from bus 0 to bus 1
     I2CWire i2c2{2, 14, 13};  // Changed from bus 1 to bus 2

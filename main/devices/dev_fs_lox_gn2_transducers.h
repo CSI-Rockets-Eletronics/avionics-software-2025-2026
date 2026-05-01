@@ -238,26 +238,34 @@ class DevFsLoxGn2Transducers : public Device {
             }
         }
 
-        // Create and send transducers packet AFTER processing received messages
-        // so ereg_state_ contains the most up-to-date values
-        FsLoxGn2TransducersPacket fs_transducers_packet{
-            .ts = micros(),
-            .oxtank_1 = oxtank_1.GetLatestPsi(),
-            .oxtank_2 = oxtank_2.GetLatestPsi(),
-            .copv_1 = copv_1.GetLatestPsi(),
-            .copv_2 = copv_2.GetLatestPsi(),
-            .pilot_pres = 0.0f,  // DISABLED - pilot_pres.GetLatestPsi(),
-            .qd_pres = 0.0f,  // DISABLED - set to 0
-            .ereg_closed = ereg_state_.ereg_closed,
-            .ereg_stage_1 = ereg_state_.ereg_stage_1,
-            .ereg_stage_2 = ereg_state_.ereg_stage_2,
-            .current_angle = ereg_state_.current_angle,
-            .p_cont = ereg_state_.p_cont,
-            .i_cont = ereg_state_.i_cont,
-            .d_cont = ereg_state_.d_cont,
-        };
+        // Rate limit transducer packet transmission to prevent overwhelming serial to Pi
+        // Send at 50 Hz (every 20ms) - still fast enough for real-time monitoring
+        static unsigned long last_transducers_send_ms = 0;
+        unsigned long current_ms = millis();
 
-        SendToPi(fs_transducers_packet);
+        if (current_ms - last_transducers_send_ms >= kTransducersPacketIntervalMs) {
+            // Create and send transducers packet AFTER processing received messages
+            // so ereg_state_ contains the most up-to-date values
+            FsLoxGn2TransducersPacket fs_transducers_packet{
+                .ts = micros(),
+                .oxtank_1 = oxtank_1.GetLatestPsi(),
+                .oxtank_2 = oxtank_2.GetLatestPsi(),
+                .copv_1 = copv_1.GetLatestPsi(),
+                .copv_2 = copv_2.GetLatestPsi(),
+                .pilot_pres = 0.0f,  // DISABLED - pilot_pres.GetLatestPsi(),
+                .qd_pres = 0.0f,  // DISABLED - set to 0
+                .ereg_closed = ereg_state_.ereg_closed,
+                .ereg_stage_1 = ereg_state_.ereg_stage_1,
+                .ereg_stage_2 = ereg_state_.ereg_stage_2,
+                .current_angle = ereg_state_.current_angle,
+                .p_cont = ereg_state_.p_cont,
+                .i_cont = ereg_state_.i_cont,
+                .d_cont = ereg_state_.d_cont,
+            };
+
+            SendToPi(fs_transducers_packet);
+            last_transducers_send_ms = current_ms;
+        }
     }
 
     void Recalibrate() {
@@ -334,7 +342,7 @@ class DevFsLoxGn2Transducers : public Device {
     static const int kPiSerialRxPin = 18;  // ESP32 RX <- Pi TX
     static const int kPiSerialTxPin = 8;   // ESP32 TX -> Pi RX
 
-    static const unsigned long kPiSerialBaud = 115200;
+    static const unsigned long kPiSerialBaud = 230400;  // Increased from 115200 for higher bandwidth
 
     static const uint8_t kPacketDelimeter1 = 0b10101010;
     static const uint8_t kPacketDelimeter2 = 0b01010101;
@@ -345,6 +353,9 @@ class DevFsLoxGn2Transducers : public Device {
     const bool kContinuous = true;
     const int kWindowSize = 50;
     const int kCalibrateSamples = 100;  // Reduced from 500 for faster calibration
+
+    // Rate limiting for transducer packet transmission to Pi
+    static const unsigned long kTransducersPacketIntervalMs = 20;  // 50 Hz
 };
 
 
