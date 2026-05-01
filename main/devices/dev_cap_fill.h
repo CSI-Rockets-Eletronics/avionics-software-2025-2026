@@ -355,7 +355,7 @@ class DevCapFill : public Device {
     // Continuously tracks max capacitance and uses linear interpolation
     // between min (128.235pF empty) and max (tracked full) capacitance
     float CapacitanceToHeightPercent(float probe_cap_pf) {
-        const float kMinCapacitance = 271.275574;  // Empty tank capacitance in pF
+        const float kMinCapacitance = 259.074219;  // Empty tank capacitance in pF
         
         // Update max capacitance if current reading is higher
         if (probe_cap_pf > max_capacitance_pf) {

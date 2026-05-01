@@ -439,7 +439,7 @@ class DevEregControl : public Device {
 
     // PID gains -- base values define the unscaled setpoint
     // Active gains (kp_, ki_, kd_) are updated each cycle by UpdateDynamicGains()
-    double setpoint_ = 418.0;
+    double setpoint_ = 450.0;
 
     double kp_base_ = 0.2;
     double ki_base_ = 0.36;
