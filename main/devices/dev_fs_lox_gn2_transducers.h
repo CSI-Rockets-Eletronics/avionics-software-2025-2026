@@ -337,7 +337,7 @@ class DevFsLoxGn2Transducers : public Device {
     utils::SerialForwarder serial_forwarder{"Serial Forwarder", Serial1,
                                             Serial2};
 
-    // ===== for raspberry pi =====
+    // ===== for raspberry pi ====
 
     static const int kPiSerialRxPin = 18;  // ESP32 RX <- Pi TX
     static const int kPiSerialTxPin = 8;   // ESP32 TX -> Pi RX
