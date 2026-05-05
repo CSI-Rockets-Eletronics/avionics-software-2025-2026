@@ -10,10 +10,6 @@ using namespace moving_median_adc;
 class DevFsInjectorTransducers : public Device {
    public:
     void Setup() override {
-        // for serial to other ESP32
-        Serial1.begin(kOtherEsp32SerialBaud, SERIAL_8N1, kOtherEsp32SerialRxPin,
-                      kOtherEsp32SerialTxPin);
-
         Recalibrate();
     }
 
@@ -30,7 +26,8 @@ class DevFsInjectorTransducers : public Device {
             .upper_cc = upper_cc.GetLatestPsi(),
         };
 
-        SendToOtherEsp32(fs_transducers_packet);
+        // Send to PacketForwarder on fs_scientific1 via ESP-NOW
+        Send(DeviceType::DevFsPacketForwarder, fs_transducers_packet);
 
         transducers_freq_logger.Tick();
 
@@ -39,7 +36,8 @@ class DevFsInjectorTransducers : public Device {
 
         switch (Receive(&thermo_packet, &command_packet)) {
             case 0:
-                SendToOtherEsp32(thermo_packet);
+                // Forward thermocouple packet to PacketForwarder
+                Send(DeviceType::DevFsPacketForwarder, thermo_packet);
                 break;
             case 1:
                 if (command_packet.command == FsCommand::RESTART) {
@@ -63,30 +61,12 @@ class DevFsInjectorTransducers : public Device {
         injector_1.Recalibrate(kCalibrateSamples);
         injector_2.Recalibrate(kCalibrateSamples);
         upper_cc.Recalibrate(kCalibrateSamples);
-
-    }
-
-    template <typename T>
-    void SendToOtherEsp32(const T& data) {
-        Serial1.write(reinterpret_cast<const uint8_t*>(&data), sizeof(data));
-        Serial1.write(kPacketDelimeter1);
-        Serial1.write(kPacketDelimeter2);
     }
 
    private:
     // ===== misc =====
 
     utils::FrequencyLogger transducers_freq_logger{"Transducers"};
-
-    // ===== for serial to other ESP32 =====
-
-    static const int kOtherEsp32SerialRxPin = 38;
-    static const int kOtherEsp32SerialTxPin = 37;
-
-    static const unsigned long kOtherEsp32SerialBaud = 230400;
-
-    static const uint8_t kPacketDelimeter1 = 0b10101010;
-    static const uint8_t kPacketDelimeter2 = 0b01010101;
 
     // ===== for transducers =====
 

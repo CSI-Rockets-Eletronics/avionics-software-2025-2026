@@ -82,6 +82,15 @@ struct FsStatePacket {
     bool ereg_power;         // 1 byte
 };
 
+// size: 8 bytes
+struct AvRelayStatePacket {
+    uint32_t ms_since_boot;  // 4 bytes
+    FsState state;           // 1 byte
+    bool press_pilot;        // 1 byte (dome pilot valve)
+    bool run;                // 1 byte (main run valve)
+    bool ereg_power;         // 1 byte (ereg power control)
+};
+
 // size: 35 bytes
 struct FsLoxGn2TransducersPacket {
     uint64_t ts;           // 8 bytes

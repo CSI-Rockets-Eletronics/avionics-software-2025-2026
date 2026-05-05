@@ -105,16 +105,6 @@ class DevFsLoxGn2Transducers : public Device {
     void Setup() override {
         Serial.println("    DevFsLoxGn2Transducers::Setup() - Starting");
 
-        // for serial forwarding
-        Serial.println("    Initializing Serial1 for forwarding");
-        Serial1.begin(kForwardSerialBaud, SERIAL_8N1, kForwardSerialRxPin,
-                      kForwardSerialTxPin);
-
-        // for raspberry pi
-        Serial.println("    Initializing Serial2 for Raspberry Pi");
-        Serial2.begin(kPiSerialBaud, SERIAL_8N1, kPiSerialRxPin,
-                      kPiSerialTxPin);
-
         Serial.println("    Calibrating transducers (this may take a moment)...");
         Recalibrate();
         Serial.println("    Transducers calibrated");
@@ -149,11 +139,10 @@ class DevFsLoxGn2Transducers : public Device {
             .ereg_stage_2 = ereg_state_.ereg_stage_2,
         };
 
-        SendToPi(fs_transducers_packet);
+        // Send to fs_scientific1 PacketForwarder via ESP-NOW
+        Send(DeviceType::DevFsPacketForwarder, fs_transducers_packet);
 
         transducers_freq_logger.Tick();
-
-        serial_forwarder.Tick();
 
         // oxtank_1.PrintLatestPsi();
         // oxtank_2.PrintLatestPsi();
@@ -165,17 +154,14 @@ class DevFsLoxGn2Transducers : public Device {
         // delay(500);
 
         FsCommandPacket command_packet;
-        FsStatePacket state_packet;
         EregStateData ereg_state_data;
-        RelayCurrentMonitorPacket relay_imon_packet;
-        FsThermocouplesPacket thermo_packet;
 
-        switch (Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet)) {
+        switch (Receive(&command_packet, &ereg_state_data)) {
             case 0:
                 Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
                 Serial.println(static_cast<int>(command_packet.command));
 
-                // Forward EREG commands to DevEregControl
+                // Forward EREG commands to DevEregControl (local device on same node)
                 if (command_packet.command == FsCommand::EREG_CLOSED ||
                     command_packet.command == FsCommand::EREG_STAGE_1 ||
                     command_packet.command == FsCommand::EREG_STAGE_2) {
@@ -192,31 +178,8 @@ class DevFsLoxGn2Transducers : public Device {
                 }
                 break;
             case 1:
-                // Serial.print("[GN2 TRANSDUCERS] Received FsStatePacket from FsRelays, state: ");
-                // Serial.print(static_cast<int>(state_packet.state));
-                // Serial.print(", ms_since_boot: ");
-                // Serial.println(state_packet.ms_since_boot);
-                SendToPi(state_packet);
-                break;
-            case 2:
-                // Received EREG state from DevEregControl
-                // Serial.print("[GN2 TRANSDUCERS] Received EregStateData: closed=");
-                // Serial.print(ereg_state_data.ereg_closed);
-                // Serial.print(", stage1=");
-                // Serial.print(ereg_state_data.ereg_stage_1);
-                // Serial.print(", stage2=");
-                // Serial.println(ereg_state_data.ereg_stage_2);
+                // Received EREG state from DevEregControl (local device on same node)
                 ereg_state_ = ereg_state_data;
-                break;
-            case 3:
-                // Received relay current monitor data from DevRelayImon
-                // Serial.println("[GN2 TRANSDUCERS] Received RelayCurrentMonitorPacket from FsRelays");
-                SendToPi(relay_imon_packet);
-                break;
-            case 4:
-                // Received thermocouple data from DevFsThermocouples
-                // Serial.println("[GN2 TRANSDUCERS] Received FsThermocouplesPacket");
-                SendToPi(thermo_packet);
                 break;
         }
     }
@@ -230,74 +193,14 @@ class DevFsLoxGn2Transducers : public Device {
         qd_pres.Recalibrate(kCalibrateSamples);
     }
 
-    template <typename T>
-    void SendToPi(const T& data) {
-        size_t packet_size = sizeof(data);
-        const uint8_t* data_ptr = reinterpret_cast<const uint8_t*>(&data);
-
-        // Serial.print("[PI TX] Sending packet, size: ");
-        // Serial.print(packet_size);
-
-        // // Show first few bytes of actual data to confirm it's not all zeros
-        // Serial.print(" bytes, data preview: 0x");
-        // for (size_t i = 0; i < min(packet_size, (size_t)4); i++) {
-        //     if (data_ptr[i] < 0x10) Serial.print("0");
-        //     Serial.print(data_ptr[i], HEX);
-        //     Serial.print(" ");
-        // }
-
-        // Write packet data
-        size_t bytes_written = Serial2.write(data_ptr, packet_size);
-
-        // Write delimiters
-        size_t delim1_written = Serial2.write(kPacketDelimeter1);
-        size_t delim2_written = Serial2.write(kPacketDelimeter2);
-
-        // Verify all bytes were written
-        if (bytes_written != packet_size) {
-            Serial.print("[PI TX ERROR] Only wrote ");
-            Serial.print(bytes_written);
-            Serial.print("/");
-            Serial.print(packet_size);
-            Serial.println(" bytes!");
-        } else if (delim1_written != 1 || delim2_written != 1) {
-            Serial.println("[PI TX ERROR] Failed to write delimiters!");
-        }
-        // else {
-        //     Serial.println(" [OK]");
-        // }
-    }
-
    private:
     // ===== misc =====
 
-    // just VS code intellisense being dumb; Serial2 is accessible globally
-    HardwareSerial Serial2{2};
     utils::FrequencyLogger transducers_freq_logger{"Transducers"};
 
     // ===== for EREG state =====
 
     EregStateData ereg_state_;
-
-    // ===== for serial forwarding =====
-
-    static const int kForwardSerialRxPin = 37;
-    static const int kForwardSerialTxPin = 36;
-
-    static const unsigned long kForwardSerialBaud = 230400;
-
-    utils::SerialForwarder serial_forwarder{"Serial Forwarder", Serial1,
-                                            Serial2};
-
-    // ===== for raspberry pi =====
-
-    static const int kPiSerialRxPin = 18;  // ESP32 RX <- Pi TX
-    static const int kPiSerialTxPin = 8;   // ESP32 TX -> Pi RX
-
-    static const unsigned long kPiSerialBaud = 115200;
-
-    static const uint8_t kPacketDelimeter1 = 0b10101010;
-    static const uint8_t kPacketDelimeter2 = 0b01010101;
 
     // ===== for transducers =====
 

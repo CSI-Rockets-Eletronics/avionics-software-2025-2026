@@ -4,29 +4,24 @@ using namespace avionics;
 
 // Relay pins (top row, l to r): 6, 17, 8, 48, 39, 41
 // Relay pins (bottom row, l to r): 4, 15, 21, 47, 38, 40
+// NOTE: PRESS_PILOT (21), RUN (8), and EREG_POWER (41) moved to DevAvRelays
 
 enum class RelayPin : int {
     GN2_DRAIN = 39,
     GN2_FILL = 38,
     DEPRESS = 15,
-    PRESS_PILOT = 21,
-    RUN = 8,
     LOX_FILL = 47,
     LOX_DISCONNECT = 48,
     IGNITER = 40,
-    EREG_POWER = 41,
 };
 
 struct RelayStates {
     bool gn2_drain = false;
     bool gn2_fill = false;
     bool depress = false;
-    bool press_pilot = false;
-    bool run = false;
     bool lox_fill = false;
     bool lox_disconnect = false;
     bool igniter = false;
-    bool ereg_power = false;
 };
 
 using MS = unsigned long;
@@ -68,12 +63,9 @@ class DevFsRelays : public Device {
         SetPinToOutput(RelayPin::GN2_DRAIN);
         SetPinToOutput(RelayPin::GN2_FILL);
         SetPinToOutput(RelayPin::DEPRESS);
-        SetPinToOutput(RelayPin::PRESS_PILOT);
-        SetPinToOutput(RelayPin::RUN);
         SetPinToOutput(RelayPin::LOX_FILL);
         SetPinToOutput(RelayPin::LOX_DISCONNECT);
         SetPinToOutput(RelayPin::IGNITER);
-        SetPinToOutput(RelayPin::EREG_POWER);
     }
 
     void Loop() override {
@@ -206,10 +198,8 @@ class DevFsRelays : public Device {
     }
 
     void UpdateRelayStates() {
-        // reset all relay states except ereg_power (persists beyond CUSTOM timeout)
-        bool preserve_ereg_power = relay_states.ereg_power;
+        // reset all relay states
         relay_states = RelayStates();
-        relay_states.ereg_power = preserve_ereg_power;
 
         // set all relays except for the pilot vent
 
@@ -240,29 +230,23 @@ class DevFsRelays : public Device {
                 relay_states.gn2_fill = true;
                 break;
             case FsState::FIRE:
-                if (time_in_state < kFireDomePilotCloseDelayMs) {
-                    relay_states.press_pilot = true;
-                } else if (time_in_state < kFireIgniterOnDelayMs) {
-                    // do nothing; dome pilot is closed
-                } else if (time_in_state < kFireIgniterOffDelayMs) {
+                // PRESS_PILOT and RUN relays moved to DevAvRelays
+                if (time_in_state >= kFireIgniterOnDelayMs &&
+                    time_in_state < kFireIgniterOffDelayMs) {
                     relay_states.igniter = true;
-                } else if (time_in_state < kFireRunOpenDelayMs) {
-                    // do nothing; igniter is off
-                } else {
-                    relay_states.run = true;
                 }
                 break;
             case FsState::FIRE_MANUAL_PRESS_PILOT:
-                relay_states.press_pilot = true;
+                // PRESS_PILOT relay moved to DevAvRelays
                 break;
             case FsState::FIRE_MANUAL_DOME_PILOT_CLOSE:
-                relay_states.press_pilot = false;
+                // PRESS_PILOT relay moved to DevAvRelays
                 break;
             case FsState::FIRE_MANUAL_IGNITER:
                 relay_states.igniter = true;
                 break;
             case FsState::FIRE_MANUAL_RUN:
-                relay_states.run = true;
+                // RUN relay moved to DevAvRelays
                 relay_states.lox_fill = true;
                 break;
         }
@@ -284,24 +268,19 @@ class DevFsRelays : public Device {
         relay_states.gn2_drain = command_packet.gn2_drain;
         relay_states.gn2_fill = command_packet.gn2_fill;
         relay_states.depress = command_packet.depress;
-        relay_states.press_pilot = command_packet.press_pilot;
-        relay_states.run = command_packet.run;
         relay_states.lox_fill = command_packet.lox_fill;
         relay_states.lox_disconnect = command_packet.lox_disconnect;
         relay_states.igniter = command_packet.igniter;
-        relay_states.ereg_power = command_packet.ereg_power;
+        // press_pilot, run, and ereg_power moved to DevAvRelays
     }
 
     void FlushRelays() {
         FlushRelay(RelayPin::GN2_DRAIN, relay_states.gn2_drain);
         FlushRelay(RelayPin::GN2_FILL, relay_states.gn2_fill);
         FlushRelay(RelayPin::DEPRESS, relay_states.depress);
-        FlushRelay(RelayPin::PRESS_PILOT, relay_states.press_pilot);
-        FlushRelay(RelayPin::RUN, relay_states.run);
         FlushRelay(RelayPin::LOX_FILL, relay_states.lox_fill);
         FlushRelay(RelayPin::LOX_DISCONNECT, relay_states.lox_disconnect);
         FlushRelay(RelayPin::IGNITER, relay_states.igniter);
-        FlushRelay(RelayPin::EREG_POWER, relay_states.ereg_power);
     }
 
     void SetPinToOutput(RelayPin pin) {
@@ -319,15 +298,16 @@ class DevFsRelays : public Device {
             .gn2_drain = relay_states.gn2_drain,
             .gn2_fill = relay_states.gn2_fill,
             .depress = relay_states.depress,
-            .press_pilot = relay_states.press_pilot,
-            .run = relay_states.run,
+            .press_pilot = false,  // moved to DevAvRelays
+            .run = false,          // moved to DevAvRelays
             .lox_fill = relay_states.lox_fill,
             .lox_disconnect = relay_states.lox_disconnect,
             .igniter = relay_states.igniter,
-            .ereg_power = relay_states.ereg_power,
+            .ereg_power = false,   // moved to DevAvRelays
         };
 
-        Send(DeviceType::DevFsLoxGn2Transducers, state_packet);
+        // Send to PacketForwarder on fs_scientific1 via ESP-NOW
+        Send(DeviceType::DevFsPacketForwarder, state_packet);
     }
 };
 

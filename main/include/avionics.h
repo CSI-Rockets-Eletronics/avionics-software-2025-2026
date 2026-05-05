@@ -16,11 +16,13 @@ void Die(const char* msg);
 
 enum class DeviceType {
     // sort alphabetically
+    DevAvRelays,
     DevCapFill,
     DevDht,
     DevEregControl,
     DevFsInjectorTransducers,
     DevFsLoxGn2Transducers,
+    DevFsPacketForwarder,
     DevFsPiPacketBroadcaster,
     DevFsRelays,
     DevFsThermocouples,

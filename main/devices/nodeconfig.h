@@ -5,13 +5,29 @@
 
 namespace avionics {
 
+static Node av_relays{
+    "AvRelays",
+    MacAddress{"50:78:7d:35:20:49"},  // TODO: Update with actual MAC address
+    {
+        DeviceType::DevAvRelays,
+    },
+};
+
+static Node av_fluids{
+    "AvFluids",
+    MacAddress{"50:78:7d:35:20:4a"},  // TODO: Update with actual MAC address
+    {
+        DeviceType::DevFsLoxGn2Transducers,
+        DeviceType::DevEregControl,
+    },
+};
+
 static Node fs_scientific1{ //i2c3/4
     "FsScientific1",
     MacAddress{"50:78:7d:35:20:48"},
     {
-        DeviceType::DevFsLoxGn2Transducers,
         DeviceType::DevFsPiPacketBroadcaster,
-        DeviceType::DevEregControl,
+        DeviceType::DevFsPacketForwarder,
     },
 };
 

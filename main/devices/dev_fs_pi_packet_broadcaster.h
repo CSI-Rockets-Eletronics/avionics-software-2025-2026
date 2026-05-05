@@ -33,20 +33,24 @@ class DevFsPiPacketBroadcaster : public Device {
             Serial.print("[PI RX] Broadcasting FsCommandPacket to other nodes, command: ");
             Serial.println(static_cast<int>(command_packet->command));
 
-            // relays has the highest priority
-            // Local - no delays needed between these
-            Serial.println("[PI RX] Sending to DevEregControl (local)");
-            Send(DeviceType::DevEregControl, *command_packet);
+            // Broadcast to all ESP-NOW nodes (no local devices on this node anymore)
 
-            Serial.println("[PI RX] Sending to DevFsLoxGn2Transducers (local)");
-            Send(DeviceType::DevFsLoxGn2Transducers, *command_packet);
-
-            // First ESP-NOW send - no delay needed before it since nothing is in-flight
+            // First ESP-NOW send - FsRelays (ground station relays)
             Serial.println("[PI RX] Sending to DevFsRelays (ESP-NOW)");
             Send(DeviceType::DevFsRelays, *command_packet);
-            delay(kSendWaitMs);  // wait for DevFsRelays ESP-NOW to complete
+            delay(kSendWaitMs);
 
-            // Second ESP-NOW send
+            // Second ESP-NOW send - AVRelays (rocket relays)
+            Serial.println("[PI RX] Sending to DevAvRelays (ESP-NOW)");
+            Send(DeviceType::DevAvRelays, *command_packet);
+            delay(kSendWaitMs);
+
+            // Third ESP-NOW send - AVFluids (EREG + transducers)
+            Serial.println("[PI RX] Sending to DevFsLoxGn2Transducers @ AVFluids (ESP-NOW)");
+            Send(DeviceType::DevFsLoxGn2Transducers, *command_packet);
+            delay(kSendWaitMs);
+
+            // Fourth ESP-NOW send - Injector transducers
             Serial.println("[PI RX] Sending to DevFsInjectorTransducers (ESP-NOW)");
             Send(DeviceType::DevFsInjectorTransducers, *command_packet);
 
