@@ -14,7 +14,7 @@ enum class ImonPin : int {
     LOX_FILL = 14,
     LOX_DISCONNECT = 10,
     IGNITER = 1,
-    EREG_POWER = 3,
+    IGNITER_BACKUP = 3,
 };
 
 class DevRelayImon : public Device {
@@ -47,7 +47,7 @@ class DevRelayImon : public Device {
         pinMode(static_cast<int>(ImonPin::LOX_FILL), INPUT);
         pinMode(static_cast<int>(ImonPin::LOX_DISCONNECT), INPUT);
         pinMode(static_cast<int>(ImonPin::IGNITER), INPUT);
-        pinMode(static_cast<int>(ImonPin::EREG_POWER), INPUT);
+        pinMode(static_cast<int>(ImonPin::IGNITER_BACKUP), INPUT);
 
         // Set ADC attenuation to 11dB (0-3.3V range)
         analogSetAttenuation(ADC_11db);
@@ -65,7 +65,7 @@ class DevRelayImon : public Device {
             .lox_fill_ma = ReadCurrent(ImonPin::LOX_FILL),
             .lox_disconnect_ma = ReadCurrent(ImonPin::LOX_DISCONNECT),
             .igniter_ma = ReadCurrent(ImonPin::IGNITER),
-            .ereg_power_ma = ReadCurrent(ImonPin::EREG_POWER),
+            .igniter_backup_ma = ReadCurrent(ImonPin::IGNITER_BACKUP),
         };
 
         // Send to other ESP32s and Raspberry Pi
