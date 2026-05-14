@@ -285,13 +285,13 @@ class DevFsRelays : public Device {
                 }
                 break;
             case FsState::FIRE:
-                // FIRE: continue holding press pilot, close gn2_fill
+                // FIRE: continue holding press pilot, keep gn2_fill open
                 // Wait 10s for ereg_Stage2 to activate, then fire igniter for 500ms
                 // Fire backup igniter 1s after primary igniter for 500ms
                 // Wait 7s after igniter on, then open run
                 // Everything stays open for 20s after run opens (37s total)
                 relay_states.press_pilot = true;
-                relay_states.gn2_fill = false;
+                relay_states.gn2_fill = true;
 
                 if (time_in_state >= kFireIgniterOnDelayMs &&
                     time_in_state < kFireIgniterOffDelayMs) {
