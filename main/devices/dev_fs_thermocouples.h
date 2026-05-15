@@ -15,7 +15,7 @@ class DevFsThermocouples : public Device {
     static const uint8_t kLoxLowerAddress = 0x65; //use this
     static const uint8_t kLoxUpperAddress = 0x66; //use this
 
-    I2CWire i2c0{0, 42, 37, 10000};  // I2C bus 0, 10kHz (MCP9600 most reliable at 10-20kHz due to clock stretching)
+    I2CWire i2c0{0, 42, 37, 50000};  // I2C bus 0, 50kHz (faster communication for quicker readings)
 
     MCP9600 gn2_internal;
     MCP9600 lox_lower;
@@ -80,6 +80,33 @@ class DevFsThermocouples : public Device {
                 if (result == 0) {
                     Serial.print(name);
                     Serial.println(" type set to TYPE_E");
+
+                    // Wait before setting filter
+                    delay(100);
+
+                    // Set filter coefficient to 0 (no filtering) for most responsive readings
+                    // Default filter can significantly dampen temperature readings
+                    result = tc.setFilterCoefficient(0);
+                    if (result != 0) {
+                        Serial.print(name);
+                        Serial.print(" setFilterCoefficient failed with code ");
+                        Serial.println(result);
+                    } else {
+                        Serial.print(name);
+                        Serial.println(" filter set to 0 (no filtering)");
+                    }
+
+                    // Wait before setting resolution
+                    delay(100);
+
+                    // Set to 14-bit resolution for faster response (60ms vs 240ms at 18-bit)
+                    if (tc.setThermocoupleResolution(RES_14_BIT) != 0) {
+                        Serial.print(name);
+                        Serial.println(" WARNING: failed to set 14-bit resolution");
+                    } else {
+                        Serial.print(name);
+                        Serial.println(" resolution set to 14-bit (60ms conversion time)");
+                    }
 
                     // Wait before verification
                     delay(100);

@@ -46,7 +46,7 @@ def create_fs_command_packet(command_value):
     Structure (from packets.h with #pragma pack(push, 1)):
         FsCommand command;  // uint8_t (1 byte, enum class FsCommand : uint8_t)
         bool gn2_drain, gn2_fill, depress, press_pilot, run;  // 5 bytes
-        bool lox_fill, lox_disconnect, igniter, ereg_power;   // 4 bytes
+        bool lox_fill, lox_disconnect, igniter, igniter_backup;   // 4 bytes
 
     Total: 1 byte (command) + 9 bytes (bools) = 10 bytes
     """
@@ -55,7 +55,7 @@ def create_fs_command_packet(command_value):
     packet = struct.pack('<10B',
         command_value,  # command (uint8_t, not uint32_t!)
         0, 0, 0, 0, 0,  # gn2_drain, gn2_fill, depress, press_pilot, run (all false)
-        0, 0, 0, 0      # lox_fill, lox_disconnect, igniter, ereg_power (all false)
+        0, 0, 0, 0      # lox_fill, lox_disconnect, igniter, igniter_backup (all false)
     )
     return packet
 

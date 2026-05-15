@@ -22,15 +22,23 @@ class DevFsInjectorTransducers : public Device {
         injector_2.Tick();
         upper_cc.Tick();
 
-        // raw values (not medians)
-        FsInjectorTransducersPacket fs_transducers_packet{
-            .ts = micros(),
-            .injector_1 = injector_1.GetLatestPsi(),
-            .injector_2 = injector_2.GetLatestPsi(),
-            .upper_cc = upper_cc.GetLatestPsi(),
-        };
+        // Rate limit packet transmission to prevent overwhelming serial/queue
+        // Only send transducer data at 50 Hz (every 20ms)
+        static unsigned long last_packet_send_ms = 0;
+        unsigned long current_ms = millis();
 
-        SendToOtherEsp32(fs_transducers_packet);
+        if (current_ms - last_packet_send_ms >= kPacketSendIntervalMs) {
+            // raw values (not medians)
+            FsInjectorTransducersPacket fs_transducers_packet{
+                .ts = micros(),
+                .injector_1 = injector_1.GetLatestPsi(),
+                .injector_2 = injector_2.GetLatestPsi(),
+                .upper_cc = upper_cc.GetLatestPsi(),
+            };
+
+            SendToOtherEsp32(fs_transducers_packet);
+            last_packet_send_ms = current_ms;
+        }
 
         transducers_freq_logger.Tick();
 
@@ -95,12 +103,15 @@ class DevFsInjectorTransducers : public Device {
     const int kWindowSize = 50;
     const int kCalibrateSamples = 500;
 
+    // Rate limiting for packet transmission
+    static const unsigned long kPacketSendIntervalMs = 20;  // 50 Hz
+
     I2CWire i2c1{1, 47, 21};  // Changed from bus 0 to bus 1
     I2CWire i2c2{2, 14, 13};  // Changed from bus 1 to bus 2
 
     // dataq - using AIN0 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> injector_1{
-        "injector_1",
+        "injector_1", //injector 
         i2c1,
         ADCAddress::GND,
         ADCMode::SingleEnded_0,
@@ -108,13 +119,29 @@ class DevFsInjectorTransducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1.0,  // TODO calibrate
+        250, 
         true,  // debug_skip_init - ignore I2C failures
     };
 
+    
     // dataq - using AIN0 (sensors not connected, values set to zero)
+    MovingMedianADC<Adafruit_ADS1115> upper_cc{
+        "upper_cc", //chamber
+        i2c1,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_0,
+        kRate,
+        GAIN_ONE,
+        kContinuous,
+        kWindowSize,
+        125,  
+        true,
+    };
+    
+
+    // dataq - using AIN1 (sensors not connected, values set to zero)
     MovingMedianADC<Adafruit_ADS1115> injector_2{
-        "injector_2",
+        "injector_2", //pilot ducer
         i2c2,
         ADCAddress::VIN,
         ADCMode::SingleEnded_0,
@@ -122,21 +149,7 @@ class DevFsInjectorTransducers : public Device {
         GAIN_ONE,
         kContinuous,
         kWindowSize,
-        1.0,  // TODO calibrate
-        true,  // debug_skip_init - ignore I2C failures
-    };
-
-    // dataq - using AIN1 (sensors not connected, values set to zero)
-    MovingMedianADC<Adafruit_ADS1115> upper_cc{
-        "upper_cc",
-        i2c1,
-        ADCAddress::GND,
-        ADCMode::SingleEnded_1,
-        kRate,
-        GAIN_ONE,
-        kContinuous,
-        kWindowSize,
-        1.0,  // TODO calibrate
+        375,
         true,  // debug_skip_init - ignore I2C failures
     };
 };

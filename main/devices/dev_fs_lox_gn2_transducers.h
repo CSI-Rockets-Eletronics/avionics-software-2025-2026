@@ -31,18 +31,18 @@ class DevFsLoxGn2Transducers : public Device {
     // Public transducers - accessed by DevEregControl for PID loop
     // ACTIVE: Only using one channel per ADC for continuous mode (maximum speed)
 
-    // COMMENTED OUT - not needed for current operation
-    // MovingMedianADC<Adafruit_ADS1115> oxtank_1{
-    //     "oxtank_1",
-    //     i2c3,
-    //     ADCAddress::VIN,
-    //     ADCMode::SingleEnded_1,
-    //     RATE_ADS1115_860SPS,
-    //     GAIN_ONE,
-    //     false,
-    //     50,
-    //     375,
-    // };
+    MovingMedianADC<Adafruit_ADS1115> oxtank_1{
+        "oxtank_1",
+        i2c4,
+        ADCAddress::VIN,
+        ADCMode::SingleEnded_0,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        250,
+    };
+    
 
     // ACTIVE - i2c4 transducers - oxtank readings (ADC @ GND address)
     MovingMedianADC<Adafruit_ADS1115> oxtank_2{
@@ -62,29 +62,29 @@ class DevFsLoxGn2Transducers : public Device {
     MovingMedianADC<Adafruit_ADS1115> copv_1{
         "copv_1",
         i2c3,
-        ADCAddress::GND,
+        ADCAddress::VIN,
         ADCMode::SingleEnded_0,
         RATE_ADS1115_860SPS,
-        GAIN_ONE,
+        GAIN_TWOTHIRDS,
         true,  // Continuous mode enabled - only one channel per ADC
         50,
         1250,
     };
 
-    // COMMENTED OUT - conflicts with copv_1 on same ADC
-    // MovingMedianADC<Adafruit_ADS1115> copv_2{
-    //     "copv_2",
-    //     i2c3,
-    //     ADCAddress::GND,
-    //     ADCMode::SingleEnded_1,
-    //     RATE_ADS1115_860SPS,
-    //     GAIN_ONE,
-    //     false,
-    //     50,
-    //     1250,
-    // };
+    MovingMedianADC<Adafruit_ADS1115> copv_2{
+        "copv_2",
+        i2c3,
+        ADCAddress::GND,
+        ADCMode::SingleEnded_0,
+        RATE_ADS1115_860SPS,
+        GAIN_ONE,
+        true,
+        50,
+        125,
+    };
 
     // ACTIVE - i2c3 transducers - pilot pressure readings (ADC @ VIN address)
+    /*
     MovingMedianADC<Adafruit_ADS1115> pilot_pres{
         "pilot_pres",
         i2c3,
@@ -96,6 +96,7 @@ class DevFsLoxGn2Transducers : public Device {
         50,
         375,
     };
+    */
 
     // COMMENTED OUT - not needed for current operation
     // MovingMedianADC<Adafruit_ADS1115> qd_pres{
@@ -142,11 +143,11 @@ class DevFsLoxGn2Transducers : public Device {
 
     void Loop() override {
         // Only tick active transducers (continuous mode for max speed)
-        // oxtank_1.Tick();  // DISABLED
+        oxtank_1.Tick();
         oxtank_2.Tick();
         copv_1.Tick();
-        // copv_2.Tick();  // DISABLED
-        pilot_pres.Tick();
+        copv_2.Tick();
+        //pilot_pres.Tick();  // DISABLED
         // qd_pres.Tick();  // DISABLED
 
         transducers_freq_logger.Tick();
@@ -169,90 +170,111 @@ class DevFsLoxGn2Transducers : public Device {
         FsThermocouplesPacket thermo_packet;
         CapFillPacket cap_fill_packet;
 
-        switch (Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet, &cap_fill_packet)) {
-            case 0:
-                Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
-                Serial.println(static_cast<int>(command_packet.command));
+        // Process multiple messages per loop to drain queue faster
+        // This prevents queue overflow when multiple devices send simultaneously
+        // Increased to 100 to handle high-frequency cap fill packets (100 Hz)
+        constexpr int kMaxMessagesPerLoop = 100;
+        for (int i = 0; i < kMaxMessagesPerLoop; i++) {
+            int result = Receive(&command_packet, &state_packet, &ereg_state_data, &relay_imon_packet, &thermo_packet, &cap_fill_packet);
 
-                // Forward EREG commands to DevEregControl
-                if (command_packet.command == FsCommand::EREG_CLOSED ||
-                    command_packet.command == FsCommand::EREG_STAGE_1 ||
-                    command_packet.command == FsCommand::EREG_STAGE_2) {
-                    Serial.println("[GN2 TRANSDUCERS] Forwarding EREG command to DevEregControl");
-                    Send(DeviceType::DevEregControl, command_packet);
-                }
+            if (result == -1) {
+                // No more messages in queue
+                break;
+            }
 
-                if (command_packet.command == FsCommand::RESTART) {
-                    Die("Restarting by command");
-                }
-                if (command_packet.command ==
-                    FsCommand::RECALIBRATE_TRANSDUCERS) {
-                    Recalibrate();
-                }
-                break;
-            case 1:
-                // Serial.print("[GN2 TRANSDUCERS] Received FsStatePacket from FsRelays, state: ");
-                // Serial.print(static_cast<int>(state_packet.state));
-                // Serial.print(", ms_since_boot: ");
-                // Serial.println(state_packet.ms_since_boot);
-                SendToPi(state_packet);
-                break;
-            case 2:
-                // Received EREG state from DevEregControl
-                // Serial.print("[GN2 TRANSDUCERS] Received EregStateData: closed=");
-                // Serial.print(ereg_state_data.ereg_closed);
-                // Serial.print(", stage1=");
-                // Serial.print(ereg_state_data.ereg_stage_1);
-                // Serial.print(", stage2=");
-                // Serial.println(ereg_state_data.ereg_stage_2);
-                ereg_state_ = ereg_state_data;
-                break;
-            case 3:
-                // Received relay current monitor data from DevRelayImon
-                // Serial.println("[GN2 TRANSDUCERS] Received RelayCurrentMonitorPacket from FsRelays");
-                SendToPi(relay_imon_packet);
-                break;
-            case 4:
-                // Received thermocouple data from DevFsThermocouples
-                // Serial.println("[GN2 TRANSDUCERS] Received FsThermocouplesPacket");
-                SendToPi(thermo_packet);
-                break;
-            case 5:
-                // Received cap fill data from DevCapFill
-                Serial.println("[GN2 TRANSDUCERS] Received CapFillPacket");
-                SendToPi(cap_fill_packet);
-                break;
+            switch (result) {
+                case 0:
+                    Serial.print("[GN2 TRANSDUCERS] Received FsCommandPacket, command: ");
+                    Serial.println(static_cast<int>(command_packet.command));
+
+                    // Forward EREG commands to DevEregControl
+                    if (command_packet.command == FsCommand::EREG_CLOSED ||
+                        command_packet.command == FsCommand::EREG_STAGE_1 ||
+                        command_packet.command == FsCommand::EREG_STAGE_2) {
+                        Serial.println("[GN2 TRANSDUCERS] Forwarding EREG command to DevEregControl");
+                        Send(DeviceType::DevEregControl, command_packet);
+                    }
+
+                    if (command_packet.command == FsCommand::RESTART) {
+                        Die("Restarting by command");
+                    }
+                    if (command_packet.command ==
+                        FsCommand::RECALIBRATE_TRANSDUCERS) {
+                        Recalibrate();
+                    }
+                    break;
+                case 1:
+                    // Serial.print("[GN2 TRANSDUCERS] Received FsStatePacket from FsRelays, state: ");
+                    // Serial.print(static_cast<int>(state_packet.state));
+                    // Serial.print(", ms_since_boot: ");
+                    // Serial.println(state_packet.ms_since_boot);
+                    SendToPi(state_packet);
+                    break;
+                case 2:
+                    // Received EREG state from DevEregControl
+                    // Serial.print("[GN2 TRANSDUCERS] Received EregStateData: closed=");
+                    // Serial.print(ereg_state_data.ereg_closed);
+                    // Serial.print(", stage1=");
+                    // Serial.print(ereg_state_data.ereg_stage_1);
+                    // Serial.print(", stage2=");
+                    // Serial.println(ereg_state_data.ereg_stage_2);
+                    ereg_state_ = ereg_state_data;
+                    break;
+                case 3:
+                    // Received relay current monitor data from DevRelayImon
+                    // Serial.println("[GN2 TRANSDUCERS] Received RelayCurrentMonitorPacket from FsRelays");
+                    SendToPi(relay_imon_packet);
+                    break;
+                case 4:
+                    // Received thermocouple data from DevFsThermocouples
+                    // Serial.println("[GN2 TRANSDUCERS] Received FsThermocouplesPacket");
+                    SendToPi(thermo_packet);
+                    break;
+                case 5:
+                    // Received cap fill data from DevCapFill
+                    // Serial.println("[GN2 TRANSDUCERS] Received CapFillPacket");
+                    SendToPi(cap_fill_packet);
+                    break;
+            }
         }
 
-        // Create and send transducers packet AFTER processing received messages
-        // so ereg_state_ contains the most up-to-date values
-        FsLoxGn2TransducersPacket fs_transducers_packet{
-            .ts = micros(),
-            .oxtank_1 = 0.0f,  // DISABLED - set to 0
-            .oxtank_2 = oxtank_2.GetLatestPsi(),
-            .copv_1 = copv_1.GetLatestPsi(),
-            .copv_2 = 0.0f,  // DISABLED - set to 0
-            .pilot_pres = pilot_pres.GetLatestPsi(),
-            .qd_pres = 0.0f,  // DISABLED - set to 0
-            .ereg_closed = ereg_state_.ereg_closed,
-            .ereg_stage_1 = ereg_state_.ereg_stage_1,
-            .ereg_stage_2 = ereg_state_.ereg_stage_2,
-            .current_angle = ereg_state_.current_angle,
-            .p_cont = ereg_state_.p_cont,
-            .i_cont = ereg_state_.i_cont,
-            .d_cont = ereg_state_.d_cont,
-        };
+        // Rate limit transducer packet transmission to prevent overwhelming serial to Pi
+        // Send at 50 Hz (every 20ms) - still fast enough for real-time monitoring
+        static unsigned long last_transducers_send_ms = 0;
+        unsigned long current_ms = millis();
 
-        SendToPi(fs_transducers_packet);
+        if (current_ms - last_transducers_send_ms >= kTransducersPacketIntervalMs) {
+            // Create and send transducers packet AFTER processing received messages
+            // so ereg_state_ contains the most up-to-date values
+            FsLoxGn2TransducersPacket fs_transducers_packet{
+                .ts = micros(),
+                .oxtank_1 = oxtank_1.GetLatestPsi(),
+                .oxtank_2 = oxtank_2.GetLatestPsi(),
+                .copv_1 = copv_1.GetLatestPsi(),
+                .copv_2 = copv_2.GetLatestPsi(),
+                .pilot_pres = 0.0f,  // DISABLED - pilot_pres.GetLatestPsi(),
+                .qd_pres = 0.0f,  // DISABLED - set to 0
+                .ereg_closed = ereg_state_.ereg_closed,
+                .ereg_stage_1 = ereg_state_.ereg_stage_1,
+                .ereg_stage_2 = ereg_state_.ereg_stage_2,
+                .current_angle = ereg_state_.current_angle,
+                .p_cont = ereg_state_.p_cont,
+                .i_cont = ereg_state_.i_cont,
+                .d_cont = ereg_state_.d_cont,
+            };
+
+            SendToPi(fs_transducers_packet);
+            last_transducers_send_ms = current_ms;
+        }
     }
 
     void Recalibrate() {
         // Only recalibrate active transducers
-        // oxtank_1.Recalibrate(kCalibrateSamples);  // DISABLED
+        oxtank_1.Recalibrate(kCalibrateSamples);
         oxtank_2.Recalibrate(kCalibrateSamples);
         copv_1.Recalibrate(kCalibrateSamples);
-        // copv_2.Recalibrate(kCalibrateSamples);  // DISABLED
-        pilot_pres.Recalibrate(kCalibrateSamples);
+        copv_2.Recalibrate(kCalibrateSamples);
+        //pilot_pres.Recalibrate(kCalibrateSamples);  // DISABLED
         // qd_pres.Recalibrate(kCalibrateSamples);  // DISABLED
     }
 
@@ -320,7 +342,7 @@ class DevFsLoxGn2Transducers : public Device {
     static const int kPiSerialRxPin = 18;  // ESP32 RX <- Pi TX
     static const int kPiSerialTxPin = 8;   // ESP32 TX -> Pi RX
 
-    static const unsigned long kPiSerialBaud = 115200;
+    static const unsigned long kPiSerialBaud = 230400;  // Increased from 115200 for higher bandwidth
 
     static const uint8_t kPacketDelimeter1 = 0b10101010;
     static const uint8_t kPacketDelimeter2 = 0b01010101;
@@ -331,6 +353,9 @@ class DevFsLoxGn2Transducers : public Device {
     const bool kContinuous = true;
     const int kWindowSize = 50;
     const int kCalibrateSamples = 100;  // Reduced from 500 for faster calibration
+
+    // Rate limiting for transducer packet transmission to Pi
+    static const unsigned long kTransducersPacketIntervalMs = 20;  // 50 Hz
 };
 
 

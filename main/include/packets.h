@@ -44,7 +44,7 @@ struct FsCommandPacket {
     bool lox_fill;           // 1 byte
     bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
-    bool ereg_power;         // 1 byte
+    bool igniter_backup;     // 1 byte
 };
 
 #define FROM_FS_COMMAND(COMMAND) COMMAND = (uint8_t)FsCommand::STATE_##COMMAND
@@ -81,7 +81,7 @@ struct FsStatePacket {
     bool lox_fill;           // 1 byte
     bool lox_disconnect;     // 1 byte
     bool igniter;            // 1 byte
-    bool ereg_power;         // 1 byte
+    bool igniter_backup;     // 1 byte
 };
 
 // size: 51 bytes
@@ -139,7 +139,7 @@ struct RelayCurrentMonitorPacket {
     int16_t lox_fill_ma;        // 2 bytes
     int16_t lox_disconnect_ma;  // 2 bytes
     int16_t igniter_ma;         // 2 bytes
-    int16_t ereg_power_ma;      // 2 bytes
+    int16_t igniter_backup_ma;  // 2 bytes
 };
 
 // ===== AVIONICS PACKETS =====

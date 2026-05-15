@@ -31,13 +31,13 @@ static Node fs_relays{ //i2c5/6
     {
         DeviceType::DevFsRelays,
         DeviceType::DevFsThermocouples,
-        DeviceType::DevRelayImon,
+        // DeviceType::DevRelayImon,  // DISABLED - not in use, reduces ESP-NOW queue congestion by 10 packets/sec
     },
 };
 
 static Node cap_fill{
     "CapFill",
-    MacAddress{"10:51:db:46:02:c4"},
+    MacAddress{"10:51:db:46:02:b8"},
     {
         DeviceType::DevCapFill,
     },

@@ -14,7 +14,7 @@ enum class RelayPin : int {
     LOX_FILL = 47,
     LOX_DISCONNECT = 48,
     IGNITER = 40,
-    EREG_POWER = 41,
+    IGNITER_BACKUP = 41,
 };
 
 struct RelayStates {
@@ -26,7 +26,7 @@ struct RelayStates {
     bool lox_fill = false;
     bool lox_disconnect = false;
     bool igniter = false;
-    bool ereg_power = false;
+    bool igniter_backup = false;
 };
 
 using MS = unsigned long;
@@ -88,7 +88,7 @@ class DevFsRelays : public Device {
         SetPinToOutput(RelayPin::LOX_FILL);
         SetPinToOutput(RelayPin::LOX_DISCONNECT);
         SetPinToOutput(RelayPin::IGNITER);
-        SetPinToOutput(RelayPin::EREG_POWER);
+        SetPinToOutput(RelayPin::IGNITER_BACKUP);
     }
 
     void Loop() override {
@@ -181,7 +181,10 @@ class DevFsRelays : public Device {
                 break;
         }
 
-        enter_state_ms = millis();
+        // Only reset the state timer if the state actually changed
+        if (prev_state != cur_state) {
+            enter_state_ms = millis();
+        }
 
         if (ShouldPulsePilotVent(cur_state) &&
             !ShouldPulsePilotVent(prev_state)) {
@@ -234,10 +237,8 @@ class DevFsRelays : public Device {
     }
 
     void UpdateRelayStates() {
-        // reset all relay states except ereg_power (persists beyond CUSTOM timeout)
-        bool preserve_ereg_power = relay_states.ereg_power;
+        // reset all relay states
         relay_states = RelayStates();
-        relay_states.ereg_power = preserve_ereg_power;
 
         // set all relays except for the pilot vent
 
@@ -251,8 +252,7 @@ class DevFsRelays : public Device {
                 // this function won't be called in the CUSTOM state
                 break;
             case FsState::ABORT:
-                // ABORT: Open depress solenoid, close all others, keep ereg power on
-                // All relay_states default to false (closed) except depress and ereg_power
+                // ABORT: Open depress solenoid, close all others
                 relay_states.depress = true;
                 // Explicitly ensure all other solenoids are closed
                 relay_states.gn2_drain = false;
@@ -262,7 +262,7 @@ class DevFsRelays : public Device {
                 relay_states.lox_fill = false;
                 relay_states.lox_disconnect = false;
                 relay_states.igniter = false;
-                // Keep ereg_power preserved (set above from previous state)
+                relay_states.igniter_backup = false;
                 break;
             case FsState::STANDBY:
             case FsState::GN2_STANDBY:
@@ -285,14 +285,23 @@ class DevFsRelays : public Device {
                 }
                 break;
             case FsState::FIRE:
-                // FIRE: continue holding press pilot + gn2 fill from ENGINE_PRIME
-                // Fire igniter immediately, wait 7s, then open run
-                // Everything stays open for 20s after run opens (27s total)
+                // FIRE: continue holding press pilot, keep gn2_fill open
+                // Wait 10s for ereg_Stage2 to activate, then fire igniter for 500ms
+                // Fire backup igniter 1s after primary igniter for 500ms
+                // Wait 7s after igniter on, then open run
+                // Everything stays open for 20s after run opens (37s total)
                 relay_states.press_pilot = true;
                 relay_states.gn2_fill = true;
 
-                if (time_in_state < kFireIgniterOffDelayMs) {
+                if (time_in_state >= kFireIgniterOnDelayMs &&
+                    time_in_state < kFireIgniterOffDelayMs) {
                     relay_states.igniter = true;
+                }
+
+                // Backup igniter fires 1 second after primary (at T+4s)
+                if (time_in_state >= (kFireIgniterOnDelayMs + 1000) &&
+                    time_in_state < (kFireIgniterOffDelayMs + 1000)) {
+                    relay_states.igniter_backup = true;
                 }
 
                 if (time_in_state >= kFireRunOpenDelayMs) {
@@ -342,7 +351,7 @@ class DevFsRelays : public Device {
         relay_states.lox_fill = command_packet.lox_fill;
         relay_states.lox_disconnect = command_packet.lox_disconnect;
         relay_states.igniter = command_packet.igniter;
-        relay_states.ereg_power = command_packet.ereg_power;
+        relay_states.igniter_backup = command_packet.igniter_backup;
 
         // Update manual overrides (persist when leaving CUSTOM state)
         manual_gn2_drain = command_packet.gn2_drain;
@@ -392,7 +401,7 @@ class DevFsRelays : public Device {
         FlushRelay(RelayPin::LOX_FILL, relay_states.lox_fill);
         FlushRelay(RelayPin::LOX_DISCONNECT, relay_states.lox_disconnect);
         FlushRelay(RelayPin::IGNITER, relay_states.igniter);
-        FlushRelay(RelayPin::EREG_POWER, relay_states.ereg_power);
+        FlushRelay(RelayPin::IGNITER_BACKUP, relay_states.igniter_backup);
     }
 
     void SetPinToOutput(RelayPin pin) {
@@ -415,7 +424,7 @@ class DevFsRelays : public Device {
             .lox_fill = relay_states.lox_fill,
             .lox_disconnect = relay_states.lox_disconnect,
             .igniter = relay_states.igniter,
-            .ereg_power = relay_states.ereg_power,
+            .igniter_backup = relay_states.igniter_backup,
         };
 
         Send(DeviceType::DevFsLoxGn2Transducers, state_packet);
