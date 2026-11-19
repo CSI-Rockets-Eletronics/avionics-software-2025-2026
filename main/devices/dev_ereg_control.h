@@ -202,6 +202,11 @@ class DevEregControl : public Device {
             case FsCommand::STATE_FIRE:
                 // FIRE: Transition to EREG_STAGE_2
                 divergence_latched_ = false;
+                // Only on entry into STAGE_2 (not if already in STAGE_2):
+                // start PID from kStage2StartAngle
+                if (current_state_ != EREG_STAGE_2) {
+                    SeedStage2StartAngle();
+                }
                 SetState(EREG_STAGE_2);
                 Serial.println("EREG: FIRE command received - entering STAGE_2");
                 break;
@@ -218,6 +223,11 @@ class DevEregControl : public Device {
                 break;
             case FsCommand::EREG_STAGE_2:
                 divergence_latched_ = false;
+                // Only on entry into STAGE_2 (not if already in STAGE_2):
+                // start PID from kStage2StartAngle
+                if (current_state_ != EREG_STAGE_2) {
+                    SeedStage2StartAngle();
+                }
                 SetState(EREG_STAGE_2);
                 // Bumpless transfer: seed error history to current error
                 // got rid of it since PID is continous, we don't reset from stage 1 to 2
@@ -340,6 +350,16 @@ class DevEregControl : public Device {
         prev2_error_ = e0;
     }
 
+    // Stage 2 entry -- PID starts from kStage2StartAngle regardless of the
+    // previous angle. Backlash tracking is seeded to the same angle with no
+    // direction so the first STAGE_2 cycle does not apply a backlash offset.
+    // Servo is written on the next PID tick (RunPidLoop).
+    void SeedStage2StartAngle() {
+        current_angle_  = kStage2StartAngle;
+        last_cmd_angle_ = kStage2StartAngle;
+        last_cmd_dir_   = 0;
+    }
+
     // ===== Dynamic Gain Scaling =====
 
     // Called once per PID cycle. Implements the MATLAB dynamic gain logic exactly:
@@ -394,6 +414,7 @@ class DevEregControl : public Device {
     // Stage angle limits
     static constexpr float kStage1MaxAngle = 19.0f;  // degrees
     static constexpr float kStage2MaxAngle = 80.0f;  // degrees
+    static constexpr float kStage2StartAngle = 25.0f;  // degrees -- PID start angle on entry to STAGE_2
 
     // Safety limits
     static constexpr float kMaxSafePressurePsi = 500.0f; // Auto-close if ereg_lower exceeds this
